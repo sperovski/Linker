@@ -1,4 +1,6 @@
+using Linker.Application.Common.Interfaces;
 using Linker.Domain.Repositories;
+using Linker.Infrastructure.Auth;
 using Linker.Infrastructure.Persistence;
 using Linker.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,8 @@ public static class DependencyInjection
         services.AddScoped<IInternshipRepository, InternshipRepository>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
+
+        services.AddScoped<ITokenService, JwtTokenService>();
 
         return services;
     }

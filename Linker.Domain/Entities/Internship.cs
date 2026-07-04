@@ -1,3 +1,5 @@
+using Linker.Domain.Enums;
+
 namespace Linker.Domain.Entities;
 
 public class Internship
@@ -7,6 +9,7 @@ public class Internship
     public string Title { get; set; } = null!;
     public string Description { get; set; } = null!;
     public string? Location { get; set; }
+    public InternshipType Type { get; set; }
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; }

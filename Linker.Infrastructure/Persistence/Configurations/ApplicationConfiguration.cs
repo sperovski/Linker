@@ -1,12 +1,13 @@
 using Linker.Domain.Entities;
+using ApplicationEntity = Linker.Domain.Entities.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Linker.Infrastructure.Persistence.Configurations;
 
-public class ApplicationConfiguration : IEntityTypeConfiguration<Application>
+public class ApplicationConfiguration : IEntityTypeConfiguration<ApplicationEntity>
 {
-    public void Configure(EntityTypeBuilder<Application> builder)
+    public void Configure(EntityTypeBuilder<ApplicationEntity> builder)
     {
         builder.HasKey(a => a.Id);
 

@@ -21,6 +21,9 @@ public class InternshipConfiguration : IEntityTypeConfiguration<Internship>
         builder.Property(i => i.Location)
             .HasMaxLength(200);
 
+        builder.Property(i => i.Type)
+            .IsRequired();
+
         builder.Property(i => i.CreatedAtUtc)
             .IsRequired();
 
