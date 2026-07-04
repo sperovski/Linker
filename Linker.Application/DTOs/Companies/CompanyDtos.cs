@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Linker.Application.DTOs.Companies;
 
 public record CompanyProfileResponse(
@@ -8,6 +10,6 @@ public record CompanyProfileResponse(
     string? Website);
 
 public record UpdateCompanyProfileRequest(
-    string Name,
-    string? Description,
-    string? Website);
+    [Required, MaxLength(200)] string Name,
+    [MaxLength(4000)] string? Description,
+    [MaxLength(500), Url] string? Website);

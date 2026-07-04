@@ -1,18 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Linker.Application.DTOs.Internships;
 
 public record CreateInternshipRequest(
-    string Title,
-    string Description,
-    string? Location,
-    string Type,
+    [Required, MaxLength(200)] string Title,
+    [Required, MaxLength(8000)] string Description,
+    [MaxLength(200)] string? Location,
+    [Required] string Type,
     DateOnly? StartDate,
     DateOnly? EndDate);
 
 public record UpdateInternshipRequest(
-    string Title,
-    string Description,
-    string? Location,
-    string Type,
+    [Required, MaxLength(200)] string Title,
+    [Required, MaxLength(8000)] string Description,
+    [MaxLength(200)] string? Location,
+    [Required] string Type,
     DateOnly? StartDate,
     DateOnly? EndDate);
 

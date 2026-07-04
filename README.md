@@ -20,7 +20,7 @@ Dependency direction flows inward: `Api → Infrastructure → Application → D
 - **Linker.Infrastructure**: `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.Design`
 - **Linker.Api**: `Microsoft.AspNetCore.Authentication.JwtBearer`, `Swashbuckle.AspNetCore`
 
-This phase is scaffolding only — no entities, DbContext, or business logic have been added yet.
+- **Linker.Application**: `BCrypt.Net-Next` (password hashing)
 
 ## Running locally
 
@@ -33,15 +33,23 @@ dotnet run --project Linker.Api
 
 The API will start with Swagger UI available in the Development environment at `/swagger`.
 
-### PostgreSQL connection
+### Configuration and secrets
 
-`Linker.Api/appsettings.Development.json` expects a `ConnectionStrings:DefaultConnection` value, e.g.:
+`Linker.Api/appsettings.Development.json` contains **placeholders only** for the PostgreSQL
+connection string (`ConnectionStrings:DefaultConnection`) and the JWT signing key (`Jwt:Key`).
+No real secrets are committed. Override them locally with user-secrets:
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "Host=localhost;Port=5432;Database=linker_dev;Username=postgres;Password=CHANGE_ME"
-}
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+  "Host=localhost;Port=5432;Database=linker_dev;Username=postgres;Password=<your-password>" \
+  --project Linker.Api
+dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)" --project Linker.Api
 ```
 
-No real secrets are committed — replace the placeholder password with your local PostgreSQL credentials.
-No database or migrations exist yet as part of this scaffolding phase; that will be added once `Linker.Infrastructure` has a `DbContext` and initial migration.
+or via environment variables (`ConnectionStrings__DefaultConnection`, `Jwt__Key`).
+
+### Database migrations
+
+```bash
+dotnet ef database update --project Linker.Infrastructure --startup-project Linker.Api
+```

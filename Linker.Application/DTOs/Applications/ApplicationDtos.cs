@@ -1,8 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Linker.Application.DTOs.Applications;
 
-public record CreateApplicationRequest(int InternshipId, string? CoverLetter);
+public record CreateApplicationRequest(
+    [Range(1, int.MaxValue)] int InternshipId,
+    [MaxLength(4000)] string? CoverLetter);
 
-public record UpdateApplicationStatusRequest(string Status);
+public record UpdateApplicationStatusRequest(
+    [Required] string Status);
 
 public record ApplicationResponse(
     int Id,
