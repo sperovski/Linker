@@ -16,7 +16,10 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
     {
         return await Context.Internships
             .AsNoTracking()
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
             .Where(i => i.CompanyId == companyId)
+            .OrderByDescending(i => i.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
 
@@ -33,6 +36,8 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
         var query = Context.Internships
             .AsNoTracking()
             .Include(i => i.Company)
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
             .Where(i => i.IsActive);
 
         if (type.HasValue)
@@ -61,6 +66,48 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
     {
         return await Context.Internships
             .Include(i => i.Company)
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
             .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
+
+    public async Task<Internship?> GetWithDetailsAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await Context.Internships
+            .AsNoTracking()
+            .Include(i => i.Company)
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Internship>> GetByIdsAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await Context.Internships
+            .AsNoTracking()
+            .Include(i => i.Company)
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
+            .Where(i => ids.Contains(i.Id))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Internship>> GetPopularActiveAsync(int take, CancellationToken cancellationToken = default)
+    {
+        return await Context.Internships
+            .AsNoTracking()
+            .Include(i => i.Company)
+            .Include(i => i.RequiredSkills)
+                .ThenInclude(rs => rs.Skill)
+            .Where(i => i.IsActive)
+            .OrderByDescending(i => i.Applications.Count)
+            .ThenByDescending(i => i.CreatedAtUtc)
+            .Take(take)
+            .ToListAsync(cancellationToken);
     }
 }

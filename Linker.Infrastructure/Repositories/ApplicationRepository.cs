@@ -34,6 +34,18 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ApplicationEntity>> GetByCompanyAsync(int companyId, CancellationToken cancellationToken = default)
+    {
+        return await Context.Applications
+            .AsNoTracking()
+            .Include(a => a.Student)
+            .Include(a => a.Internship)
+            .ThenInclude(i => i.Company)
+            .Where(a => a.Internship.CompanyId == companyId)
+            .OrderByDescending(a => a.AppliedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> ExistsAsync(int studentId, int internshipId, CancellationToken cancellationToken = default)
     {
         return await Context.Applications

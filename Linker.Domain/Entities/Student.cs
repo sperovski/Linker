@@ -13,4 +13,5 @@ public class Student
     public User User { get; set; } = null!;
     public ICollection<StudentSkill> Skills { get; set; } = new List<StudentSkill>();
     public ICollection<Application> Applications { get; set; } = new List<Application>();
+    public ICollection<SavedInternship> SavedInternships { get; set; } = new List<SavedInternship>();
 }

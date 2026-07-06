@@ -31,6 +31,7 @@ public class ExceptionHandlingMiddleware
         var (statusCode, title) = exception switch
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
+            BadRequestException => (StatusCodes.Status400BadRequest, "Bad Request"),
             ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             ForbiddenAccessException => (StatusCodes.Status403Forbidden, "Forbidden"),
             AuthenticationFailedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),

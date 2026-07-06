@@ -96,6 +96,9 @@ namespace Linker.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateOnly?>("ApplicationDeadline")
+                        .HasColumnType("date");
+
                     b.Property<int>("CompanyId")
                         .HasColumnType("integer");
 
@@ -133,6 +136,39 @@ namespace Linker.Infrastructure.Migrations
                     b.HasIndex("CompanyId");
 
                     b.ToTable("Internships");
+                });
+
+            modelBuilder.Entity("Linker.Domain.Entities.InternshipSkill", b =>
+                {
+                    b.Property<int>("InternshipId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SkillId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("InternshipId", "SkillId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("InternshipSkills");
+                });
+
+            modelBuilder.Entity("Linker.Domain.Entities.SavedInternship", b =>
+                {
+                    b.Property<int>("StudentId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("InternshipId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SavedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("StudentId", "InternshipId");
+
+                    b.HasIndex("InternshipId");
+
+                    b.ToTable("SavedInternships");
                 });
 
             modelBuilder.Entity("Linker.Domain.Entities.Skill", b =>
@@ -284,6 +320,44 @@ namespace Linker.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("Linker.Domain.Entities.InternshipSkill", b =>
+                {
+                    b.HasOne("Linker.Domain.Entities.Internship", "Internship")
+                        .WithMany("RequiredSkills")
+                        .HasForeignKey("InternshipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Linker.Domain.Entities.Skill", "Skill")
+                        .WithMany("InternshipSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Internship");
+
+                    b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("Linker.Domain.Entities.SavedInternship", b =>
+                {
+                    b.HasOne("Linker.Domain.Entities.Internship", "Internship")
+                        .WithMany("SavedBy")
+                        .HasForeignKey("InternshipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Linker.Domain.Entities.Student", "Student")
+                        .WithMany("SavedInternships")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Internship");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("Linker.Domain.Entities.Student", b =>
                 {
                     b.HasOne("Linker.Domain.Entities.User", "User")
@@ -322,16 +396,24 @@ namespace Linker.Infrastructure.Migrations
             modelBuilder.Entity("Linker.Domain.Entities.Internship", b =>
                 {
                     b.Navigation("Applications");
+
+                    b.Navigation("RequiredSkills");
+
+                    b.Navigation("SavedBy");
                 });
 
             modelBuilder.Entity("Linker.Domain.Entities.Skill", b =>
                 {
+                    b.Navigation("InternshipSkills");
+
                     b.Navigation("StudentSkills");
                 });
 
             modelBuilder.Entity("Linker.Domain.Entities.Student", b =>
                 {
                     b.Navigation("Applications");
+
+                    b.Navigation("SavedInternships");
 
                     b.Navigation("Skills");
                 });

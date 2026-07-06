@@ -35,7 +35,10 @@ public static class EntityMappings
             company.Description,
             company.Website);
 
-    public static InternshipListItemResponse ToListItemResponse(this Internship internship) =>
+    public static InternshipListItemResponse ToListItemResponse(
+        this Internship internship,
+        IReadOnlySet<int>? studentSkillIds = null,
+        IReadOnlySet<int>? savedInternshipIds = null) =>
         new(
             internship.Id,
             internship.Title,
@@ -44,9 +47,16 @@ public static class EntityMappings
             internship.Company?.Name ?? string.Empty,
             internship.IsActive,
             internship.StartDate,
-            internship.EndDate);
+            internship.EndDate,
+            internship.ApplicationDeadline,
+            internship.RequiredSkillResponses(),
+            internship.MatchScore(studentSkillIds),
+            savedInternshipIds?.Contains(internship.Id) ?? false);
 
-    public static InternshipDetailResponse ToDetailResponse(this Internship internship) =>
+    public static InternshipDetailResponse ToDetailResponse(
+        this Internship internship,
+        IReadOnlySet<int>? studentSkillIds = null,
+        IReadOnlySet<int>? savedInternshipIds = null) =>
         new(
             internship.Id,
             internship.CompanyId,
@@ -57,8 +67,39 @@ public static class EntityMappings
             internship.Type.ToString(),
             internship.StartDate,
             internship.EndDate,
+            internship.ApplicationDeadline,
             internship.IsActive,
-            internship.CreatedAtUtc);
+            internship.CreatedAtUtc,
+            internship.RequiredSkillResponses(),
+            internship.MatchScore(studentSkillIds),
+            savedInternshipIds?.Contains(internship.Id) ?? false);
+
+    private static IReadOnlyList<SkillResponse> RequiredSkillResponses(this Internship internship) =>
+        internship.RequiredSkills
+            .Where(rs => rs.Skill is not null)
+            .OrderBy(rs => rs.Skill.Name)
+            .Select(rs => rs.Skill.ToResponse())
+            .ToList();
+
+    // Share of an internship's required skills that the student already has,
+    // as a 0-100 percentage. Null when there is no student context or the
+    // internship lists no required skills (nothing meaningful to match on).
+    private static int? MatchScore(this Internship internship, IReadOnlySet<int>? studentSkillIds)
+    {
+        if (studentSkillIds is null)
+        {
+            return null;
+        }
+
+        var required = internship.RequiredSkills.Select(rs => rs.SkillId).ToList();
+        if (required.Count == 0)
+        {
+            return null;
+        }
+
+        var matched = required.Count(studentSkillIds.Contains);
+        return (int)Math.Round(matched * 100.0 / required.Count);
+    }
 
     public static ApplicationResponse ToResponse(this ApplicationEntity application) =>
         new(

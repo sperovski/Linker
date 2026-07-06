@@ -7,4 +7,5 @@ public interface ICompanyService
     Task<CompanyProfileResponse> GetByIdAsync(int companyId, CancellationToken cancellationToken = default);
     Task<CompanyProfileResponse> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
     Task<CompanyProfileResponse> UpdateProfileAsync(int userId, UpdateCompanyProfileRequest request, CancellationToken cancellationToken = default);
+    Task<CompanyDashboardResponse> GetDashboardAsync(int userId, CancellationToken cancellationToken = default);
 }

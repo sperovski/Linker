@@ -39,6 +39,11 @@ public class ApplicationService : IApplicationService
             throw new ConflictException("This internship is closed and no longer accepts applications.");
         }
 
+        if (internship.ApplicationDeadline is { } deadline && deadline < DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            throw new ConflictException("The application deadline for this internship has passed.");
+        }
+
         if (await _applicationRepository.ExistsAsync(student.Id, internship.Id, cancellationToken))
         {
             throw new ConflictException("You have already applied to this internship.");
@@ -79,6 +84,35 @@ public class ApplicationService : IApplicationService
         }
 
         application.Status = status;
+        await _applicationRepository.UpdateAsync(application, cancellationToken);
+
+        return application.ToResponse();
+    }
+
+    public async Task<ApplicationResponse> WithdrawAsync(int userId, int applicationId, CancellationToken cancellationToken = default)
+    {
+        var student = await _studentRepository.GetByUserIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException($"No student profile exists for user '{userId}'.");
+
+        var application = await _applicationRepository.GetWithDetailsAsync(applicationId, cancellationToken)
+            ?? throw new NotFoundException("Application", applicationId);
+
+        if (application.StudentId != student.Id)
+        {
+            throw new ForbiddenAccessException("You can only withdraw your own applications.");
+        }
+
+        if (application.Status == ApplicationStatus.Withdrawn)
+        {
+            throw new ConflictException("This application has already been withdrawn.");
+        }
+
+        if (application.Status == ApplicationStatus.Rejected)
+        {
+            throw new ConflictException("A rejected application cannot be withdrawn.");
+        }
+
+        application.Status = ApplicationStatus.Withdrawn;
         await _applicationRepository.UpdateAsync(application, cancellationToken);
 
         return application.ToResponse();

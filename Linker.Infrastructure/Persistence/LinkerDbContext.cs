@@ -17,6 +17,8 @@ public class LinkerDbContext : DbContext
     public DbSet<ApplicationEntity> Applications => Set<ApplicationEntity>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<StudentSkill> StudentSkills => Set<StudentSkill>();
+    public DbSet<InternshipSkill> InternshipSkills => Set<InternshipSkill>();
+    public DbSet<SavedInternship> SavedInternships => Set<SavedInternship>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

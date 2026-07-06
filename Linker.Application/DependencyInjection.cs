@@ -13,6 +13,12 @@ public static class DependencyInjection
         services.AddScoped<IInternshipService, InternshipService>();
         services.AddScoped<IApplicationService, ApplicationService>();
         services.AddScoped<ISkillService, SkillService>();
+        services.AddScoped<ISavedInternshipService, SavedInternshipService>();
+
+        // Offline heuristic CV reviewer is the default. Infrastructure swaps in an
+        // AI-backed reviewer when an Anthropic API key is configured.
+        services.AddScoped<HeuristicCvReviewService>();
+        services.AddScoped<ICvReviewService>(sp => sp.GetRequiredService<HeuristicCvReviewService>());
 
         return services;
     }

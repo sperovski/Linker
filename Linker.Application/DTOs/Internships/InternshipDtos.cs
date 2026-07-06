@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Linker.Application.DTOs.Skills;
 
 namespace Linker.Application.DTOs.Internships;
 
@@ -8,7 +9,9 @@ public record CreateInternshipRequest(
     [MaxLength(200)] string? Location,
     [Required] string Type,
     DateOnly? StartDate,
-    DateOnly? EndDate);
+    DateOnly? EndDate,
+    DateOnly? ApplicationDeadline,
+    IReadOnlyList<int>? SkillIds);
 
 public record UpdateInternshipRequest(
     [Required, MaxLength(200)] string Title,
@@ -16,7 +19,9 @@ public record UpdateInternshipRequest(
     [MaxLength(200)] string? Location,
     [Required] string Type,
     DateOnly? StartDate,
-    DateOnly? EndDate);
+    DateOnly? EndDate,
+    DateOnly? ApplicationDeadline,
+    IReadOnlyList<int>? SkillIds);
 
 public record InternshipSearchRequest(string? Location, string? SearchText, string? Type);
 
@@ -28,7 +33,11 @@ public record InternshipListItemResponse(
     string CompanyName,
     bool IsActive,
     DateOnly? StartDate,
-    DateOnly? EndDate);
+    DateOnly? EndDate,
+    DateOnly? ApplicationDeadline,
+    IReadOnlyList<SkillResponse> RequiredSkills,
+    int? MatchScore,
+    bool IsSaved);
 
 public record InternshipDetailResponse(
     int Id,
@@ -40,5 +49,9 @@ public record InternshipDetailResponse(
     string Type,
     DateOnly? StartDate,
     DateOnly? EndDate,
+    DateOnly? ApplicationDeadline,
     bool IsActive,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    IReadOnlyList<SkillResponse> RequiredSkills,
+    int? MatchScore,
+    bool IsSaved);

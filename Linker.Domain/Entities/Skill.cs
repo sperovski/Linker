@@ -6,4 +6,5 @@ public class Skill
     public string Name { get; set; } = null!;
 
     public ICollection<StudentSkill> StudentSkills { get; set; } = new List<StudentSkill>();
+    public ICollection<InternshipSkill> InternshipSkills { get; set; } = new List<InternshipSkill>();
 }

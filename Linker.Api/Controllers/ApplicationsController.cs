@@ -45,6 +45,17 @@ public class ApplicationsController : ApiControllerBase
         return Ok(await _applicationService.GetByIdAsync(CurrentUserId, id, cancellationToken));
     }
 
+    [HttpPost("{id:int}/withdraw")]
+    [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(ApplicationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApplicationResponse>> Withdraw(int id, CancellationToken cancellationToken)
+    {
+        return Ok(await _applicationService.WithdrawAsync(CurrentUserId, id, cancellationToken));
+    }
+
     [HttpPut("{id:int}/status")]
     [Authorize(Roles = "Company")]
     [ProducesResponseType(typeof(ApplicationResponse), StatusCodes.Status200OK)]

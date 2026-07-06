@@ -7,7 +7,9 @@ public interface IInternshipService
     Task<InternshipDetailResponse> CreateAsync(int userId, CreateInternshipRequest request, CancellationToken cancellationToken = default);
     Task<InternshipDetailResponse> UpdateAsync(int userId, int internshipId, UpdateInternshipRequest request, CancellationToken cancellationToken = default);
     Task<InternshipDetailResponse> CloseAsync(int userId, int internshipId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<InternshipListItemResponse>> SearchAsync(InternshipSearchRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InternshipListItemResponse>> SearchAsync(InternshipSearchRequest request, int? userId = null, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InternshipListItemResponse>> GetRecommendedAsync(int userId, int take, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<InternshipListItemResponse>> GetPopularAsync(int take, int? userId = null, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InternshipListItemResponse>> GetOwnListingsAsync(int userId, CancellationToken cancellationToken = default);
-    Task<InternshipDetailResponse> GetDetailAsync(int internshipId, CancellationToken cancellationToken = default);
+    Task<InternshipDetailResponse> GetDetailAsync(int internshipId, int? userId = null, CancellationToken cancellationToken = default);
 }

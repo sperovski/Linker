@@ -19,4 +19,18 @@ public abstract class ApiControllerBase : ControllerBase
             return int.Parse(value);
         }
     }
+
+    // Null for anonymous requests. Lets endpoints that allow anonymous access
+    // still personalise their response (match scores, saved flags) when a token
+    // happens to be present.
+    protected int? CurrentUserIdOrNull
+    {
+        get
+        {
+            var value = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? User.FindFirstValue("sub");
+
+            return value is null ? null : int.Parse(value);
+        }
+    }
 }

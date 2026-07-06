@@ -34,6 +34,15 @@ public class CompaniesController : ApiControllerBase
         return Ok(await _companyService.UpdateProfileAsync(CurrentUserId, request, cancellationToken));
     }
 
+    [HttpGet("dashboard")]
+    [Authorize(Roles = "Company")]
+    [ProducesResponseType(typeof(CompanyDashboardResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CompanyDashboardResponse>> GetDashboard(CancellationToken cancellationToken)
+    {
+        return Ok(await _companyService.GetDashboardAsync(CurrentUserId, cancellationToken));
+    }
+
     [HttpGet("{id:int}")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CompanyProfileResponse), StatusCodes.Status200OK)]

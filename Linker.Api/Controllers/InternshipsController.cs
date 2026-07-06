@@ -11,11 +11,16 @@ public class InternshipsController : ApiControllerBase
 {
     private readonly IInternshipService _internshipService;
     private readonly IApplicationService _applicationService;
+    private readonly ISavedInternshipService _savedInternshipService;
 
-    public InternshipsController(IInternshipService internshipService, IApplicationService applicationService)
+    public InternshipsController(
+        IInternshipService internshipService,
+        IApplicationService applicationService,
+        ISavedInternshipService savedInternshipService)
     {
         _internshipService = internshipService;
         _applicationService = applicationService;
+        _savedInternshipService = savedInternshipService;
     }
 
     [HttpGet]
@@ -25,7 +30,31 @@ public class InternshipsController : ApiControllerBase
         [FromQuery] string? location, [FromQuery] string? searchText, [FromQuery] string? type, CancellationToken cancellationToken)
     {
         var request = new InternshipSearchRequest(location, searchText, type);
-        return Ok(await _internshipService.SearchAsync(request, cancellationToken));
+        return Ok(await _internshipService.SearchAsync(request, CurrentUserIdOrNull, cancellationToken));
+    }
+
+    [HttpGet("saved")]
+    [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> GetSaved(CancellationToken cancellationToken)
+    {
+        return Ok(await _savedInternshipService.GetSavedAsync(CurrentUserId, cancellationToken));
+    }
+
+    [HttpGet("recommended")]
+    [Authorize(Roles = "Student")]
+    [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> GetRecommended([FromQuery] int take, CancellationToken cancellationToken)
+    {
+        return Ok(await _internshipService.GetRecommendedAsync(CurrentUserId, take <= 0 ? 6 : take, cancellationToken));
+    }
+
+    [HttpGet("popular")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> GetPopular([FromQuery] int take, CancellationToken cancellationToken)
+    {
+        return Ok(await _internshipService.GetPopularAsync(take <= 0 ? 6 : take, CurrentUserIdOrNull, cancellationToken));
     }
 
     [HttpGet("mine")]
@@ -42,7 +71,26 @@ public class InternshipsController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<InternshipDetailResponse>> GetDetail(int id, CancellationToken cancellationToken)
     {
-        return Ok(await _internshipService.GetDetailAsync(id, cancellationToken));
+        return Ok(await _internshipService.GetDetailAsync(id, CurrentUserIdOrNull, cancellationToken));
+    }
+
+    [HttpPost("{id:int}/save")]
+    [Authorize(Roles = "Student")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Save(int id, CancellationToken cancellationToken)
+    {
+        await _savedInternshipService.SaveAsync(CurrentUserId, id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}/save")]
+    [Authorize(Roles = "Student")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Unsave(int id, CancellationToken cancellationToken)
+    {
+        await _savedInternshipService.UnsaveAsync(CurrentUserId, id, cancellationToken);
+        return NoContent();
     }
 
     [HttpPost]
