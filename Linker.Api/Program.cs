@@ -1,6 +1,8 @@
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 using Linker.Api.Middleware;
+using Linker.Api.RateLimiting;
 using Linker.Application;
 using Linker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -61,15 +63,31 @@ builder.Services.AddCors(options =>
 });
 
 // Credential endpoints get a strict per-IP budget; everything else a generous one.
+// The partition key is the *real* client IP: see ClientIpResolver for why that
+// requires an explicit trusted-proxy list rather than the raw connection IP.
 var globalPermitLimit = builder.Configuration.GetValue("RateLimiting:GlobalPerMinute", 300);
 var authPermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPerMinute", 10);
+
+List<IPNetwork> trustedProxies;
+try
+{
+    trustedProxies = (builder.Configuration.GetSection("RateLimiting:TrustedProxies").Get<string[]>() ?? [])
+        .Select(IPNetwork.Parse)
+        .ToList();
+}
+catch (FormatException ex)
+{
+    throw new InvalidOperationException(
+        "One or more entries in 'RateLimiting:TrustedProxies' is not a valid CIDR (e.g. '172.16.0.0/12').", ex);
+}
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            ClientIpResolver.Resolve(context, trustedProxies),
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = globalPermitLimit,
@@ -79,7 +97,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("auth", context =>
         RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            ClientIpResolver.Resolve(context, trustedProxies),
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = authPermitLimit,
