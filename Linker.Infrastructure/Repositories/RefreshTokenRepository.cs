@@ -25,4 +25,12 @@ public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRep
             .Where(t => t.UserId == userId && t.RevokedAtUtc == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now), cancellationToken);
     }
+
+    public async Task RevokeFamilyAsync(Guid familyId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        await Context.RefreshTokens
+            .Where(t => t.FamilyId == familyId && t.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAtUtc, now), cancellationToken);
+    }
 }

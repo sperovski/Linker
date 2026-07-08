@@ -14,6 +14,8 @@ public sealed class TestDb : IDisposable
 {
     private readonly SqliteConnection _connection;
 
+    private readonly DbContextOptions<LinkerDbContext> _options;
+
     public LinkerDbContext Context { get; }
 
     public TestDb()
@@ -21,13 +23,25 @@ public sealed class TestDb : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        var options = new DbContextOptionsBuilder<LinkerDbContext>()
+        _options = new DbContextOptionsBuilder<LinkerDbContext>()
             .UseSqlite(_connection)
             .Options;
 
-        Context = new LinkerDbContext(options);
+        Context = new LinkerDbContext(_options);
         Context.Database.EnsureCreated();
     }
+
+    /// <summary>
+    /// A fresh LinkerDbContext against the same live database, mirroring the
+    /// scoped-per-request DbContext a real HTTP request gets in production.
+    /// Use this (not the shared <see cref="Context"/>) when a test simulates
+    /// more than one "request" and needs each to see the others' committed
+    /// writes without any stale change-tracker state carried over — a single
+    /// shared context wouldn't pick up rows changed via bulk
+    /// ExecuteUpdateAsync calls (e.g. token-family revocation) that it already
+    /// has a stale tracked copy of, whereas a fresh scope always reads current.
+    /// </summary>
+    public LinkerDbContext NewContext() => new(_options);
 
     public Student AddStudent(string email = "student@test.local")
     {

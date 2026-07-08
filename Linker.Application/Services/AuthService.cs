@@ -114,14 +114,35 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> RefreshAsync(RefreshRequest request, CancellationToken cancellationToken = default)
     {
         var stored = await _refreshTokenRepository.GetByTokenHashAsync(Hash(request.RefreshToken), cancellationToken);
-        if (stored is null || !stored.IsActive || !stored.User.IsActive)
+        if (stored is null)
         {
             throw new AuthenticationFailedException("Invalid or expired refresh token.");
         }
 
-        // Rotation: every refresh token is single-use; revoke + reissue atomically.
+        if (stored.RevokedAtUtc is not null)
+        {
+            // This exact token was already rotated away, yet it's being presented
+            // again — either a stolen/leaked copy or a client retry race. Either
+            // way, treat it as compromised: kill every token descended from this
+            // login so both the attacker and the legitimate client must
+            // re-authenticate, rather than failing just this one request.
+            await _refreshTokenRepository.RevokeFamilyAsync(stored.FamilyId, cancellationToken);
+            throw new AuthenticationFailedException(
+                "This session was revoked because a refresh token was reused. Please log in again.");
+        }
+
+        if (stored.ExpiresAtUtc <= DateTime.UtcNow || !stored.User.IsActive)
+        {
+            // Naturally expired or the account was disabled — not a replay, so
+            // the rest of the family is left alone.
+            throw new AuthenticationFailedException("Invalid or expired refresh token.");
+        }
+
+        // Rotation: every refresh token is single-use; revoke + reissue
+        // atomically, keeping the same family so a later replay is still
+        // detectable against this new token too.
         stored.RevokedAtUtc = DateTime.UtcNow;
-        var rawRefreshToken = StageRefreshToken(stored.User);
+        var rawRefreshToken = StageRefreshToken(stored.User, stored.FamilyId);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ToAuthResponse(stored.User, rawRefreshToken);
@@ -230,14 +251,20 @@ public class AuthService : IAuthService
             cancellationToken);
     }
 
-    /// <summary>Stages a new refresh token for the user and returns the raw value.</summary>
-    private string StageRefreshToken(User user)
+    /// <summary>
+    /// Stages a new refresh token for the user and returns the raw value.
+    /// Omit <paramref name="familyId"/> to start a fresh lineage (login/register);
+    /// pass the rotating token's family to keep it (refresh), so a later replay
+    /// of any token in the chain is still attributable to the same session.
+    /// </summary>
+    private string StageRefreshToken(User user, Guid? familyId = null)
     {
         var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         _refreshTokenRepository.Add(new RefreshToken
         {
             User = user,
             TokenHash = Hash(raw),
+            FamilyId = familyId ?? Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
             ExpiresAtUtc = DateTime.UtcNow.AddDays(_refreshTokenDays)
         });

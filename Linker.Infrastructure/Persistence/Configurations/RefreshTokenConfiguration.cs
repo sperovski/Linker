@@ -18,6 +18,11 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.HasIndex(t => t.TokenHash)
             .IsUnique();
 
+        builder.Property(t => t.FamilyId).IsRequired();
+
+        // Bulk-revoked as a group when a replay is detected.
+        builder.HasIndex(t => t.FamilyId);
+
         builder.Property(t => t.CreatedAtUtc).IsRequired();
         builder.Property(t => t.ExpiresAtUtc).IsRequired();
 

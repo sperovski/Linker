@@ -74,9 +74,15 @@ public class AuthFlowTests : IClassFixture<LinkerApiFactory>
         var refreshed = await refresh.Content.ReadFromJsonAsync<AuthBody>();
         Assert.NotEqual(body.refreshToken, refreshed!.refreshToken);
 
-        // Old token was single-use.
+        // Old token was single-use — replaying it is rejected...
         var reuse = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = body.refreshToken });
         Assert.Equal(HttpStatusCode.Unauthorized, reuse.StatusCode);
+
+        // ...and the replay revokes the whole family: the *current*, never-reused
+        // token is now dead too, forcing a full re-login rather than trusting a
+        // chain that may have been compromised.
+        var reuseOfCurrent = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken = refreshed.refreshToken });
+        Assert.Equal(HttpStatusCode.Unauthorized, reuseOfCurrent.StatusCode);
     }
 
     [Fact]

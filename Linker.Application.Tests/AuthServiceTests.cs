@@ -40,6 +40,32 @@ public class AuthServiceTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
+    /// <summary>
+    /// A fresh AuthService bound to a new DbContext scope — mirrors the scoped
+    /// DI lifetime a real HTTP request gets, so tests that simulate multiple
+    /// requests see committed writes (including bulk ExecuteUpdateAsync calls)
+    /// the same way production does, rather than a stale change-tracker copy
+    /// held by one long-lived context/service across the whole test.
+    /// </summary>
+    private AuthService NewRequestScopedService()
+    {
+        var context = _db.NewContext();
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:RefreshTokenDays"] = "30" })
+            .Build();
+
+        return new AuthService(
+            new UserRepository(context),
+            new StudentRepository(context),
+            new CompanyRepository(context),
+            new RefreshTokenRepository(context),
+            new UserTokenRepository(context),
+            new FakeTokenService(),
+            _email,
+            context,
+            config);
+    }
+
     [Fact]
     public async Task RegisterStudent_PersistsUserProfileAndRefreshToken()
     {
@@ -113,6 +139,63 @@ public class AuthServiceTests : IDisposable
         await Assert.ThrowsAsync<AuthenticationFailedException>(() =>
             _service.RefreshAsync(new RefreshRequest("not-a-real-token")));
     }
+
+    [Fact]
+    public async Task Refresh_ReplayOfAlreadyRotatedToken_RevokesEntireFamily()
+    {
+        // Simulates the replay-before-rotation race: an attacker holds a copy of
+        // token A (e.g. sniffed off the wire). The legitimate client rotates
+        // first (A -> B). The attacker then replays A. Each step below uses a
+        // fresh, request-scoped AuthService (matching production's per-request
+        // DI scope) so the assertions reflect what a real second/third HTTP
+        // request would actually see — not a same-context cache.
+        var registered = await NewRequestScopedService().RegisterStudentAsync(
+            new RegisterStudentRequest("family@test.local", "password123", "A", "B", null, null));
+
+        // Legitimate client rotates first: token A -> token B.
+        var afterFirstRefresh = await NewRequestScopedService().RefreshAsync(new RefreshRequest(registered.RefreshToken));
+
+        // Attacker replays the original token A, which is now revoked —
+        // detected as reuse.
+        var ex = await Assert.ThrowsAsync<AuthenticationFailedException>(() =>
+            NewRequestScopedService().RefreshAsync(new RefreshRequest(registered.RefreshToken)));
+        Assert.Contains("reused", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        // The whole family is dead: even the legitimate client's *current*
+        // token B — never itself replayed — is now revoked, forcing a full
+        // re-login rather than silently trusting a possibly-compromised chain.
+        await Assert.ThrowsAsync<AuthenticationFailedException>(() =>
+            NewRequestScopedService().RefreshAsync(new RefreshRequest(afterFirstRefresh.RefreshToken)));
+
+        // Confirms it's a real revocation, not just a fluke: the row is present
+        // and explicitly marked revoked, not merely absent/expired.
+        using var verifyContext = _db.NewContext();
+        var tokenRow = verifyContext.RefreshTokens.Single(t => t.TokenHash == Hash(afterFirstRefresh.RefreshToken));
+        Assert.NotNull(tokenRow.RevokedAtUtc);
+    }
+
+    [Fact]
+    public async Task Refresh_UnrelatedFamily_IsNotAffectedByAnotherFamilysReplay()
+    {
+        var registered = await NewRequestScopedService().RegisterStudentAsync(
+            new RegisterStudentRequest("unrelated@test.local", "password123", "A", "B", null, null));
+
+        // A second, independent login (its own family) for the same user —
+        // e.g. a second device/browser.
+        var secondLogin = await NewRequestScopedService().LoginAsync(new LoginRequest("unrelated@test.local", "password123"));
+
+        // Trigger reuse detection on the *first* family only.
+        await NewRequestScopedService().RefreshAsync(new RefreshRequest(registered.RefreshToken));
+        await Assert.ThrowsAsync<AuthenticationFailedException>(() =>
+            NewRequestScopedService().RefreshAsync(new RefreshRequest(registered.RefreshToken)));
+
+        // The second device's session, in a different family, still works.
+        var stillWorks = await NewRequestScopedService().RefreshAsync(new RefreshRequest(secondLogin.RefreshToken));
+        Assert.False(string.IsNullOrWhiteSpace(stillWorks.Token));
+    }
+
+    private static string Hash(string token) =>
+        Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
 
     [Fact]
     public async Task Register_SendsVerificationEmail_AndUserStartsUnverified()
