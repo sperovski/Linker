@@ -12,6 +12,10 @@ primary_region = "fra"
   Database__SeedDemoData = "true"
   Jwt__Issuer = "Linker.Api"
   Jwt__Audience = "Linker.Client"
+  # fdaa::/16 is Fly's documented private 6PN range — the app is only ever
+  # reached over this network (by fly-proxy), never directly from the public
+  # internet, so it's safe to trust forwarded headers from it.
+  RateLimiting__TrustedProxies__0 = "fdaa::/16"
   # Secrets (set via `fly secrets set -c fly.api.toml`):
   #   ConnectionStrings__DefaultConnection, Jwt__Key,
   #   Seed__AdminEmail, Seed__AdminPassword,

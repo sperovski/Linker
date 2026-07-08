@@ -49,6 +49,21 @@ dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)" --project Linker.
 
 or via environment variables (`ConnectionStrings__DefaultConnection`, `Jwt__Key`).
 
+### Rate limiting behind a reverse proxy
+
+`/api/auth/*` is rate-limited per client IP. When the API sits behind a reverse
+proxy, the connection it sees is the proxy's own IP, not the real caller's —
+so `RateLimiting:TrustedProxies` (a list of CIDRs) tells the app which
+upstream hops to trust before reading `X-Forwarded-For` / Fly's
+`Fly-Client-IP` at all. An empty list (the default, used for plain
+`dotnet run`) means nothing is trusted and the raw connection IP is always
+used. Docker Compose sets it to nginx's bridge network (`172.16.0.0/12`);
+`fly.api.toml` sets it to Fly's private 6PN range (`fdaa::/16`). See
+`Linker.Api/RateLimiting/ClientIpResolver.cs` for the resolution logic —
+notably, only the *last* hop in `X-Forwarded-For` is trusted (nginx appends
+rather than replaces the header, so a client could otherwise prepend a fake
+IP and have it believed).
+
 ### Database migrations
 
 ```bash

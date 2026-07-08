@@ -34,6 +34,10 @@ services:
       Seed__AdminEmail: admin@linker.local
       Seed__AdminPassword: AdminLocal123!
       Cors__AllowedOrigins__0: http://localhost:8080
+      # nginx (the "web" service) is the only thing that can reach "api" on this
+      # network — trust its forwarded headers for real-client-IP rate limiting.
+      # Compose's default bridge subnets always fall inside 172.16.0.0/12.
+      RateLimiting__TrustedProxies__0: 172.16.0.0/12
 
   web:
     build:
