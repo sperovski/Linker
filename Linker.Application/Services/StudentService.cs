@@ -8,10 +8,12 @@ namespace Linker.Application.Services;
 public class StudentService : IStudentService
 {
     private readonly IStudentRepository _studentRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public StudentService(IStudentRepository studentRepository)
+    public StudentService(IStudentRepository studentRepository, IUnitOfWork unitOfWork)
     {
         _studentRepository = studentRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<StudentProfileResponse> GetByIdAsync(int studentId, CancellationToken cancellationToken = default)
@@ -41,7 +43,8 @@ public class StudentService : IStudentService
         student.GraduationYear = request.GraduationYear;
         student.Bio = request.Bio;
 
-        await _studentRepository.UpdateAsync(student, cancellationToken);
+        _studentRepository.Update(student);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(student.Id, cancellationToken);
     }

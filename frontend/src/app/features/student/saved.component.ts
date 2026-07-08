@@ -41,7 +41,13 @@ import { TYPE_LABELS, deadlineCountdown, daysUntil } from '../../shared/dates';
         <app-skeleton-cards [count]="3" />
       } @else {
         <div [@listStagger]="animState()">
-          @if (internships().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              variant="inbox"
+              title="Couldn't load your saved roles"
+              message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+            />
+          } @else if (internships().length === 0) {
             <app-empty-state
               variant="inbox"
               title="No saved roles yet"
@@ -167,6 +173,7 @@ export class SavedComponent implements OnInit {
 
   protected readonly internships = signal<InternshipListItem[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
 
   ngOnInit(): void {
@@ -177,6 +184,7 @@ export class SavedComponent implements OnInit {
         setTimeout(() => this.animState.set('loaded'));
       },
       error: () => {
+        this.loadError.set(true);
         this.loading.set(false);
         this.animState.set('loaded');
       },

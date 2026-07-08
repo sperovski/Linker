@@ -123,7 +123,7 @@ export interface CompanyOption {
       }
 
       .cf-option:hover { background: var(--color-muted); }
-      .cf-option.active { background: rgba(3, 105, 161, 0.08); color: var(--color-primary); font-weight: 600; }
+      .cf-option.active { background: rgba(79, 70, 229, 0.08); color: var(--color-primary); font-weight: 600; }
 
       .cf-dot {
         display: inline-flex;

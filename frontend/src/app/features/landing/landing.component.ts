@@ -13,6 +13,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
 
@@ -111,7 +112,7 @@ const PILLARS: Pillar[] = [
     tint: 'sky',
     tilt: 0,
     radius: '14px',
-    offset: true,
+    offset: false,
   },
   {
     pill: 'Track',
@@ -193,7 +194,7 @@ const TESTIMONIALS = [
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, RevealDirective, CompanyLogoComponent],
+  imports: [RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -229,14 +230,19 @@ const TESTIMONIALS = [
             Internships in Skopje from companies you already know — real roles,
             honest applications, no noise in between.
           </p>
-          <div class="hero-ctas">
-            <a routerLink="/internships" class="btn btn-primary btn-lg">
+          <div class="hero-ctas hero-ctas-stack">
+            <app-link-button variant="standard" routerLink="/internships" size="lg">
               Browse internships
               <app-icon name="arrow-right" [size]="17" />
-            </a>
-            <a routerLink="/register" [queryParams]="{ as: 'company' }" class="btn btn-secondary btn-lg">
+            </app-link-button>
+            <app-link-button
+              variant="standard-secondary"
+              size="lg"
+              routerLink="/register"
+              [queryParams]="{ as: 'company' }"
+            >
               Post an internship
-            </a>
+            </app-link-button>
           </div>
           <p class="hero-note">Free for students. Always.</p>
         </div>
@@ -487,23 +493,23 @@ const TESTIMONIALS = [
           <footer class="quote-meta">
             <span class="portrait" aria-hidden="true">
               <svg width="48" height="48" viewBox="0 0 48 48">
-                <circle cx="24" cy="24" r="24" fill="#DCEEFB" />
+                <circle cx="24" cy="24" r="24" fill="#E3E1F9" />
                 @switch (quote().portrait) {
                   @case (0) {
                     <!-- long hair -->
-                    <path d="M12 26c0-9 5-15 12-15s12 6 12 15v8H12v-8Z" fill="#0C4A6E" />
+                    <path d="M12 26c0-9 5-15 12-15s12 6 12 15v8H12v-8Z" fill="#1E1B4B" />
                     <circle cx="24" cy="21" r="7.5" fill="#F3C6A5" />
-                    <path d="M16.5 19c1-5 4-7.5 7.5-7.5S30.5 14 31.5 19c-2.5-1.6-5-2.4-7.5-2.4s-5 .8-7.5 2.4Z" fill="#0C4A6E" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#0EA5E9" />
+                    <path d="M16.5 19c1-5 4-7.5 7.5-7.5S30.5 14 31.5 19c-2.5-1.6-5-2.4-7.5-2.4s-5 .8-7.5 2.4Z" fill="#1E1B4B" />
+                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#7C3AED" />
                   }
                   @case (1) {
                     <!-- short hair + glasses -->
                     <circle cx="24" cy="21" r="7.5" fill="#E8B48C" />
                     <path d="M16.5 18.5c.6-4.6 3.6-7 7.5-7s6.9 2.4 7.5 7c-2.4-1.9-5-2.7-7.5-2.7s-5.1.8-7.5 2.7Z" fill="#33526B" />
-                    <circle cx="20.5" cy="21.5" r="2.6" fill="none" stroke="#0C4A6E" stroke-width="1.1" />
-                    <circle cx="27.5" cy="21.5" r="2.6" fill="none" stroke="#0C4A6E" stroke-width="1.1" />
-                    <path d="M23.1 21.5h1.8" stroke="#0C4A6E" stroke-width="1.1" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#0369A1" />
+                    <circle cx="20.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
+                    <circle cx="27.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
+                    <path d="M23.1 21.5h1.8" stroke="#1E1B4B" stroke-width="1.1" />
+                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#4F46E5" />
                   }
                   @case (2) {
                     <!-- bun -->
@@ -565,13 +571,13 @@ const TESTIMONIALS = [
         <div class="stats-cta" appReveal>
           <h2 class="display cta-title">Ready to get linked?</h2>
           <div class="hero-ctas cta-center">
-            <a routerLink="/register" class="btn btn-primary btn-lg">
+            <app-link-button variant="secondary" size="lg" routerLink="/register">
               Sign up as a student
               <app-icon name="arrow-right" [size]="17" />
-            </a>
-            <a routerLink="/register" [queryParams]="{ as: 'company' }" class="btn btn-invert btn-lg">
+            </app-link-button>
+            <app-link-button variant="primary" size="lg" routerLink="/register" [queryParams]="{ as: 'company' }">
               Sign up as a company
-            </a>
+            </app-link-button>
           </div>
         </div>
       </div>
@@ -614,7 +620,8 @@ const TESTIMONIALS = [
 
       .hero-ctas { display: flex; gap: var(--space-md); flex-wrap: wrap; }
 
-      .btn-lg { padding: 14px 28px; font-size: 1rem; }
+      /* Top hero only: stack the two CTAs vertically instead of side by side. */
+      .hero-ctas-stack { flex-direction: column; align-items: flex-start; }
 
       .hero-note {
         margin-top: var(--space-md);
@@ -640,7 +647,7 @@ const TESTIMONIALS = [
         left: 6%;
         width: 92%;
         height: 90%;
-        background: #DCEEFB;
+        background: #e3e1f9; /* soft indigo tint of --color-primary */
         border-radius: 58% 42% 55% 45% / 48% 55% 45% 52%;
         transform: rotate(-6deg);
       }
@@ -658,12 +665,12 @@ const TESTIMONIALS = [
         position: relative;
         width: 244px;
         height: 500px;
-        background: #10283C;
+        background: var(--color-foreground);
         border-radius: 42px;
         padding: 10px;
         box-shadow:
-          0 24px 48px rgba(12, 74, 110, 0.28),
-          0 6px 14px rgba(12, 74, 110, 0.18);
+          0 24px 48px rgba(30, 27, 75, 0.28),
+          0 6px 14px rgba(30, 27, 75, 0.18);
         transform: rotate(3deg);
       }
 
@@ -672,7 +679,7 @@ const TESTIMONIALS = [
       .phone::after {
         content: '';
         position: absolute;
-        background: #10283C;
+        background: var(--color-foreground);
         border-radius: 3px;
       }
 
@@ -686,7 +693,7 @@ const TESTIMONIALS = [
         transform: translateX(-50%);
         width: 76px;
         height: 22px;
-        background: #10283C;
+        background: var(--color-foreground);
         border-radius: 999px;
         z-index: 2;
       }
@@ -840,8 +847,8 @@ const TESTIMONIALS = [
 
       .mock-raised {
         box-shadow:
-          0 18px 34px rgba(12, 74, 110, 0.2),
-          0 4px 10px rgba(12, 74, 110, 0.12);
+          0 18px 34px rgba(30, 27, 75, 0.2),
+          0 4px 10px rgba(30, 27, 75, 0.12);
         transform: scale(1.03);
       }
 
@@ -893,7 +900,7 @@ const TESTIMONIALS = [
       .wall {
         position: relative;
         padding: var(--space-2xl) 0;
-        background: #F7FCFF; /* lightest chapter tint */
+        background: #f8f8fd; /* lightest chapter tint of --color-background */
         border-top: 1px solid var(--color-border);
         border-bottom: 1px solid var(--color-border);
         overflow: hidden;
@@ -902,14 +909,14 @@ const TESTIMONIALS = [
         gap: var(--space-lg);
       }
 
-      /* soft off-center teal glow — asymmetric on purpose */
+      /* soft off-center violet glow — asymmetric on purpose */
       .wall-glow {
         position: absolute;
         top: -30%;
         left: 12%;
         width: 55%;
         height: 160%;
-        background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.07), transparent 65%);
+        background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.07), transparent 65%);
         pointer-events: none;
       }
 
@@ -1135,6 +1142,7 @@ const TESTIMONIALS = [
         font-weight: 600;
       }
 
+
       @media (max-width: 1023px) {
         .pillars { grid-template-columns: 1fr 1fr; }
         .pillar-offset { margin-top: 0; }
@@ -1231,14 +1239,14 @@ const TESTIMONIALS = [
       .stat-label {
         display: block;
         margin-top: var(--space-xs);
-        color: #9CCDE8;
+        color: #b4b1ee; /* light indigo tint, ~7:1 on the navy band */
         font-size: 0.9rem;
         font-weight: 600;
       }
 
       .wall-title {
         text-align: center;
-        color: #7FB8D8;
+        color: #a5a1e8;
         font-size: 0.8125rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -1279,17 +1287,6 @@ const TESTIMONIALS = [
       .cta-title { margin-bottom: var(--space-lg); }
 
       .cta-center { justify-content: center; }
-
-      .btn-invert {
-        background: transparent;
-        color: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.65);
-      }
-
-      .btn-invert:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: #fff;
-      }
 
       /* ------------------------------ footer ----------------------------- */
       .footer { border-top: 1px solid var(--color-border); padding: var(--space-lg) 0; }

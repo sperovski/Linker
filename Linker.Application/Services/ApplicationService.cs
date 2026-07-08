@@ -13,17 +13,23 @@ public class ApplicationService : IApplicationService
     private readonly IInternshipRepository _internshipRepository;
     private readonly IStudentRepository _studentRepository;
     private readonly ICompanyRepository _companyRepository;
+    private readonly INotificationService _notificationService;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ApplicationService(
         IApplicationRepository applicationRepository,
         IInternshipRepository internshipRepository,
         IStudentRepository studentRepository,
-        ICompanyRepository companyRepository)
+        ICompanyRepository companyRepository,
+        INotificationService notificationService,
+        IUnitOfWork unitOfWork)
     {
         _applicationRepository = applicationRepository;
         _internshipRepository = internshipRepository;
         _studentRepository = studentRepository;
         _companyRepository = companyRepository;
+        _notificationService = notificationService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ApplicationResponse> ApplyAsync(int userId, CreateApplicationRequest request, CancellationToken cancellationToken = default)
@@ -44,9 +50,25 @@ public class ApplicationService : IApplicationService
             throw new ConflictException("The application deadline for this internship has passed.");
         }
 
-        if (await _applicationRepository.ExistsAsync(student.Id, internship.Id, cancellationToken))
+        var existing = await _applicationRepository.GetByStudentAndInternshipAsync(student.Id, internship.Id, cancellationToken);
+        if (existing is not null)
         {
-            throw new ConflictException("You have already applied to this internship.");
+            if (existing.Status != ApplicationStatus.Withdrawn)
+            {
+                throw new ConflictException("You have already applied to this internship.");
+            }
+
+            // Re-applying after a withdrawal reactivates the original application
+            // (a unique index on StudentId+InternshipId means one row per pair).
+            existing.Status = ApplicationStatus.Pending;
+            existing.CoverLetter = request.CoverLetter;
+            existing.AppliedAtUtc = DateTime.UtcNow;
+            NotifyCompanyOfApplication(internship, student);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            existing.Student = student;
+            existing.Internship = internship;
+            return existing.ToResponse();
         }
 
         var application = new ApplicationEntity
@@ -57,11 +79,21 @@ public class ApplicationService : IApplicationService
             CoverLetter = request.CoverLetter,
             AppliedAtUtc = DateTime.UtcNow
         };
-        await _applicationRepository.AddAsync(application, cancellationToken);
+        _applicationRepository.Add(application);
+        NotifyCompanyOfApplication(internship, student);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         application.Student = student;
         application.Internship = internship;
         return application.ToResponse();
+    }
+
+    private void NotifyCompanyOfApplication(Domain.Entities.Internship internship, Domain.Entities.Student student)
+    {
+        _notificationService.Create(
+            internship.Company.UserId,
+            $"{student.FirstName} {student.LastName} applied to \"{internship.Title}\".",
+            $"/company/internships/{internship.Id}/applicants");
     }
 
     public async Task<ApplicationResponse> UpdateStatusAsync(int userId, int applicationId, UpdateApplicationStatusRequest request, CancellationToken cancellationToken = default)
@@ -69,7 +101,7 @@ public class ApplicationService : IApplicationService
         if (!Enum.TryParse<ApplicationStatus>(request.Status, ignoreCase: true, out var status))
         {
             var validValues = string.Join(", ", Enum.GetNames<ApplicationStatus>());
-            throw new ConflictException($"'{request.Status}' is not a valid application status. Valid values: {validValues}.");
+            throw new BadRequestException($"'{request.Status}' is not a valid application status. Valid values: {validValues}.");
         }
 
         var application = await _applicationRepository.GetWithDetailsAsync(applicationId, cancellationToken)
@@ -84,7 +116,12 @@ public class ApplicationService : IApplicationService
         }
 
         application.Status = status;
-        await _applicationRepository.UpdateAsync(application, cancellationToken);
+        // Let the applicant know the moment their status changes.
+        _notificationService.Create(
+            application.Student.UserId,
+            $"{application.Internship.Company.Name} marked your application for \"{application.Internship.Title}\" as {status}.",
+            "/applications");
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return application.ToResponse();
     }
@@ -113,7 +150,7 @@ public class ApplicationService : IApplicationService
         }
 
         application.Status = ApplicationStatus.Withdrawn;
-        await _applicationRepository.UpdateAsync(application, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return application.ToResponse();
     }

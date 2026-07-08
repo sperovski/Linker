@@ -1,5 +1,7 @@
 <Solution>
+  <Project Path="Linker.Api.IntegrationTests/Linker.Api.IntegrationTests.csproj" />
   <Project Path="Linker.Api/Linker.Api.csproj" />
+  <Project Path="Linker.Application.Tests/Linker.Application.Tests.csproj" />
   <Project Path="Linker.Application/Linker.Application.csproj" />
   <Project Path="Linker.Domain/Linker.Domain.csproj" />
   <Project Path="Linker.Infrastructure/Linker.Infrastructure.csproj" />

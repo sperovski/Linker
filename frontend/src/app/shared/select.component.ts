@@ -103,6 +103,9 @@ export interface SelectOption {
         z-index: 40;
         transform-origin: top;
         animation: sel-pop 140ms ease;
+        /* Long lists (e.g. the 23 UKIM faculties) scroll instead of towering. */
+        max-height: 320px;
+        overflow-y: auto;
       }
 
       @keyframes sel-pop {

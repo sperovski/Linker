@@ -4,18 +4,18 @@
    Linker design tokens — from design-system/linker/MASTER.md
 --------------------------------------------------------------------------- */
 :root {
-  --color-primary: #0369A1;
+  --color-primary: #4F46E5;
   --color-on-primary: #FFFFFF;
-  --color-secondary: #0EA5E9;
+  --color-secondary: #7C3AED;
   --color-accent: #16A34A;
-  --color-background: #F0F9FF;
-  --color-foreground: #0C4A6E;
-  --color-muted: #E7EFF5;
-  --color-border: #BAE6FD;
+  --color-background: #F4F5FB;
+  --color-foreground: #1E1B4B;
+  --color-muted: #ECEDF9;
+  --color-border: #DBDCF2;
   --color-destructive: #DC2626;
-  --color-ring: #0369A1;
+  --color-ring: #4F46E5;
   --color-surface: #FFFFFF;
-  --color-text-soft: #47617A;
+  --color-text-soft: #565478;
 
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -145,7 +145,7 @@ a:hover { text-decoration: underline; }
   justify-content: center;
   gap: var(--space-sm);
   padding: 12px 22px;
-  border-radius: 12px;
+  border-radius: 13px;
   font-family: var(--font-sans);
   font-size: 0.9375rem;
   font-weight: 600;
@@ -169,32 +169,34 @@ a:hover { text-decoration: underline; }
   filter: grayscale(0.15);
 }
 
-/* Solid buttons get a faint top sheen + a soft, colour-matched shadow so they
-   read as raised objects rather than flat rectangles. */
+/* Solid buttons: a soft inner top highlight + a diffuse, colour-matched shadow
+   give a natural, physical raise — matte rather than glossy/plastic. */
 .btn-primary {
   background-color: var(--color-accent);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
   color: var(--color-on-primary);
-  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.24), 0 6px 16px -6px rgba(22, 163, 74, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(22, 163, 74, 0.2), 0 8px 20px -8px rgba(22, 163, 74, 0.45);
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.03);
-  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.28), 0 12px 24px -8px rgba(22, 163, 74, 0.55);
+  transform: translateY(-1.5px);
+  filter: brightness(1.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 2px 5px rgba(22, 163, 74, 0.24), 0 14px 28px -10px rgba(22, 163, 74, 0.5);
 }
 
 .btn-blue {
   background-color: var(--color-primary);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
   color: var(--color-on-primary);
-  box-shadow: 0 1px 2px rgba(3, 105, 161, 0.24), 0 6px 16px -6px rgba(3, 105, 161, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(79, 70, 229, 0.2), 0 8px 20px -8px rgba(79, 70, 229, 0.45);
 }
 
 .btn-blue:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
-  box-shadow: 0 2px 4px rgba(3, 105, 161, 0.28), 0 12px 24px -8px rgba(3, 105, 161, 0.55);
+  transform: translateY(-1.5px);
+  filter: brightness(1.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 2px 5px rgba(79, 70, 229, 0.24), 0 14px 28px -10px rgba(79, 70, 229, 0.5);
 }
 
 /* Press: settle back down for a natural click. */
@@ -216,9 +218,9 @@ a:hover { text-decoration: underline; }
 
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--color-primary);
-  background: rgba(3, 105, 161, 0.04);
+  background: rgba(79, 70, 229, 0.04);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px -8px rgba(3, 105, 161, 0.35);
+  box-shadow: 0 6px 16px -8px rgba(79, 70, 229, 0.35);
 }
 
 .btn-secondary:active:not(:disabled) {
@@ -234,7 +236,7 @@ a:hover { text-decoration: underline; }
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(3, 105, 161, 0.08);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .btn-ghost:active:not(:disabled) {
@@ -301,7 +303,7 @@ a.btn:hover { text-decoration: none; }
 .textarea:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.13);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
 }
 
 .input.invalid,
@@ -369,7 +371,7 @@ a.btn:hover { text-decoration: none; }
 }
 
 .badge-type { background: #E0F2FE; color: #075985; }
-.badge-location { background: var(--color-muted); color: #33526B; }
+.badge-location { background: var(--color-muted); color: var(--color-text-soft); }
 .badge-pending { background: #FEF3C7; color: #92400E; }
 .badge-accepted { background: #DCFCE7; color: #166534; }
 .badge-rejected { background: #FEE2E2; color: #991B1B; }
@@ -449,14 +451,14 @@ a.btn:hover { text-decoration: none; }
 
 .band-navy {
   background: var(--color-foreground);
-  color: #E6F3FB;
+  color: #e7e6fb;
 }
 
 .band-navy h1,
 .band-navy h2,
 .band-navy h3 { color: #fff; }
 
-.band-navy .eyebrow { color: #7DD3FC; }
+.band-navy .eyebrow { color: #a5b4fc; }
 
 /* ---------------------------------------------------------------------------
    Scroll reveal — elements fade+slide in as they enter the viewport.

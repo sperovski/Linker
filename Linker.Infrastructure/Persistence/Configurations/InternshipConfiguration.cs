@@ -35,5 +35,10 @@ public class InternshipConfiguration : IEntityTypeConfiguration<Internship>
             .WithMany(c => c.Internships)
             .HasForeignKey(i => i.CompanyId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Common filter columns for browse/search and deadline sweeps.
+        builder.HasIndex(i => i.IsActive);
+        builder.HasIndex(i => i.Type);
+        builder.HasIndex(i => i.ApplicationDeadline);
     }
 }

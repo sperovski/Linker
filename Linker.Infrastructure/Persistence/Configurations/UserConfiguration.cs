@@ -26,5 +26,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.CreatedAtUtc)
             .IsRequired();
+
+        builder.Property(u => u.EmailVerified)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        // DB default true so existing rows stay active when this column is added.
+        builder.Property(u => u.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
     }
 }

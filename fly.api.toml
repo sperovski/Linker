@@ -1,0 +1,37 @@
+# Fly.io config for the API.  Deploy:  fly deploy -c fly.api.toml
+# One-time setup is documented in README.md (Deploy section).
+app = "linker-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Linker.Api/Dockerfile"
+
+[env]
+  ASPNETCORE_ENVIRONMENT = "Production"
+  Database__MigrateOnStartup = "true"
+  Database__SeedDemoData = "true"
+  Jwt__Issuer = "Linker.Api"
+  Jwt__Audience = "Linker.Client"
+  # Secrets (set via `fly secrets set -c fly.api.toml`):
+  #   ConnectionStrings__DefaultConnection, Jwt__Key,
+  #   Seed__AdminEmail, Seed__AdminPassword,
+  #   App__BaseUrl (public web URL, used in emailed links),
+  #   optionally Anthropic__ApiKey and Smtp__* for real email.
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

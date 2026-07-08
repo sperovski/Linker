@@ -21,7 +21,10 @@ export type IconName =
   | 'target'
   | 'bar-chart'
   | 'users'
-  | 'trash';
+  | 'trash'
+  | 'bell'
+  | 'shield'
+  | 'mail';
 
 /** Inline SVG icons (Lucide outlines) — the design system forbids emoji icons. */
 @Component({
@@ -103,6 +106,15 @@ export type IconName =
         }
         @case ('trash') {
           <path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        }
+        @case ('bell') {
+          <path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+        }
+        @case ('shield') {
+          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+        }
+        @case ('mail') {
+          <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" />
         }
       }
     </svg>

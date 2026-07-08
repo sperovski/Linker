@@ -18,18 +18,20 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#0369A1` | `--color-primary` |
+| Primary | `#4F46E5` | `--color-primary` |
 | On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#0EA5E9` | `--color-secondary` |
+| Secondary | `#7C3AED` | `--color-secondary` |
 | Accent/CTA | `#16A34A` | `--color-accent` |
-| Background | `#F0F9FF` | `--color-background` |
-| Foreground | `#0C4A6E` | `--color-foreground` |
-| Muted | `#E7EFF5` | `--color-muted` |
-| Border | `#BAE6FD` | `--color-border` |
+| Background | `#F4F5FB` | `--color-background` |
+| Foreground | `#1E1B4B` | `--color-foreground` |
+| Muted | `#ECEDF9` | `--color-muted` |
+| Border | `#DBDCF2` | `--color-border` |
 | Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#0369A1` | `--color-ring` |
+| Ring | `#4F46E5` | `--color-ring` |
+| Surface | `#FFFFFF` | `--color-surface` |
+| Text Soft | `#565478` | `--color-text-soft` |
 
-**Color Notes:** Professional blue + success green [Accent adjusted from #22C55E for WCAG 3:1]
+**Color Notes:** Professional indigo/violet + success green [Accent adjusted from #22C55E for WCAG 3:1]
 
 ### Typography
 
@@ -90,8 +92,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #0369A1;
-  border: 2px solid #0369A1;
+  color: #4F46E5;
+  border: 2px solid #4F46E5;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -104,7 +106,7 @@
 
 ```css
 .card {
-  background: #F0F9FF;
+  background: #FFFFFF;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -130,9 +132,9 @@
 }
 
 .input:focus {
-  border-color: #0369A1;
+  border-color: #4F46E5;
   outline: none;
-  box-shadow: 0 0 0 3px #0369A120;
+  box-shadow: 0 0 0 3px #4F46E520;
 }
 ```
 

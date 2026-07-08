@@ -31,6 +31,15 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Internship>> GetAllWithCompanyAsync(CancellationToken cancellationToken = default)
+    {
+        return await Context.Internships
+            .AsNoTracking()
+            .Include(i => i.Company)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Internship>> SearchActiveAsync(string? location, string? searchText, InternshipType? type, CancellationToken cancellationToken = default)
     {
         var query = Context.Internships

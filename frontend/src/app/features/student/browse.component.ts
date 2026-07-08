@@ -65,6 +65,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
             accent="amber"
             [items]="popular()"
             [rank]="true"
+            [carousel]="true"
           />
         }
       }
@@ -119,7 +120,13 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
         <app-skeleton-cards [count]="6" />
       } @else {
         <div [@listStagger]="animState()">
-          @if (internships().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              variant="inbox"
+              title="Couldn't load internships"
+              message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+            />
+          } @else if (internships().length === 0) {
             <app-empty-state
               variant="search"
               title="No internships found"
@@ -224,7 +231,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
 
       .filter-bar:focus-within {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.12), var(--shadow-md);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12), var(--shadow-md);
       }
 
       .filter-cell {
@@ -245,8 +252,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
         margin: var(--space-sm) 0;
       }
 
-      .filter-input,
-      .filter-select {
+      .filter-input {
         border: none;
         outline: none;
         background: transparent;
@@ -256,24 +262,6 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
         width: 100%;
         padding: 12px 0;
       }
-
-      .filter-select { cursor: pointer; }
-
-      .type-select {
-        display: flex;
-        align-items: center;
-        flex: 1;
-        min-width: 0;
-        color: var(--color-text-soft);
-      }
-
-      .type-select select {
-        appearance: none;
-        -webkit-appearance: none;
-        padding-right: 4px;
-      }
-
-      .type-select app-icon { pointer-events: none; flex-shrink: 0; }
 
       .filter-input::placeholder { color: var(--color-text-soft); }
 
@@ -400,6 +388,7 @@ export class BrowseComponent implements OnInit {
   /** Raw results from the server (text/location/type filters applied there). */
   protected readonly serverResults = signal<InternshipListItem[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   /** flips loading -> loaded exactly once so filtering doesn't re-stagger */
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
 
@@ -490,6 +479,7 @@ export class BrowseComponent implements OnInit {
       })
       .subscribe({
         next: (internships) => {
+          this.loadError.set(false);
           this.serverResults.set(internships);
           // Drop the company filter if that company is no longer in the results.
           if (this.company() && !internships.some((i) => i.companyName === this.company())) {
@@ -500,6 +490,7 @@ export class BrowseComponent implements OnInit {
           setTimeout(() => this.animState.set('loaded'));
         },
         error: () => {
+          this.loadError.set(true);
           this.serverResults.set([]);
           this.company.set('');
           this.loading.set(false);

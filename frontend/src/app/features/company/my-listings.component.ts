@@ -7,13 +7,14 @@ import { apiErrorMessage } from '../../shared/api-error';
 import { listStagger } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
 import { TYPE_LABELS } from '../../shared/dates';
 
 @Component({
   selector: 'app-my-listings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent],
+  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent, LinkButtonComponent],
   animations: [listStagger],
   template: `
     <div class="container page">
@@ -23,17 +24,23 @@ import { TYPE_LABELS } from '../../shared/dates';
           <h1>My listings</h1>
           <p class="page-sub">Manage your internship postings and applicants.</p>
         </div>
-        <a routerLink="/company/internships/new" class="btn btn-primary">
+        <app-link-button routerLink="/company/internships/new">
           <app-icon name="plus" [size]="16" />
           Post New Internship
-        </a>
+        </app-link-button>
       </div>
 
       @if (loading()) {
         <app-skeleton-cards [count]="3" />
       } @else {
         <div [@listStagger]="animState()">
-          @if (listings().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              variant="inbox"
+              title="Couldn't load your listings"
+              message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+            />
+          } @else if (listings().length === 0) {
             <app-empty-state
               variant="rocket"
               title="Post your first internship"
@@ -71,24 +78,29 @@ import { TYPE_LABELS } from '../../shared/dates';
                     </div>
                   </div>
                   <div class="listing-actions">
-                    <a [routerLink]="['/company/internships', listing.id, 'applicants']" class="btn btn-ghost btn-sm">
+                    <app-link-button
+                      size="sm"
+                      [routerLink]="['/company/internships', listing.id, 'applicants']"
+                    >
                       <app-icon name="file-text" [size]="15" />
                       Applicants
-                    </a>
-                    <a [routerLink]="['/company/internships', listing.id, 'edit']" class="btn btn-ghost btn-sm">
+                    </app-link-button>
+                    <app-link-button
+                      size="sm"
+                      [routerLink]="['/company/internships', listing.id, 'edit']"
+                    >
                       <app-icon name="pencil" [size]="15" />
                       Edit
-                    </a>
+                    </app-link-button>
                     @if (listing.isActive) {
-                      <button
-                        type="button"
-                        class="btn btn-danger-ghost btn-sm"
-                        (click)="close(listing)"
+                      <app-link-button
+                        size="sm"
                         [disabled]="closingId() === listing.id"
+                        (pressed)="close(listing)"
                       >
                         <app-icon name="x" [size]="15" />
                         {{ closingId() === listing.id ? 'Closing…' : 'Close' }}
-                      </button>
+                      </app-link-button>
                     }
                   </div>
                 </div>
@@ -151,6 +163,7 @@ export class MyListingsComponent implements OnInit {
 
   protected readonly listings = signal<InternshipListItem[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
   protected readonly closingId = signal<number | null>(null);
 
@@ -162,6 +175,7 @@ export class MyListingsComponent implements OnInit {
         setTimeout(() => this.animState.set('loaded'));
       },
       error: () => {
+        this.loadError.set(true);
         this.loading.set(false);
         this.animState.set('loaded');
       },

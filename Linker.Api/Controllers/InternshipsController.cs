@@ -46,7 +46,7 @@ public class InternshipsController : ApiControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> GetRecommended([FromQuery] int take, CancellationToken cancellationToken)
     {
-        return Ok(await _internshipService.GetRecommendedAsync(CurrentUserId, take <= 0 ? 6 : take, cancellationToken));
+        return Ok(await _internshipService.GetRecommendedAsync(CurrentUserId, ClampTake(take), cancellationToken));
     }
 
     [HttpGet("popular")]
@@ -54,8 +54,11 @@ public class InternshipsController : ApiControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> GetPopular([FromQuery] int take, CancellationToken cancellationToken)
     {
-        return Ok(await _internshipService.GetPopularAsync(take <= 0 ? 6 : take, CurrentUserIdOrNull, cancellationToken));
+        return Ok(await _internshipService.GetPopularAsync(ClampTake(take), CurrentUserIdOrNull, cancellationToken));
     }
+
+    // Rails ask for a handful of items; keep the bound sane no matter the query.
+    private static int ClampTake(int take) => take is <= 0 or > 24 ? 12 : take;
 
     [HttpGet("mine")]
     [Authorize(Roles = "Company")]
@@ -94,7 +97,7 @@ public class InternshipsController : ApiControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Company")]
+    [Authorize(Roles = "Company", Policy = "VerifiedEmail")]
     [ProducesResponseType(typeof(InternshipDetailResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<InternshipDetailResponse>> Create(CreateInternshipRequest request, CancellationToken cancellationToken)

@@ -1,18 +1,21 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
+import { facultyOptions, gradYearOptions } from '../../shared/faculties';
 import { IconComponent } from '../../shared/icon.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
+import { SelectComponent } from '../../shared/select.component';
 
 type RegisterRole = 'student' | 'company';
 
 @Component({
   selector: 'app-register',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, SelectComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -76,18 +79,30 @@ type RegisterRole = 'student' | 'company';
 
             <div class="form-section">
               <div class="form-section-title">Your studies</div>
-              <div class="form-row">
-                <div class="field">
-                  <label class="label" for="university">University <span class="optional">(optional)</span></label>
-                  <input id="university" class="input" formControlName="university" />
+              <div class="field">
+                <label class="label">Faculty <span class="optional">(Ss. Cyril and Methodius University, optional)</span></label>
+                <div class="field-select">
+                  <app-select
+                    [options]="facultyOptions"
+                    [value]="studentForm.controls.university.value"
+                    icon="building"
+                    ariaLabel="Faculty"
+                    placeholder="Choose your faculty… (optional)"
+                    (valueChange)="studentForm.controls.university.setValue($event)"
+                  />
                 </div>
-                <div class="field">
-                  <label class="label" for="gradYear">Graduation year <span class="optional">(optional)</span></label>
-                  <input id="gradYear" type="number" class="input" formControlName="graduationYear"
-                    [class.invalid]="invalid(studentForm, 'graduationYear')" />
-                  @if (invalid(studentForm, 'graduationYear')) {
-                    <div class="field-error" @fadeSlideIn>Enter a year between 1950 and 2100.</div>
-                  }
+              </div>
+              <div class="field">
+                <label class="label">Graduation year <span class="optional">(optional)</span></label>
+                <div class="field-select">
+                  <app-select
+                    [options]="gradYearOptions"
+                    [value]="yearValue()"
+                    icon="calendar"
+                    ariaLabel="Graduation year"
+                    placeholder="Choose a year… (optional)"
+                    (valueChange)="setYear($event)"
+                  />
                 </div>
               </div>
             </div>
@@ -113,9 +128,9 @@ type RegisterRole = 'student' | 'company';
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary submit-btn" [disabled]="submitting()">
+            <app-link-button type="submit" block [disabled]="submitting()">
               {{ submitting() ? 'Creating account…' : 'Sign up as a student' }}
-            </button>
+            </app-link-button>
           </form>
         } @else {
           <form [formGroup]="companyForm" (ngSubmit)="submitCompany()" novalidate>
@@ -164,9 +179,9 @@ type RegisterRole = 'student' | 'company';
               </div>
             </div>
 
-            <button type="submit" class="btn btn-blue submit-btn" [disabled]="submitting()">
+            <app-link-button type="submit" block [disabled]="submitting()">
               {{ submitting() ? 'Creating account…' : 'Sign up as a company' }}
-            </button>
+            </app-link-button>
           </form>
         }
 
@@ -191,14 +206,33 @@ export class RegisterComponent {
   protected readonly submitting = signal(false);
   protected readonly serverError = signal<string | null>(null);
 
+  private readonly currentYear = new Date().getFullYear();
+
+  protected readonly facultyOptions = facultyOptions();
+  protected readonly gradYearOptions = gradYearOptions();
+
   protected readonly studentForm = this.fb.nonNullable.group({
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     university: [''],
-    graduationYear: [null as number | null, [Validators.min(1950), Validators.max(2100)]],
+    // Students can't have already graduated — floor the year at the present.
+    graduationYear: [null as number | null, [Validators.min(this.currentYear), Validators.max(2100)]],
   });
+
+  /** Signal mirror of the graduationYear control so the select's [value] stays reactive. */
+  private readonly graduationYearSignal = signal<number | null>(null);
+  protected readonly yearValue = computed(() => {
+    const year = this.graduationYearSignal();
+    return year === null ? '' : String(year);
+  });
+
+  protected setYear(value: string): void {
+    const year = value ? Number(value) : null;
+    this.studentForm.controls.graduationYear.setValue(year);
+    this.graduationYearSignal.set(year);
+  }
 
   protected readonly companyForm = this.fb.nonNullable.group({
     name: ['', Validators.required],

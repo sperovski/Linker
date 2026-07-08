@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Linker.Application.Common.Validation;
 
 namespace Linker.Application.DTOs.Auth;
 
@@ -8,7 +9,7 @@ public record RegisterStudentRequest(
     [Required, MaxLength(100)] string FirstName,
     [Required, MaxLength(100)] string LastName,
     [MaxLength(200)] string? University,
-    [Range(1950, 2100)] int? GraduationYear);
+    [CurrentYearOrLater] int? GraduationYear);
 
 public record RegisterCompanyRequest(
     [Required, EmailAddress, MaxLength(255)] string Email,
@@ -21,4 +22,22 @@ public record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password);
 
-public record AuthResponse(int UserId, string Email, string Role, string Token);
+public record RefreshRequest([Required] string RefreshToken);
+
+public record VerifyEmailRequest([Required] string Token);
+
+public record ResendVerificationRequest([Required, EmailAddress] string Email);
+
+public record ForgotPasswordRequest([Required, EmailAddress] string Email);
+
+public record ResetPasswordRequest(
+    [Required] string Token,
+    [Required, MinLength(8), MaxLength(100)] string NewPassword);
+
+public record AuthResponse(
+    int UserId,
+    string Email,
+    string Role,
+    string Token,
+    string RefreshToken,
+    bool EmailVerified);

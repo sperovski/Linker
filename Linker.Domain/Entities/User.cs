@@ -10,6 +10,11 @@ public class User
     public UserRole Role { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 
+    public bool EmailVerified { get; set; }
+
+    /// <summary>Admins can disable an account; disabled users cannot authenticate.</summary>
+    public bool IsActive { get; set; } = true;
+
     public Student? Student { get; set; }
     public Company? Company { get; set; }
 }

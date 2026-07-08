@@ -16,7 +16,7 @@ public class ApplicationsController : ApiControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Student")]
+    [Authorize(Roles = "Student", Policy = "VerifiedEmail")]
     [ProducesResponseType(typeof(ApplicationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

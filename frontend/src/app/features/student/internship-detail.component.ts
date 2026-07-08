@@ -20,6 +20,7 @@ import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn, fadeSwap } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { SaveButtonComponent } from '../../shared/save-button.component';
 import { MatchBadgeComponent } from '../../shared/match-badge.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
@@ -28,7 +29,7 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
 @Component({
   selector: 'app-internship-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, IconComponent, SaveButtonComponent, MatchBadgeComponent, CompanyLogoComponent],
+  imports: [FormsModule, RouterLink, IconComponent, SaveButtonComponent, MatchBadgeComponent, CompanyLogoComponent, LinkButtonComponent],
   animations: [fadeSlideIn, fadeSwap],
   template: `
     <div class="container page detail-page">
@@ -144,7 +145,7 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
             } @else if (!auth.isLoggedIn()) {
               <h3>Interested?</h3>
               <p>Log in as a student to apply for this internship.</p>
-              <a routerLink="/login" class="btn btn-primary" style="width: 100%">Log in to apply</a>
+              <app-link-button routerLink="/login" block>Log in to apply</app-link-button>
               <p class="hint">
                 No account? <a routerLink="/register">Sign up free</a>
               </p>
@@ -169,15 +170,14 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
                 [(ngModel)]="coverLetter"
                 placeholder="Tell {{ job.companyName }} why you're a great fit…"
               ></textarea>
-              <button
-                type="button"
-                class="btn btn-primary"
-                style="width: 100%; margin-top: var(--space-md)"
+              <app-link-button
+                block
+                style="margin-top: var(--space-md)"
                 [disabled]="submitting()"
-                (click)="apply(job)"
+                (pressed)="apply(job)"
               >
                 {{ submitting() ? 'Submitting…' : 'Submit application' }}
-              </button>
+              </app-link-button>
             }
           </div>
 

@@ -5,13 +5,15 @@ import { CompanyProfile } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
+import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-company-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IconComponent, CompanyLogoComponent],
+  imports: [ReactiveFormsModule, EmptyStateComponent, IconComponent, CompanyLogoComponent, LinkButtonComponent],
   animations: [fadeSlideIn],
   template: `
     <div class="container page narrow">
@@ -29,6 +31,12 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
           <div class="skeleton" style="height: 90px; width: 100%; margin-bottom: 12px;"></div>
           <div class="skeleton" style="height: 44px; width: 60%;"></div>
         </div>
+      } @else if (loadError()) {
+        <app-empty-state
+          variant="inbox"
+          title="Couldn't load your profile"
+          message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+        />
       } @else {
         <form class="card" [formGroup]="form" (ngSubmit)="save()" novalidate>
           <div class="profile-head">
@@ -63,9 +71,9 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
             <input id="website" type="url" class="input" formControlName="website" placeholder="https://…" />
           </div>
 
-          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+          <app-link-button type="submit" [disabled]="saving()">
             {{ saving() ? 'Saving…' : 'Save profile' }}
-          </button>
+          </app-link-button>
         </form>
       }
     </div>
@@ -85,20 +93,6 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
 
       .profile-head h2 { margin: 0; font-size: 1.25rem; }
 
-      .logo-mark {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 56px;
-        height: 56px;
-        border-radius: var(--radius-lg);
-        background: var(--color-primary);
-        color: var(--color-on-primary);
-        font-size: 1.5rem;
-        font-weight: 700;
-        flex-shrink: 0;
-      }
-
       .website-link {
         display: inline-flex;
         align-items: center;
@@ -116,6 +110,7 @@ export class CompanyProfileComponent implements OnInit {
 
   protected readonly profile = signal<CompanyProfile | null>(null);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly saving = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -135,7 +130,10 @@ export class CompanyProfileComponent implements OnInit {
         });
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loadError.set(true);
+        this.loading.set(false);
+      },
     });
   }
 

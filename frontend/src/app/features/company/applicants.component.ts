@@ -57,7 +57,15 @@ const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
         <app-skeleton-cards [count]="2" />
       } @else {
         <div [@listStagger]="animState()">
-          @if (applications().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              variant="inbox"
+              title="Couldn't load applicants"
+              message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+              ctaLink="/company/listings"
+              ctaLabel="Back to listings"
+            />
+          } @else if (applications().length === 0) {
             <app-empty-state
               variant="inbox"
               title="No applications yet"
@@ -269,6 +277,7 @@ export class ApplicantsComponent implements OnInit {
   protected readonly applications = signal<ApplicationResponse[]>([]);
   protected readonly studentDetails = signal(new Map<number, StudentProfile>());
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
   protected readonly updatingId = signal<number | null>(null);
 
@@ -285,9 +294,9 @@ export class ApplicantsComponent implements OnInit {
         this.loadStudentDetails(applications);
       },
       error: () => {
+        this.loadError.set(true);
         this.loading.set(false);
         this.animState.set('loaded');
-        this.toast.error('Could not load applicants.');
       },
     });
   }

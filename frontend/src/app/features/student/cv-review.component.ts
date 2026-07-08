@@ -7,11 +7,12 @@ import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { IconComponent } from '../../shared/icon.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-cv-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, IconComponent, SelectComponent],
+  imports: [FormsModule, IconComponent, SelectComponent, LinkButtonComponent],
   template: `
     <div class="container page">
       <div class="page-header">
@@ -71,18 +72,17 @@ import { SelectComponent, SelectOption } from '../../shared/select.component';
             />
           </div>
 
-          <button
-            type="button"
-            class="btn btn-primary rate-btn"
+          <app-link-button
+            block
             [disabled]="loading() || wordCount() < 50"
-            (click)="rate()"
+            (pressed)="rate()"
           >
             @if (loading()) {
               <span class="spinner" aria-hidden="true"></span> Analysing…
             } @else {
               <app-icon name="target" [size]="16" /> Rate my CV
             }
-          </button>
+          </app-link-button>
           @if (wordCount() > 0 && wordCount() < 50) {
             <p class="hint">Add a bit more — at least 50 words — for a meaningful review.</p>
           }
@@ -219,15 +219,15 @@ import { SelectComponent, SelectOption } from '../../shared/select.component';
         transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
       }
 
-      .dropzone:hover { border-color: var(--color-primary); background: rgba(3, 105, 161, 0.03); }
-      .dropzone.dragging { border-color: var(--color-primary); background: rgba(3, 105, 161, 0.07); transform: scale(1.01); }
+      .dropzone:hover { border-color: var(--color-primary); background: rgba(79, 70, 229, 0.03); }
+      .dropzone.dragging { border-color: var(--color-primary); background: rgba(79, 70, 229, 0.07); transform: scale(1.01); }
 
       .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
       .dz-icon {
         display: inline-flex; align-items: center; justify-content: center;
         width: 48px; height: 48px; border-radius: var(--radius-md);
-        background: rgba(3, 105, 161, 0.1); color: var(--color-primary); margin-bottom: 4px;
+        background: rgba(79, 70, 229, 0.1); color: var(--color-primary); margin-bottom: 4px;
       }
       .dz-title { font-weight: 700; color: var(--color-foreground); word-break: break-word; }
       .dz-sub { font-size: 0.8125rem; color: var(--color-text-soft); }
@@ -255,9 +255,8 @@ import { SelectComponent, SelectOption } from '../../shared/select.component';
         padding: 0 12px;
         margin-bottom: var(--space-md);
       }
-      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.12); }
+      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
 
-      .rate-btn { width: 100%; justify-content: center; }
       .hint { font-size: 0.8125rem; color: var(--color-text-soft); margin: var(--space-sm) 0 0; text-align: center; }
 
       .spinner {

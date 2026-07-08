@@ -15,6 +15,7 @@ public class InternshipService : IInternshipService
     private readonly ISkillRepository _skillRepository;
     private readonly ISavedInternshipRepository _savedInternshipRepository;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public InternshipService(
         IInternshipRepository internshipRepository,
@@ -22,7 +23,8 @@ public class InternshipService : IInternshipService
         IStudentRepository studentRepository,
         ISkillRepository skillRepository,
         ISavedInternshipRepository savedInternshipRepository,
-        IApplicationRepository applicationRepository)
+        IApplicationRepository applicationRepository,
+        IUnitOfWork unitOfWork)
     {
         _internshipRepository = internshipRepository;
         _companyRepository = companyRepository;
@@ -30,6 +32,7 @@ public class InternshipService : IInternshipService
         _skillRepository = skillRepository;
         _savedInternshipRepository = savedInternshipRepository;
         _applicationRepository = applicationRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<InternshipDetailResponse> CreateAsync(int userId, CreateInternshipRequest request, CancellationToken cancellationToken = default)
@@ -55,7 +58,8 @@ public class InternshipService : IInternshipService
             internship.RequiredSkills.Add(new InternshipSkill { SkillId = skillId });
         }
 
-        await _internshipRepository.AddAsync(internship, cancellationToken);
+        _internshipRepository.Add(internship);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         internship.Company = company;
         return (await _internshipRepository.GetWithDetailsAsync(internship.Id, cancellationToken))!.ToDetailResponse();
@@ -86,7 +90,8 @@ public class InternshipService : IInternshipService
             internship.RequiredSkills.Add(new InternshipSkill { InternshipId = internship.Id, SkillId = added });
         }
 
-        await _internshipRepository.UpdateAsync(internship, cancellationToken);
+        _internshipRepository.Update(internship);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return (await _internshipRepository.GetWithDetailsAsync(internship.Id, cancellationToken))!.ToDetailResponse();
     }
@@ -96,7 +101,8 @@ public class InternshipService : IInternshipService
         var internship = await GetOwnedInternshipAsync(userId, internshipId, cancellationToken);
 
         internship.IsActive = false;
-        await _internshipRepository.UpdateAsync(internship, cancellationToken);
+        _internshipRepository.Update(internship);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return internship.ToDetailResponse();
     }
@@ -120,15 +126,24 @@ public class InternshipService : IInternshipService
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetRecommendedAsync(int userId, int take, CancellationToken cancellationToken = default)
     {
-        var (skillIds, savedIds) = await LoadStudentContextAsync(userId, cancellationToken);
-        if (skillIds is null)
+        // Resolve the student once and derive everything from it (skills, saved
+        // ids, applied ids) rather than re-fetching across helper calls.
+        var student = await _studentRepository.GetByUserIdAsync(userId, cancellationToken);
+        if (student is null)
         {
             // Recommendations are skill-driven; nothing to offer without a student.
             return [];
         }
 
-        var student = await _studentRepository.GetByUserIdAsync(userId, cancellationToken);
-        var applied = (await _applicationRepository.GetByStudentAsync(student!.Id, cancellationToken))
+        var withSkills = await _studentRepository.GetWithSkillsAsync(student.Id, cancellationToken);
+        IReadOnlySet<int> skillIds = withSkills!.Skills.Select(ss => ss.SkillId).ToHashSet();
+        if (skillIds.Count == 0)
+        {
+            return [];
+        }
+
+        IReadOnlySet<int> savedIds = (await _savedInternshipRepository.GetSavedInternshipIdsAsync(student.Id, cancellationToken)).ToHashSet();
+        var applied = (await _applicationRepository.GetByStudentAsync(student.Id, cancellationToken))
             .Select(a => a.InternshipId)
             .ToHashSet();
 
@@ -212,7 +227,7 @@ public class InternshipService : IInternshipService
         var unknown = distinct.Where(id => !known.Contains(id)).ToList();
         if (unknown.Count > 0)
         {
-            throw new ConflictException($"Unknown skill id(s): {string.Join(", ", unknown)}.");
+            throw new BadRequestException($"Unknown skill id(s): {string.Join(", ", unknown)}.");
         }
 
         return distinct;
@@ -223,7 +238,7 @@ public class InternshipService : IInternshipService
         if (!Enum.TryParse<InternshipType>(type, ignoreCase: true, out var parsed))
         {
             var validValues = string.Join(", ", Enum.GetNames<InternshipType>());
-            throw new ConflictException($"'{type}' is not a valid internship type. Valid values: {validValues}.");
+            throw new BadRequestException($"'{type}' is not a valid internship type. Valid values: {validValues}.");
         }
 
         return parsed;

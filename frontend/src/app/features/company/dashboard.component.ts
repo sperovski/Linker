@@ -4,12 +4,13 @@ import { CompanyService } from '../../core/api/company.service';
 import { CompanyDashboard } from '../../core/models';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate, deadlineCountdown } from '../../shared/dates';
 
 @Component({
   selector: 'app-company-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, EmptyStateComponent],
+  imports: [RouterLink, IconComponent, EmptyStateComponent, LinkButtonComponent],
   template: `
     <div class="container page">
       <div class="page-header">
@@ -18,10 +19,10 @@ import { formatDate, deadlineCountdown } from '../../shared/dates';
           <h1>Dashboard</h1>
           <p class="page-sub">Your hiring at a glance.</p>
         </div>
-        <a routerLink="/company/internships/new" class="btn btn-primary">
+        <app-link-button routerLink="/company/internships/new">
           <app-icon name="plus" [size]="16" />
           Post an internship
-        </a>
+        </app-link-button>
       </div>
 
       @if (loading()) {
@@ -154,7 +155,7 @@ import { formatDate, deadlineCountdown } from '../../shared/dates';
         width: 40px;
         height: 40px;
         border-radius: var(--radius-md);
-        background: rgba(3, 105, 161, 0.1);
+        background: rgba(79, 70, 229, 0.1);
         color: var(--color-primary);
         margin-bottom: var(--space-sm);
       }

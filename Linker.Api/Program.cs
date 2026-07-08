@@ -1,17 +1,31 @@
+using System.Text;
+using System.Threading.RateLimiting;
 using Linker.Api.Middleware;
 using Linker.Application;
 using Linker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using System.Text;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured request/app logging; JSON in Production, readable console in dev.
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture));
 
 // Add services to the container.
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<Linker.Infrastructure.Persistence.LinkerDbContext>("database");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -35,14 +49,62 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-const string AngularDevCorsPolicy = "AngularDev";
+const string CorsPolicy = "Frontend";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(AngularDevCorsPolicy, policy =>
-        policy.WithOrigins("http://localhost:4200")
+    options.AddPolicy(CorsPolicy, policy =>
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
+
+// Credential endpoints get a strict per-IP budget; everything else a generous one.
+var globalPermitLimit = builder.Configuration.GetValue("RateLimiting:GlobalPerMinute", 300);
+var authPermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPerMinute", 10);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = globalPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = authPermitLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.ContentType = "application/problem+json";
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            status = StatusCodes.Status429TooManyRequests,
+            title = "Too Many Requests",
+            detail = "Rate limit exceeded. Please wait a moment and try again."
+        }, cancellationToken);
+    };
+});
+
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException(
+        "JWT signing key 'Jwt:Key' is not configured. Set it via user-secrets or the Jwt__Key environment variable.");
+}
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -56,16 +118,49 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            // Default 5-minute clock skew defeats a 15-minute token; keep it tight.
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
 
-builder.Services.AddAuthorization();
+// Opt-in gate (Auth__RequireVerifiedEmail=true): applying and posting require a
+// verified email. Off by default so dev/demo flows aren't blocked on SMTP.
+var requireVerifiedEmail = builder.Configuration.GetValue("Auth:RequireVerifiedEmail", false);
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("VerifiedEmail", policy =>
+        policy.RequireAssertion(context =>
+            !requireVerifiedEmail ||
+            context.User.HasClaim("email_verified", "true") ||
+            context.User.IsInRole("Admin")));
+});
 
 var app = builder.Build();
 
+// Containers and cloud hosts opt in via Database__MigrateOnStartup=true;
+// local dev keeps using `dotnet ef database update` explicitly.
+if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider
+        .GetRequiredService<Linker.Infrastructure.Persistence.LinkerDbContext>()
+        .Database.MigrateAsync();
+}
+
+// Idempotent: admin seeds when Seed:AdminEmail/Password are set; demo data
+// additionally requires Database__SeedDemoData=true and empty tables.
+{
+    using var scope = app.Services.CreateScope();
+    await Linker.Infrastructure.Persistence.DbSeeder.SeedAsync(
+        scope.ServiceProvider.GetRequiredService<Linker.Infrastructure.Persistence.LinkerDbContext>(),
+        app.Configuration,
+        app.Logger);
+}
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -73,14 +168,33 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    await next();
+});
 
 app.UseHttpsRedirection();
 
-app.UseCors(AngularDevCorsPolicy);
+app.UseCors(CorsPolicy);
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// Liveness/readiness for containers and cloud hosts (checks Postgres).
+app.MapHealthChecks("/health").AllowAnonymous();
+
 app.Run();
+
+public partial class Program;

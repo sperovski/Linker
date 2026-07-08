@@ -11,15 +11,18 @@ public class CompanyService : ICompanyService
     private readonly ICompanyRepository _companyRepository;
     private readonly IInternshipRepository _internshipRepository;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CompanyService(
         ICompanyRepository companyRepository,
         IInternshipRepository internshipRepository,
-        IApplicationRepository applicationRepository)
+        IApplicationRepository applicationRepository,
+        IUnitOfWork unitOfWork)
     {
         _companyRepository = companyRepository;
         _internshipRepository = internshipRepository;
         _applicationRepository = applicationRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<CompanyProfileResponse> GetByIdAsync(int companyId, CancellationToken cancellationToken = default)
@@ -47,7 +50,8 @@ public class CompanyService : ICompanyService
         company.Description = request.Description;
         company.Website = request.Website;
 
-        await _companyRepository.UpdateAsync(company, cancellationToken);
+        _companyRepository.Update(company);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return company.ToResponse();
     }

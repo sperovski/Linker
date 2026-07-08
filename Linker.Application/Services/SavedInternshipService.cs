@@ -11,15 +11,18 @@ public class SavedInternshipService : ISavedInternshipService
     private readonly ISavedInternshipRepository _savedInternshipRepository;
     private readonly IStudentRepository _studentRepository;
     private readonly IInternshipRepository _internshipRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public SavedInternshipService(
         ISavedInternshipRepository savedInternshipRepository,
         IStudentRepository studentRepository,
-        IInternshipRepository internshipRepository)
+        IInternshipRepository internshipRepository,
+        IUnitOfWork unitOfWork)
     {
         _savedInternshipRepository = savedInternshipRepository;
         _studentRepository = studentRepository;
         _internshipRepository = internshipRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetSavedAsync(int userId, CancellationToken cancellationToken = default)
@@ -55,14 +58,13 @@ public class SavedInternshipService : ISavedInternshipService
             return;
         }
 
-        await _savedInternshipRepository.AddAsync(
-            new SavedInternship
-            {
-                StudentId = student.Id,
-                InternshipId = internshipId,
-                SavedAtUtc = DateTime.UtcNow
-            },
-            cancellationToken);
+        _savedInternshipRepository.Add(new SavedInternship
+        {
+            StudentId = student.Id,
+            InternshipId = internshipId,
+            SavedAtUtc = DateTime.UtcNow
+        });
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UnsaveAsync(int userId, int internshipId, CancellationToken cancellationToken = default)
@@ -75,7 +77,8 @@ public class SavedInternshipService : ISavedInternshipService
             return;
         }
 
-        await _savedInternshipRepository.RemoveAsync(existing, cancellationToken);
+        _savedInternshipRepository.Remove(existing);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Student> GetStudentAsync(int userId, CancellationToken cancellationToken)

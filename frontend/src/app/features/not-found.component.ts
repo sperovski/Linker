@@ -2,24 +2,25 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { IconComponent } from '../shared/icon.component';
+import { LinkButtonComponent } from '../shared/link-button.component';
 
 @Component({
   selector: 'app-not-found',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent],
+  imports: [RouterLink, IconComponent, LinkButtonComponent],
   template: `
     <div class="container page nf">
       <p class="nf-code" aria-hidden="true">404</p>
       <h1>This page took a different internship.</h1>
       <p class="nf-sub">The link is broken or the page has moved — but the roles are still here.</p>
       <div class="nf-actions">
-        <a routerLink="/internships" class="btn btn-primary">
+        <app-link-button routerLink="/internships">
           Browse internships
           <app-icon name="arrow-right" [size]="16" />
-        </a>
-        <a [routerLink]="auth.isLoggedIn() ? auth.homePath() : '/'" class="btn btn-secondary">
+        </app-link-button>
+        <app-link-button variant="standard-secondary" [routerLink]="auth.isLoggedIn() ? auth.homePath() : '/'">
           Go home
-        </a>
+        </app-link-button>
       </div>
     </div>
   `,

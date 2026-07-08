@@ -17,11 +17,12 @@ import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-internship-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, SelectComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, SelectComponent, LinkButtonComponent],
   animations: [fadeSlideIn],
   template: `
     <div class="container page narrow">
@@ -176,9 +177,9 @@ import { SelectComponent, SelectOption } from '../../shared/select.component';
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          <app-link-button type="submit" [disabled]="submitting()">
             {{ submitting() ? 'Saving…' : isEdit() ? 'Save changes' : 'Publish internship' }}
-          </button>
+          </app-link-button>
         </form>
       }
     </div>
@@ -265,7 +266,7 @@ import { SelectComponent, SelectOption } from '../../shared/select.component';
         padding: 0 12px;
       }
 
-      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.12); }
+      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
 
       .opt { font-weight: 400; color: var(--color-text-soft); }
 

@@ -23,21 +23,9 @@ public class Repository<T> : IRepository<T> where T : class
         return await Context.Set<T>().AsNoTracking().ToListAsync(cancellationToken);
     }
 
-    public virtual async Task AddAsync(T entity, CancellationToken cancellationToken = default)
-    {
-        Context.Set<T>().Add(entity);
-        await Context.SaveChangesAsync(cancellationToken);
-    }
+    public virtual void Add(T entity) => Context.Set<T>().Add(entity);
 
-    public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
-    {
-        Context.Set<T>().Update(entity);
-        await Context.SaveChangesAsync(cancellationToken);
-    }
+    public virtual void Update(T entity) => Context.Set<T>().Update(entity);
 
-    public virtual async Task DeleteAsync(T entity, CancellationToken cancellationToken = default)
-    {
-        Context.Set<T>().Remove(entity);
-        await Context.SaveChangesAsync(cancellationToken);
-    }
+    public virtual void Remove(T entity) => Context.Set<T>().Remove(entity);
 }

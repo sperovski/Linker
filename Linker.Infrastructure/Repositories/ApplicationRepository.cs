@@ -46,10 +46,10 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> ExistsAsync(int studentId, int internshipId, CancellationToken cancellationToken = default)
+    public async Task<ApplicationEntity?> GetByStudentAndInternshipAsync(int studentId, int internshipId, CancellationToken cancellationToken = default)
     {
         return await Context.Applications
-            .AnyAsync(a => a.StudentId == studentId && a.InternshipId == internshipId, cancellationToken);
+            .FirstOrDefaultAsync(a => a.StudentId == studentId && a.InternshipId == internshipId, cancellationToken);
     }
 
     public async Task<ApplicationEntity?> GetWithDetailsAsync(int id, CancellationToken cancellationToken = default)

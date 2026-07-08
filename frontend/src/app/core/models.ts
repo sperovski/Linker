@@ -1,4 +1,4 @@
-export type UserRole = 'Student' | 'Company';
+export type UserRole = 'Student' | 'Company' | 'Admin';
 
 export type InternshipType = 'Internship' | 'PartTime' | 'FullTime';
 
@@ -9,6 +9,46 @@ export interface AuthResponse {
   email: string;
   role: UserRole;
   token: string;
+  refreshToken: string;
+  emailVerified: boolean;
+}
+
+export interface NotificationItem {
+  id: number;
+  message: string;
+  link: string | null;
+  isRead: boolean;
+  createdAtUtc: string;
+}
+
+export interface NotificationList {
+  items: NotificationItem[];
+  unreadCount: number;
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  emailVerified: boolean;
+  createdAtUtc: string;
+}
+
+export interface AdminInternship {
+  id: number;
+  title: string;
+  companyName: string;
+  isActive: boolean;
+  createdAtUtc: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  students: number;
+  companies: number;
+  totalInternships: number;
+  activeInternships: number;
 }
 
 export interface RegisterStudentRequest {

@@ -8,6 +8,7 @@ import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate } from '../../shared/dates';
 
 const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
@@ -21,7 +22,7 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
 @Component({
   selector: 'app-my-applications',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent, CompanyLogoComponent],
+  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent, CompanyLogoComponent, LinkButtonComponent],
   animations: [listStagger],
   template: `
     <div class="container page">
@@ -53,7 +54,13 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
         <app-skeleton-cards [count]="3" />
       } @else {
         <div [@listStagger]="animState()">
-          @if (filtered().length === 0) {
+          @if (loadError()) {
+            <app-empty-state
+              variant="inbox"
+              title="Couldn't load your applications"
+              message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
+            />
+          } @else if (filtered().length === 0) {
             @if (filter() === 'All') {
               <app-empty-state
                 variant="rocket"
@@ -94,15 +101,14 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
                       {{ app.status }}
                     </span>
                     @if (canWithdraw(app)) {
-                      <button
-                        type="button"
-                        class="withdraw-btn"
+                      <app-link-button
+                        size="sm"
                         [disabled]="withdrawing().has(app.id)"
-                        (click)="withdraw(app)"
+                        (pressed)="withdraw(app)"
                       >
                         <app-icon name="trash" [size]="13" />
                         Withdraw
-                      </button>
+                      </app-link-button>
                     }
                   </div>
                 </div>
@@ -202,25 +208,6 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
         gap: var(--space-xs);
       }
 
-      .withdraw-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: none;
-        border: none;
-        color: var(--color-text-soft);
-        font-family: var(--font-sans);
-        font-size: 0.8125rem;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 2px 4px;
-        border-radius: var(--radius-sm);
-        transition: color 160ms ease;
-      }
-
-      .withdraw-btn:hover { color: var(--color-destructive); }
-      .withdraw-btn:disabled { opacity: 0.5; cursor: default; }
-
       @media (max-width: 640px) {
         .app-card { align-items: flex-start; }
         .app-meta { flex-direction: column; gap: var(--space-xs); }
@@ -237,6 +224,7 @@ export class MyApplicationsComponent implements OnInit {
 
   protected readonly applications = signal<ApplicationResponse[]>([]);
   protected readonly loading = signal(true);
+  protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
   protected readonly filter = signal<ApplicationStatus | 'All'>('All');
   protected readonly withdrawing = signal<Set<number>>(new Set());
@@ -255,6 +243,7 @@ export class MyApplicationsComponent implements OnInit {
         setTimeout(() => this.animState.set('loaded'));
       },
       error: () => {
+        this.loadError.set(true);
         this.loading.set(false);
         this.animState.set('loaded');
       },
@@ -270,7 +259,7 @@ export class MyApplicationsComponent implements OnInit {
   }
 
   protected withdraw(app: ApplicationResponse): void {
-    if (!confirm(`Withdraw your application to ${app.internshipTitle}? This can't be undone.`)) {
+    if (!confirm(`Withdraw your application to ${app.internshipTitle}? You can re-apply later while the role is open.`)) {
       return;
     }
 

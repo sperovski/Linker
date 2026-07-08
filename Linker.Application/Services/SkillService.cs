@@ -11,11 +11,13 @@ public class SkillService : ISkillService
 {
     private readonly ISkillRepository _skillRepository;
     private readonly IStudentRepository _studentRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public SkillService(ISkillRepository skillRepository, IStudentRepository studentRepository)
+    public SkillService(ISkillRepository skillRepository, IStudentRepository studentRepository, IUnitOfWork unitOfWork)
     {
         _skillRepository = skillRepository;
         _studentRepository = studentRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IReadOnlyList<SkillResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -38,7 +40,7 @@ public class SkillService : ISkillService
         }
 
         student.Skills.Add(new StudentSkill { StudentId = student.Id, SkillId = skill.Id });
-        await _studentRepository.UpdateAsync(student, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetRefreshedProfileAsync(student.Id, cancellationToken);
     }
@@ -51,7 +53,7 @@ public class SkillService : ISkillService
             ?? throw new NotFoundException($"Skill '{skillId}' is not assigned to this student.");
 
         student.Skills.Remove(studentSkill);
-        await _studentRepository.UpdateAsync(student, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetRefreshedProfileAsync(student.Id, cancellationToken);
     }

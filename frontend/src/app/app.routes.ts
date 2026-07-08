@@ -20,6 +20,32 @@ export const routes: Routes = [
     title: 'Sign up — Linker',
   },
   {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/auth/verify-email.component').then((m) => m.VerifyEmailComponent),
+    title: 'Verify email — Linker',
+  },
+  {
+    path: 'forgot-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+    title: 'Reset password — Linker',
+  },
+  {
+    path: 'reset-password',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/reset-password.component').then((m) => m.ResetPasswordComponent),
+    title: 'Choose a new password — Linker',
+  },
+  {
+    path: 'admin',
+    canActivate: [roleGuard('Admin')],
+    loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),
+    title: 'Admin — Linker',
+  },
+  {
     path: 'internships',
     loadComponent: () => import('./features/student/browse.component').then((m) => m.BrowseComponent),
     title: 'Browse internships — Linker',

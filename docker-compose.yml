@@ -1,0 +1,47 @@
+# One-command demo stack:  docker compose up --build
+# Frontend at http://localhost:8080 (API proxied same-origin under /api).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: linker
+      POSTGRES_USER: linker
+      POSTGRES_PASSWORD: linker_local_pw
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linker -d linker"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Linker.Api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=linker;Username=linker;Password=linker_local_pw
+      # Local/demo only — override all of these for any real deployment.
+      Jwt__Issuer: Linker.Api
+      Jwt__Audience: Linker.Client
+      Jwt__Key: local-compose-demo-signing-key-change-me-0123456789abcdef
+      Database__MigrateOnStartup: "true"
+      Database__SeedDemoData: "true"
+      Seed__AdminEmail: admin@linker.local
+      Seed__AdminPassword: AdminLocal123!
+      Cors__AllowedOrigins__0: http://localhost:8080
+
+  web:
+    build:
+      context: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:

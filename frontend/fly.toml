@@ -1,0 +1,23 @@
+# Fly.io config for the frontend.  Deploy from this directory:
+#   cd frontend && fly deploy
+# Deploy the API first: nginx resolves linker-api.internal at startup.
+app = "linker-web"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Fly private networking: the web proxy reaches the API over 6PN.
+  API_ORIGIN = "http://linker-api.internal:8080"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

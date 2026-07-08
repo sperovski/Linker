@@ -92,6 +92,20 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Wrapper that gives the borderless app-select the same chrome as .input */
+.field-select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: 0 12px;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.field-select:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
+}
+
 .form-error-banner {
   background: #FEE2E2;
   color: #991B1B;

@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { NotificationService } from '../core/api/notification.service';
 import { IconComponent } from './icon.component';
+import { LinkButtonComponent } from './link-button.component';
+import { NotificationBellComponent } from './notification-bell.component';
 
 @Component({
   selector: 'app-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, IconComponent],
+  imports: [RouterLink, RouterLinkActive, IconComponent, LinkButtonComponent, NotificationBellComponent],
   host: { '(window:scroll)': 'onScroll()' },
   template: `
     <header class="header" [class.elevated]="scrolled()">
       <div class="container header-inner">
         <a [routerLink]="auth.isLoggedIn() ? auth.homePath() : '/'" class="brand">
-          <span class="brand-mark" aria-hidden="true"></span>
           Linker
         </a>
 
@@ -37,22 +39,27 @@ import { IconComponent } from './icon.component';
             <a routerLink="/company/dashboard" routerLinkActive="active">Dashboard</a>
             <a routerLink="/company/listings" routerLinkActive="active">My Listings</a>
             <a routerLink="/company/profile" routerLinkActive="active">Profile</a>
+          } @else if (auth.isAdmin()) {
+            <a routerLink="/admin" routerLinkActive="active">Admin</a>
           } @else {
             <a routerLink="/internships" routerLinkActive="active">Browse internships</a>
           }
 
           @if (auth.isLoggedIn()) {
+            @if (!auth.isAdmin()) {
+              <app-notification-bell />
+            }
             <span class="user-chip" [title]="auth.email()">
               <app-icon [name]="auth.isCompany() ? 'building' : 'user'" [size]="15" />
               {{ auth.email() }}
             </span>
-            <button type="button" class="logout" (click)="auth.logout()">
+            <app-link-button size="sm" (pressed)="logout()">
               <app-icon name="log-out" [size]="15" />
               Log out
-            </button>
+            </app-link-button>
           } @else {
-            <a routerLink="/login" routerLinkActive="active">Log in</a>
-            <a routerLink="/register" class="btn btn-primary btn-sm">Sign up</a>
+            <app-link-button routerLink="/login" size="sm">Log in</app-link-button>
+            <app-link-button routerLink="/register" size="sm">Sign up</app-link-button>
           }
         </nav>
       </div>
@@ -81,26 +88,20 @@ import { IconComponent } from './icon.component';
         padding-bottom: var(--space-sm);
       }
 
+      /* Text-only wordmark: the bundled logo asset is a non-transparent JPEG
+         export (opaque white square), which bleeds a visible background box
+         around the mark at nav size. Falling back to a clean text wordmark
+         until a proper transparent asset is provided avoids that artifact. */
       .brand {
         display: inline-flex;
         align-items: center;
-        gap: var(--space-sm);
-        font-weight: 700;
-        font-size: 1.25rem;
+        font-weight: 800;
+        font-size: 1.4rem;
+        letter-spacing: -0.02em;
         color: var(--color-foreground);
       }
 
       .brand:hover { text-decoration: none; }
-
-      .brand-mark {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        background-image: url('/linker.jpg');
-        background-repeat: no-repeat;
-        background-size: 150%;
-        background-position: center 24%;
-      }
 
       .nav {
         display: flex;
@@ -145,27 +146,6 @@ import { IconComponent } from './icon.component';
         white-space: nowrap;
       }
 
-      .logout {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-xs);
-        background: none;
-        border: none;
-        color: var(--color-text-soft);
-        font-family: var(--font-sans);
-        font-size: 0.875rem;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 6px 8px;
-        border-radius: var(--radius-sm);
-        transition: color 200ms ease, background-color 200ms ease;
-      }
-
-      .logout:hover {
-        color: var(--color-destructive);
-        background: rgba(220, 38, 38, 0.07);
-      }
-
       .menu-toggle { display: none; }
 
       @media (max-width: 767px) {
@@ -195,10 +175,17 @@ import { IconComponent } from './icon.component';
 })
 export class HeaderComponent {
   protected readonly auth = inject(AuthService);
+  private readonly notifications = inject(NotificationService);
   protected readonly menuOpen = signal(false);
   protected readonly scrolled = signal(false);
 
   protected onScroll(): void {
     this.scrolled.set(window.scrollY > 8);
+  }
+
+  protected logout(): void {
+    // Clear the local notification feed so a new login starts clean.
+    this.notifications.clear();
+    this.auth.logout();
   }
 }

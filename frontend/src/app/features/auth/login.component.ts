@@ -4,11 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -38,7 +39,10 @@ import { fadeSlideIn } from '../../shared/animations';
           </div>
 
           <div class="field">
-            <label class="label" for="password">Password</label>
+            <div class="label-row">
+              <label class="label" for="password">Password</label>
+              <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
+            </div>
             <input
               id="password"
               type="password"
@@ -52,9 +56,9 @@ import { fadeSlideIn } from '../../shared/animations';
             }
           </div>
 
-          <button type="submit" class="btn btn-primary submit-btn" [disabled]="submitting()">
+          <app-link-button type="submit" block [disabled]="submitting()">
             {{ submitting() ? 'Logging in…' : 'Log in' }}
-          </button>
+          </app-link-button>
         </form>
 
         <p class="auth-footer">
@@ -63,6 +67,12 @@ import { fadeSlideIn } from '../../shared/animations';
       </div>
     </div>
   `,
+  styles: [
+    `
+      .label-row { display: flex; align-items: baseline; justify-content: space-between; }
+      .forgot-link { font-size: 0.8125rem; font-weight: 600; }
+    `,
+  ],
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
