@@ -112,9 +112,22 @@ dotnet test Linker.Api.IntegrationTests       # full-stack tests (needs Docker: 
 docker compose up --build
 ```
 
-Brings up Postgres + API + frontend at **http://localhost:8080** with migrations,
-demo data and an admin account (`admin@linker.local` / `AdminLocal123!`) — demo
-credentials only, override for anything public.
+Brings up Postgres + API + frontend at **http://localhost:8080** with migrations
+and demo data — demo credentials only, override for anything public.
+
+Demo accounts (all use the password shown, or override via `Seed:DemoPassword`):
+
+| Role    | Email                          | Password           | Notes                                   |
+|---------|---------------------------------|---------------------|------------------------------------------|
+| Admin   | `admin@linker.local`            | `AdminLocal123!`    | set via `Seed:AdminEmail`/`Seed:AdminPassword` |
+| Student | `stefan.perovski20@gmail.com`   | `magii1002`         | Stefan Perovski — has applications (accepted/pending/rejected), saved internships, notifications |
+| Student | `marko.ilievski@linker.demo`    | `Demo123!linker`    | Backend-leaning profile with its own application mix |
+| Student | `elena.stojanova@linker.demo`   | `Demo123!linker`    | Design-leaning profile |
+| Company | `careers@netcetera.demo`        | `Demo123!linker`    | has a received application + notification |
+| Company | `careers@endava.demo`           | `Demo123!linker`    | has a received application + notification |
+
+10 companies and 12 internships are seeded regardless (see `careers@<company>.demo`
+for the other 8, same password).
 
 ## CI
 

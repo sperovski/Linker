@@ -15,7 +15,7 @@ import { NotificationBellComponent } from './notification-bell.component';
     <header class="header" [class.elevated]="scrolled()">
       <div class="container header-inner">
         <a [routerLink]="auth.isLoggedIn() ? auth.homePath() : '/'" class="brand">
-          Linker
+          <img src="/linker-logo.png" alt="Linker" class="brand-logo" />
         </a>
 
         <button
@@ -88,20 +88,18 @@ import { NotificationBellComponent } from './notification-bell.component';
         padding-bottom: var(--space-sm);
       }
 
-      /* Text-only wordmark: the bundled logo asset is a non-transparent JPEG
-         export (opaque white square), which bleeds a visible background box
-         around the mark at nav size. Falling back to a clean text wordmark
-         until a proper transparent asset is provided avoids that artifact. */
       .brand {
         display: inline-flex;
         align-items: center;
-        font-weight: 800;
-        font-size: 1.4rem;
-        letter-spacing: -0.02em;
-        color: var(--color-foreground);
       }
 
       .brand:hover { text-decoration: none; }
+
+      .brand-logo {
+        display: block;
+        height: 36px;
+        width: auto;
+      }
 
       .nav {
         display: flex;

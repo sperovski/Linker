@@ -40,6 +40,11 @@ public static class DbSeeder
         {
             await SeedCompaniesAndInternshipsAsync(db, configuration, logger, cancellationToken);
         }
+
+        if (!await db.Students.AnyAsync(cancellationToken))
+        {
+            await SeedStudentsAndActivityAsync(db, configuration, logger, cancellationToken);
+        }
     }
 
     private static async Task SeedAdminAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken)
@@ -149,5 +154,166 @@ public static class DbSeeder
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded {Companies} demo companies and {Listings} internships",
             companies.Length, listings.Length);
+    }
+
+    private static async Task SeedStudentsAndActivityAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken)
+    {
+        var demoPassword = configuration["Seed:DemoPassword"] ?? "Demo123!linker";
+        var skills = await db.Skills.ToDictionaryAsync(s => s.Name, cancellationToken);
+        var internships = await db.Internships.Include(i => i.Company).ToListAsync(cancellationToken);
+        Internship ByTitle(string title) => internships.First(i => i.Title == title);
+
+        // A null Password falls back to the shared demo password; the primary
+        // presentation account gets an explicit password so it always works.
+        var students = new (string Email, string? Password, string FirstName, string LastName, string University, int GradYear, string Bio, string[] Skills)[]
+        {
+            ("stefan.perovski20@gmail.com", "magii1002", "Stefan", "Perovski", "UKIM - FINKI", 2026,
+                "Third-year CS student who loves building clean UIs and learning backend fundamentals. Looking for a frontend or full-stack internship.",
+                ["Angular", "TypeScript", "CSS", "JavaScript", "Git"]),
+            ("marko.ilievski@linker.demo", null, "Marko", "Ilievski", "UKIM - FINKI", 2025,
+                "Backend-leaning student with coursework in databases and distributed systems. Comfortable with C# and SQL.",
+                ["C#", "SQL", "Docker", "Git"]),
+            ("elena.stojanova@linker.demo", null, "Elena", "Stojanova", "American University of Europe - FON", 2027,
+                "Design-minded student exploring UX research and product design through coursework and freelance projects.",
+                ["Figma", "CSS", "Communication"]),
+        };
+
+        var studentEntities = new Dictionary<string, Student>();
+        foreach (var s in students)
+        {
+            var student = new Student
+            {
+                FirstName = s.FirstName,
+                LastName = s.LastName,
+                University = s.University,
+                GraduationYear = s.GradYear,
+                Bio = s.Bio,
+                User = new User
+                {
+                    Email = s.Email,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(s.Password ?? demoPassword),
+                    Role = UserRole.Student,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    EmailVerified = true,
+                    IsActive = true
+                }
+            };
+            foreach (var skillName in s.Skills)
+            {
+                student.Skills.Add(new StudentSkill { Skill = skills[skillName] });
+            }
+            db.Students.Add(student);
+            studentEntities[s.Email] = student;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var stefan = studentEntities["stefan.perovski20@gmail.com"];
+        var marko = studentEntities["marko.ilievski@linker.demo"];
+        var elena = studentEntities["elena.stojanova@linker.demo"];
+
+        var now = DateTime.UtcNow;
+        var applications = new (Student Student, Internship Internship, ApplicationStatus Status, int DaysAgo, string? CoverLetter)[]
+        {
+            (stefan, ByTitle("Frontend Intern"), ApplicationStatus.Accepted, 9,
+                "I've shipped several Angular side projects and would love to bring that experience to a team building for real banking customers."),
+            (stefan, ByTitle("Frontend Intern"), ApplicationStatus.Pending, 2, null),
+            (stefan, ByTitle("UX/UI Design Intern"), ApplicationStatus.Rejected, 14,
+                "I'm mostly a developer but have picked up Figma for a couple of class projects and would love to grow into design."),
+            (marko, ByTitle("Backend Intern"), ApplicationStatus.Pending, 3,
+                "I've built a few C#/SQL side projects and I'm excited about working on payments infrastructure."),
+            (marko, ByTitle("DevOps Intern"), ApplicationStatus.Accepted, 6, null),
+            (marko, ByTitle("IT Support Intern"), ApplicationStatus.Withdrawn, 20, null),
+            (elena, ByTitle("UX/UI Design Intern"), ApplicationStatus.Pending, 1,
+                "I've been running small usability tests for my coursework and would love real mentorship on product design."),
+            (elena, ByTitle("Business Analysis Intern"), ApplicationStatus.Rejected, 11, null),
+        };
+
+        foreach (var a in applications)
+        {
+            // Frontend Intern title exists at two different companies; disambiguate the second Ana application.
+            var internship = a.Internship;
+            if (a.Student == stefan && a.Status == ApplicationStatus.Pending && internship.Title == "Frontend Intern")
+            {
+                internship = internships.First(i => i.Title == "Frontend Intern" && i.Company.Name == "Makedonski Telekom");
+            }
+
+            db.Applications.Add(new Linker.Domain.Entities.Application
+            {
+                Student = a.Student,
+                Internship = internship,
+                Status = a.Status,
+                CoverLetter = a.CoverLetter,
+                AppliedAtUtc = now.AddDays(-a.DaysAgo)
+            });
+        }
+
+        var saved = new (Student Student, string Title, string Company)[]
+        {
+            (stefan, "Software Engineering Intern", "Endava"),
+            (stefan, "Backend Intern", "Netcetera"),
+            (marko, "Frontend Intern", "Netcetera"),
+            (elena, "Data Analysis Intern", "NLB Banka"),
+        };
+
+        foreach (var s in saved)
+        {
+            var internship = internships.First(i => i.Title == s.Title && i.Company.Name == s.Company);
+            db.SavedInternships.Add(new SavedInternship
+            {
+                Student = s.Student,
+                Internship = internship,
+                SavedAtUtc = now.AddDays(-Random.Shared.Next(1, 15))
+            });
+        }
+
+        db.Notifications.Add(new Notification
+        {
+            User = stefan.User,
+            Message = "Great news! Netcetera accepted your application for Frontend Intern.",
+            Link = "/applications",
+            CreatedAtUtc = now.AddDays(-9)
+        });
+        db.Notifications.Add(new Notification
+        {
+            User = stefan.User,
+            Message = "Makedonski Telekom is reviewing your application for Frontend Intern.",
+            Link = "/applications",
+            CreatedAtUtc = now.AddDays(-2)
+        });
+        db.Notifications.Add(new Notification
+        {
+            User = marko.User,
+            Message = "Endava accepted your application for DevOps Intern.",
+            Link = "/applications",
+            CreatedAtUtc = now.AddDays(-6)
+        });
+        db.Notifications.Add(new Notification
+        {
+            User = elena.User,
+            Message = "New internship matching your skills: UX/UI Design Intern at Seavus.",
+            Link = "/internships",
+            CreatedAtUtc = now.AddDays(-1)
+        });
+
+        var netcetera = ByTitle("Frontend Intern").Company;
+        var endava = ByTitle("DevOps Intern").Company;
+        db.Notifications.Add(new Notification
+        {
+            User = netcetera.User,
+            Message = "Stefan Perovski applied to Frontend Intern.",
+            Link = "/company/listings",
+            CreatedAtUtc = now.AddDays(-9)
+        });
+        db.Notifications.Add(new Notification
+        {
+            User = endava.User,
+            Message = "Marko Ilievski applied to DevOps Intern.",
+            Link = "/company/listings",
+            CreatedAtUtc = now.AddDays(-6)
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded {Count} demo students with applications, saved internships and notifications", students.Length);
     }
 }
