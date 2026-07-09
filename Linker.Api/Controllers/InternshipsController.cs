@@ -1,4 +1,5 @@
 using Linker.Application.DTOs.Applications;
+using Linker.Application.DTOs.Common;
 using Linker.Application.DTOs.Internships;
 using Linker.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -25,11 +26,18 @@ public class InternshipsController : ApiControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(IReadOnlyList<InternshipListItemResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<InternshipListItemResponse>>> Search(
-        [FromQuery] string? location, [FromQuery] string? searchText, [FromQuery] string? type, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(InternshipSearchResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<InternshipSearchResponse>> Search(
+        [FromQuery] string? location,
+        [FromQuery] string? searchText,
+        [FromQuery] string? type,
+        [FromQuery] string? company,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        var request = new InternshipSearchRequest(location, searchText, type);
+        // The service normalizes page/pageSize; out-of-range values are clamped, not rejected.
+        var request = new InternshipSearchRequest(location, searchText, type, company, page, pageSize);
         return Ok(await _internshipService.SearchAsync(request, CurrentUserIdOrNull, cancellationToken));
     }
 
@@ -129,11 +137,15 @@ public class InternshipsController : ApiControllerBase
 
     [HttpGet("{id:int}/applications")]
     [Authorize(Roles = "Company")]
-    [ProducesResponseType(typeof(IReadOnlyList<ApplicationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<ApplicationResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<ApplicationResponse>>> GetApplications(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResponse<ApplicationResponse>>> GetApplications(
+        int id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        return Ok(await _applicationService.GetByInternshipAsync(CurrentUserId, id, cancellationToken));
+        return Ok(await _applicationService.GetByInternshipAsync(CurrentUserId, id, page, pageSize, cancellationToken));
     }
 }

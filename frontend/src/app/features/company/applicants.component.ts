@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  computed,
   inject,
   input,
   numberAttribute,
@@ -16,6 +17,7 @@ import {
   ApplicationResponse,
   ApplicationStatus,
   InternshipDetail,
+  PagedResponse,
   StudentProfile,
 } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
@@ -24,14 +26,18 @@ import { fadeSlideIn, listStagger } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate } from '../../shared/dates';
 
 const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
 
+/** Applicant lists are long-form cards; a smaller page keeps the view scannable. */
+const PAGE_SIZE = 10;
+
 @Component({
   selector: 'app-applicants',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent],
+  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent, LinkButtonComponent],
   animations: [fadeSlideIn, listStagger],
   template: `
     <div class="container page">
@@ -47,7 +53,7 @@ const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
           @if (internship(); as job) {
             <p class="page-sub">
               {{ job.title }} —
-              {{ applications().length }} application{{ applications().length === 1 ? '' : 's' }}
+              {{ total() }} application{{ total() === 1 ? '' : 's' }}
             </p>
           }
         </div>
@@ -144,6 +150,24 @@ const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
                 </div>
               }
             </div>
+
+            @if (totalPages() > 1) {
+              <nav class="pager" aria-label="Applicant pages">
+                <app-link-button size="sm" [disabled]="page() === 1" (pressed)="goToPage(page() - 1)">
+                  Previous
+                </app-link-button>
+                <span class="pager-status" aria-live="polite">
+                  Page {{ page() }} of {{ totalPages() }}
+                </span>
+                <app-link-button
+                  size="sm"
+                  [disabled]="page() === totalPages()"
+                  (pressed)="goToPage(page() + 1)"
+                >
+                  Next
+                </app-link-button>
+              </nav>
+            }
           }
         </div>
       }
@@ -151,6 +175,20 @@ const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
   `,
   styles: [
     `
+      .pager {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-lg);
+        margin-top: var(--space-xl);
+      }
+
+      .pager-status {
+        color: var(--color-text-soft);
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+
       .back-link {
         display: inline-flex;
         align-items: center;
@@ -281,17 +319,24 @@ export class ApplicantsComponent implements OnInit {
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
   protected readonly updatingId = signal<number | null>(null);
 
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly pageSize = signal(PAGE_SIZE);
+
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.pageSize())),
+  );
+
   ngOnInit(): void {
     forkJoin({
       internship: this.internshipService.getDetail(this.id()),
-      applications: this.internshipService.getApplications(this.id()),
+      applications: this.internshipService.getApplications(this.id(), this.page(), this.pageSize()),
     }).subscribe({
       next: ({ internship, applications }) => {
         this.internship.set(internship);
-        this.applications.set(applications);
+        this.applyPage(applications);
         this.loading.set(false);
         setTimeout(() => this.animState.set('loaded'));
-        this.loadStudentDetails(applications);
       },
       error: () => {
         this.loadError.set(true);
@@ -299,6 +344,30 @@ export class ApplicantsComponent implements OnInit {
         this.animState.set('loaded');
       },
     });
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.page()) {
+      return;
+    }
+
+    this.page.set(page);
+    this.internshipService.getApplications(this.id(), page, this.pageSize()).subscribe({
+      next: (applications) => {
+        this.applyPage(applications);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      error: () => this.loadError.set(true),
+    });
+  }
+
+  private applyPage(result: PagedResponse<ApplicationResponse>): void {
+    this.applications.set(result.items);
+    this.total.set(result.total);
+    this.page.set(result.page);
+    this.pageSize.set(result.pageSize);
+    // Only the current page's students need profile lookups.
+    this.loadStudentDetails(result.items);
   }
 
   protected updateStatus(app: ApplicationResponse, event: Event): void {

@@ -8,6 +8,8 @@ import {
   InternshipDetail,
   InternshipListItem,
   InternshipSearchFilters,
+  InternshipSearchResponse,
+  PagedResponse,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -15,12 +17,15 @@ export class InternshipService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiBaseUrl}/internships`;
 
-  search(filters: InternshipSearchFilters): Observable<InternshipListItem[]> {
+  search(filters: InternshipSearchFilters): Observable<InternshipSearchResponse> {
     let params = new HttpParams();
     if (filters.location) params = params.set('location', filters.location);
     if (filters.searchText) params = params.set('searchText', filters.searchText);
     if (filters.type) params = params.set('type', filters.type);
-    return this.http.get<InternshipListItem[]>(this.baseUrl, { params });
+    if (filters.company) params = params.set('company', filters.company);
+    if (filters.page) params = params.set('page', filters.page);
+    if (filters.pageSize) params = params.set('pageSize', filters.pageSize);
+    return this.http.get<InternshipSearchResponse>(this.baseUrl, { params });
   }
 
   getMine(): Observable<InternshipListItem[]> {
@@ -67,7 +72,9 @@ export class InternshipService {
     return this.http.post<InternshipDetail>(`${this.baseUrl}/${id}/close`, {});
   }
 
-  getApplications(id: number): Observable<ApplicationResponse[]> {
-    return this.http.get<ApplicationResponse[]>(`${this.baseUrl}/${id}/applications`);
+  getApplications(id: number, page = 1, pageSize = 20): Observable<PagedResponse<ApplicationResponse>> {
+    return this.http.get<PagedResponse<ApplicationResponse>>(`${this.baseUrl}/${id}/applications`, {
+      params: new HttpParams().set('page', page).set('pageSize', pageSize),
+    });
   }
 }

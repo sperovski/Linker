@@ -1,4 +1,5 @@
 using Linker.Application.DTOs.Applications;
+using Linker.Application.DTOs.Common;
 
 namespace Linker.Application.Services;
 
@@ -9,5 +10,6 @@ public interface IApplicationService
     Task<ApplicationResponse> WithdrawAsync(int userId, int applicationId, CancellationToken cancellationToken = default);
     Task<ApplicationResponse> GetByIdAsync(int userId, int applicationId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ApplicationResponse>> GetOwnApplicationsAsync(int userId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ApplicationResponse>> GetByInternshipAsync(int userId, int internshipId, CancellationToken cancellationToken = default);
+    Task<PagedResponse<ApplicationResponse>> GetByInternshipAsync(
+        int userId, int internshipId, int page = 1, int pageSize = Paging.DefaultPageSize, CancellationToken cancellationToken = default);
 }

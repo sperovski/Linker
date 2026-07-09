@@ -1,5 +1,6 @@
 using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Applications;
+using Linker.Application.DTOs.Common;
 using Linker.Application.Mappings;
 using Linker.Domain.Enums;
 using Linker.Domain.Repositories;
@@ -186,7 +187,8 @@ public class ApplicationService : IApplicationService
         return applications.Select(a => a.ToResponse()).ToList();
     }
 
-    public async Task<IReadOnlyList<ApplicationResponse>> GetByInternshipAsync(int userId, int internshipId, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<ApplicationResponse>> GetByInternshipAsync(
+        int userId, int internshipId, int page = 1, int pageSize = Paging.DefaultPageSize, CancellationToken cancellationToken = default)
     {
         var internship = await _internshipRepository.GetByIdAsync(internshipId, cancellationToken)
             ?? throw new NotFoundException("Internship", internshipId);
@@ -194,13 +196,16 @@ public class ApplicationService : IApplicationService
         var company = await _companyRepository.GetByUserIdAsync(userId, cancellationToken)
             ?? throw new NotFoundException($"No company profile exists for user '{userId}'.");
 
+        // Ownership is settled before we touch the applications table at all.
         if (internship.CompanyId != company.Id)
         {
             throw new ForbiddenAccessException("Only the company that posted this internship can view its applications.");
         }
 
-        var applications = await _applicationRepository.GetByInternshipAsync(internshipId, cancellationToken);
+        (page, pageSize) = Paging.Normalize(page, pageSize);
+        var (applications, total) = await _applicationRepository.GetByInternshipAsync(internshipId, page, pageSize, cancellationToken);
 
-        return applications.Select(a => a.ToResponse()).ToList();
+        return new PagedResponse<ApplicationResponse>(
+            applications.Select(a => a.ToResponse()).ToList(), total, page, pageSize);
     }
 }

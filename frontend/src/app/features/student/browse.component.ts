@@ -16,7 +16,11 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { CompanyFilterComponent, CompanyOption } from '../../shared/company-filter.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { InternshipStripComponent } from '../../shared/internship-strip.component';
+import { LinkButtonComponent } from '../../shared/link-button.component';
 import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../../shared/dates';
+
+/** Matches the API default; the server clamps anything above 50. */
+const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-browse',
@@ -33,6 +37,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
     CompanyFilterComponent,
     SelectComponent,
     InternshipStripComponent,
+    LinkButtonComponent,
   ],
   animations: [listStagger],
   template: `
@@ -44,7 +49,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
           <p class="page-sub">Real roles from Netcetera to Alkaloid — companies you already know.</p>
         </div>
         @if (!loading()) {
-          <span class="result-count">{{ internships().length }} open role{{ internships().length === 1 ? '' : 's' }}</span>
+          <span class="result-count">{{ total() }} open role{{ total() === 1 ? '' : 's' }}</span>
         }
       </div>
 
@@ -101,7 +106,7 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
           <app-company-filter
             [companies]="companies()"
             [selected]="company()"
-            (selectedChange)="company.set($event)"
+            (selectedChange)="onCompanyChange($event)"
           />
         </div>
         <div class="filter-divider" aria-hidden="true"></div>
@@ -199,6 +204,30 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
                 </div>
               }
             </div>
+
+            @if (totalPages() > 1) {
+              <nav class="pager" aria-label="Search results pages">
+                <app-link-button
+                  size="sm"
+                  [disabled]="page() === 1"
+                  (pressed)="goToPage(page() - 1)"
+                >
+                  <app-icon name="arrow-right" [size]="14" class="flip" />
+                  Previous
+                </app-link-button>
+                <span class="pager-status" aria-live="polite">
+                  Page {{ page() }} of {{ totalPages() }}
+                </span>
+                <app-link-button
+                  size="sm"
+                  [disabled]="page() === totalPages()"
+                  (pressed)="goToPage(page() + 1)"
+                >
+                  Next
+                  <app-icon name="arrow-right" [size]="14" />
+                </app-link-button>
+              </nav>
+            }
           }
         </div>
       }
@@ -210,6 +239,25 @@ import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../..
         color: var(--color-text-soft);
         font-size: 0.875rem;
         font-weight: 600;
+      }
+
+      .pager {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-lg);
+        margin-top: var(--space-xl);
+      }
+
+      .pager-status {
+        color: var(--color-text-soft);
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+
+      /* Reuse the arrow glyph for "Previous" rather than shipping a second icon. */
+      .flip {
+        transform: rotate(180deg);
       }
 
       /* Premium single-bar filter row with internal dividers */
@@ -385,8 +433,10 @@ export class BrowseComponent implements OnInit {
     () => !this.searchText() && !this.location() && !this.type() && !this.company(),
   );
 
-  /** Raw results from the server (text/location/type filters applied there). */
-  protected readonly serverResults = signal<InternshipListItem[]>([]);
+  /** The current page of results. Every filter, including company, is applied server-side. */
+  protected readonly internships = signal<InternshipListItem[]>([]);
+  /** Companies across the whole result set — the server computes this ignoring the company filter. */
+  protected readonly companies = signal<CompanyOption[]>([]);
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   /** flips loading -> loaded exactly once so filtering doesn't re-stagger */
@@ -395,26 +445,15 @@ export class BrowseComponent implements OnInit {
   protected readonly searchText = signal('');
   protected readonly location = signal('');
   protected readonly type = signal<InternshipType | ''>('');
-  /** Company filter is applied client-side on top of the server results. */
   protected readonly company = signal('');
 
-  /** Displayed list = server results narrowed by the selected company. */
-  protected readonly internships = computed(() => {
-    const selected = this.company();
-    const all = this.serverResults();
-    return selected ? all.filter((i) => i.companyName === selected) : all;
-  });
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly pageSize = signal(PAGE_SIZE);
 
-  /** Distinct companies in the current server results, with open-role counts. */
-  protected readonly companies = computed<CompanyOption[]>(() => {
-    const counts = new Map<string, number>();
-    for (const item of this.serverResults()) {
-      counts.set(item.companyName, (counts.get(item.companyName) ?? 0) + 1);
-    }
-    return [...counts.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  });
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.pageSize())),
+  );
 
   constructor() {
     this.search$.pipe(debounceTime(300), takeUntilDestroyed()).subscribe(() => this.fetch());
@@ -438,19 +477,39 @@ export class BrowseComponent implements OnInit {
     }
   }
 
+  // Every filter change resets to page 1: narrowing a search while on page 4
+  // would otherwise strand the user on a page that no longer exists.
   protected onSearchChange(value: string): void {
     this.searchText.set(value);
+    this.page.set(1);
     this.search$.next();
   }
 
   protected onLocationChange(value: string): void {
     this.location.set(value);
+    this.page.set(1);
     this.search$.next();
   }
 
   protected onTypeChange(value: InternshipType | ''): void {
     this.type.set(value);
+    this.page.set(1);
     this.fetch();
+  }
+
+  protected onCompanyChange(value: string): void {
+    this.company.set(value);
+    this.page.set(1);
+    this.fetch();
+  }
+
+  protected goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.page()) {
+      return;
+    }
+    this.page.set(page);
+    this.fetch();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   protected typeLabel(type: string): string {
@@ -476,22 +535,36 @@ export class BrowseComponent implements OnInit {
         searchText: this.searchText() || undefined,
         location: this.location() || undefined,
         type: this.type() || undefined,
+        company: this.company() || undefined,
+        page: this.page(),
+        pageSize: this.pageSize(),
       })
       .subscribe({
-        next: (internships) => {
+        next: (result) => {
           this.loadError.set(false);
-          this.serverResults.set(internships);
-          // Drop the company filter if that company is no longer in the results.
-          if (this.company() && !internships.some((i) => i.companyName === this.company())) {
-            this.company.set('');
-          }
+          this.internships.set(result.items);
+          this.companies.set(result.companies);
+          this.total.set(result.total);
+          this.page.set(result.page);
+          this.pageSize.set(result.pageSize);
           this.loading.set(false);
           // defer so the DOM renders before the stagger trigger fires
           setTimeout(() => this.animState.set('loaded'));
+
+          // The facet ignores the company filter, so a selected company missing
+          // from it has no roles under the other filters. Clear it and refetch
+          // rather than leaving the user staring at an empty page.
+          if (this.company() && !result.companies.some((c) => c.name === this.company())) {
+            this.company.set('');
+            this.page.set(1);
+            this.fetch();
+          }
         },
         error: () => {
           this.loadError.set(true);
-          this.serverResults.set([]);
+          this.internships.set([]);
+          this.companies.set([]);
+          this.total.set(0);
           this.company.set('');
           this.loading.set(false);
           this.animState.set('loaded');

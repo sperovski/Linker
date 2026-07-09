@@ -107,22 +107,35 @@ public class InternshipService : IInternshipService
         return internship.ToDetailResponse();
     }
 
-    public async Task<IReadOnlyList<InternshipListItemResponse>> SearchAsync(InternshipSearchRequest request, int? userId = null, CancellationToken cancellationToken = default)
+    public async Task<InternshipSearchResponse> SearchAsync(InternshipSearchRequest request, int? userId = null, CancellationToken cancellationToken = default)
     {
+        request = request.Normalized();
+
         // Public search only ever exposes open listings; closed ones are visible
         // to their owning company via GetOwnListingsAsync.
         var type = string.IsNullOrWhiteSpace(request.Type) ? (InternshipType?)null : ParseType(request.Type);
-        var internships = await _internshipRepository.SearchActiveAsync(request.Location, request.SearchText, type, cancellationToken);
+        var criteria = new InternshipSearchCriteria(request.Location, request.SearchText, type, NullIfBlank(request.Company));
 
         var (skillIds, savedIds) = await LoadStudentContextAsync(userId, cancellationToken);
 
-        return internships
-            .Select(i => i.ToListItemResponse(skillIds, savedIds))
-            // Best matches first when we have a student to match against; the
-            // repository's recency ordering is preserved within an equal score.
-            .OrderByDescending(i => i.MatchScore ?? -1)
-            .ToList();
+        // Ordering by match score happens in SQL (see InternshipRepository.OrderForStudent);
+        // sorting here would only ever sort the current page against itself.
+        var (internships, total) = await _internshipRepository.SearchActiveAsync(
+            criteria, skillIds?.ToArray(), request.Page, request.PageSize, cancellationToken);
+
+        // The facet ignores the company filter, so selecting a company doesn't
+        // shrink the dropdown to that one company.
+        var facets = await _internshipRepository.GetCompanyFacetsAsync(criteria with { Company = null }, cancellationToken);
+
+        return new InternshipSearchResponse(
+            internships.Select(i => i.ToListItemResponse(skillIds, savedIds)).ToList(),
+            total,
+            request.Page,
+            request.PageSize,
+            facets.Select(f => new CompanyFacet(f.Name, f.Count)).ToList());
     }
+
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetRecommendedAsync(int userId, int take, CancellationToken cancellationToken = default)
     {
@@ -147,7 +160,7 @@ public class InternshipService : IInternshipService
             .Select(a => a.InternshipId)
             .ToHashSet();
 
-        var active = await _internshipRepository.SearchActiveAsync(null, null, null, cancellationToken);
+        var active = await _internshipRepository.GetActiveWithDetailsAsync(cancellationToken);
 
         return active
             .Where(i => !applied.Contains(i.Id))

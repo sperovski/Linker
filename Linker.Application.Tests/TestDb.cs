@@ -80,21 +80,45 @@ public sealed class TestDb : IDisposable
         return company;
     }
 
-    public Internship AddInternship(Company company, bool isActive = true, DateOnly? deadline = null)
+    public Internship AddInternship(
+        Company company,
+        bool isActive = true,
+        DateOnly? deadline = null,
+        string title = "Test Internship",
+        DateTime? createdAtUtc = null,
+        params int[] requiredSkillIds)
     {
         var internship = new Internship
         {
             CompanyId = company.Id,
-            Title = "Test Internship",
+            Title = title,
             Description = "A role for testing.",
             Type = InternshipType.Internship,
             IsActive = isActive,
             ApplicationDeadline = deadline,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow,
+            RequiredSkills = requiredSkillIds.Select(id => new InternshipSkill { SkillId = id }).ToList()
         };
         Context.Internships.Add(internship);
         Context.SaveChanges();
         return internship;
+    }
+
+    public Skill AddSkill(string name)
+    {
+        var skill = new Skill { Name = name };
+        Context.Skills.Add(skill);
+        Context.SaveChanges();
+        return skill;
+    }
+
+    public void GiveStudentSkills(Student student, params int[] skillIds)
+    {
+        foreach (var id in skillIds)
+        {
+            Context.Set<StudentSkill>().Add(new StudentSkill { StudentId = student.Id, SkillId = id });
+        }
+        Context.SaveChanges();
     }
 
     public void Dispose()

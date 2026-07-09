@@ -389,11 +389,14 @@ export class CvReviewComponent implements OnInit {
   );
 
   ngOnInit(): void {
-    this.internshipService.search({}).subscribe({
-      next: (items) =>
+    // 50 is the server's max page size. The target-role picker therefore shows the
+    // 50 best-matching open roles rather than every one; a searchable picker would
+    // be the fix if the catalogue ever outgrows that.
+    this.internshipService.search({ pageSize: 50 }).subscribe({
+      next: (result) =>
         this.targetOptions.set([
           { value: '', label: 'General review (no specific role)' },
-          ...items.map((i) => ({ value: String(i.id), label: `${i.title} — ${i.companyName}` })),
+          ...result.items.map((i) => ({ value: String(i.id), label: `${i.title} — ${i.companyName}` })),
         ]),
       error: () => {},
     });

@@ -471,8 +471,9 @@ export class InternshipDetailComponent implements OnInit {
           next: (company) => this.company.set(company),
           error: () => {},
         });
-        this.internshipService.search({}).subscribe((all) => {
-          const others = all.filter((role) => role.id !== internship.id);
+        // One page is ample to rank three suggestions out of.
+        this.internshipService.search({ pageSize: 24 }).subscribe((all) => {
+          const others = all.items.filter((role) => role.id !== internship.id);
           // prefer same type, then same location, then anything open
           const ranked = [
             ...others.filter((r) => r.type === internship.type),

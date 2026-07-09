@@ -23,15 +23,27 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ApplicationEntity>> GetByInternshipAsync(int internshipId, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<ApplicationEntity> Items, int Total)> GetByInternshipAsync(
+        int internshipId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        return await Context.Applications
+        var filtered = Context.Applications
             .AsNoTracking()
+            .Where(a => a.InternshipId == internshipId);
+
+        var total = await filtered.CountAsync(cancellationToken);
+
+        // Id breaks AppliedAtUtc ties so a row can't straddle two pages.
+        var items = await filtered
             .Include(a => a.Student)
             .Include(a => a.Internship)
             .ThenInclude(i => i.Company)
-            .Where(a => a.InternshipId == internshipId)
+            .OrderByDescending(a => a.AppliedAtUtc)
+            .ThenByDescending(a => a.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
+
+        return (items, total);
     }
 
     public async Task<IReadOnlyList<ApplicationEntity>> GetByCompanyAsync(int companyId, CancellationToken cancellationToken = default)

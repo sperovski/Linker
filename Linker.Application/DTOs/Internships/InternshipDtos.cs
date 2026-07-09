@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Linker.Application.DTOs.Common;
 using Linker.Application.DTOs.Skills;
 
 namespace Linker.Application.DTOs.Internships;
@@ -23,7 +24,32 @@ public record UpdateInternshipRequest(
     DateOnly? ApplicationDeadline,
     IReadOnlyList<int>? SkillIds);
 
-public record InternshipSearchRequest(string? Location, string? SearchText, string? Type);
+public record InternshipSearchRequest(
+    string? Location,
+    string? SearchText,
+    string? Type,
+    string? Company = null,
+    int Page = 1,
+    int PageSize = Paging.DefaultPageSize)
+{
+    public InternshipSearchRequest Normalized()
+    {
+        var (page, pageSize) = Paging.Normalize(Page, PageSize);
+        return this with { Page = page, PageSize = pageSize };
+    }
+}
+
+/// <summary>A company appearing in a search result set, with its open-role count.</summary>
+public record CompanyFacet(string Name, int Count);
+
+/// <summary>A page of search results plus the company facet for the whole result set.</summary>
+public record InternshipSearchResponse(
+    IReadOnlyList<InternshipListItemResponse> Items,
+    int Total,
+    int Page,
+    int PageSize,
+    IReadOnlyList<CompanyFacet> Companies)
+    : PagedResponse<InternshipListItemResponse>(Items, Total, Page, PageSize);
 
 public record InternshipListItemResponse(
     int Id,

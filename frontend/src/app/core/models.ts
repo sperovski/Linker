@@ -182,6 +182,31 @@ export interface InternshipSearchFilters {
   location?: string;
   searchText?: string;
   type?: InternshipType | '';
+  company?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+/** One page of results plus the total across all pages. */
+export interface PagedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** A company in the current result set, with its open-role count. */
+export interface CompanyFacet {
+  name: string;
+  count: number;
+}
+
+/**
+ * Search results. `companies` is computed over the whole result set ignoring the
+ * company filter, so selecting one doesn't collapse the dropdown to that company.
+ */
+export interface InternshipSearchResponse extends PagedResponse<InternshipListItem> {
+  companies: CompanyFacet[];
 }
 
 export interface ApplicationResponse {

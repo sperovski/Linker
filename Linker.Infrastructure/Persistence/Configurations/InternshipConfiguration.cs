@@ -40,5 +40,11 @@ public class InternshipConfiguration : IEntityTypeConfiguration<Internship>
         builder.HasIndex(i => i.IsActive);
         builder.HasIndex(i => i.Type);
         builder.HasIndex(i => i.ApplicationDeadline);
+
+        // Paged browse for anonymous callers filters on IsActive and sorts by
+        // CreatedAtUtc DESC; this covers both so Postgres doesn't sort the table
+        // once per page.
+        builder.HasIndex(i => new { i.IsActive, i.CreatedAtUtc })
+            .IsDescending(false, true);
     }
 }
