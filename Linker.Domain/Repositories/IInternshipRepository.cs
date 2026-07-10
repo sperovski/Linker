@@ -9,6 +9,12 @@ public interface IInternshipRepository : IRepository<Internship>
     Task<IReadOnlyList<Internship>> GetActiveAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Internship>> GetAllWithCompanyAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Listing totals computed in SQL — never loads internship rows.</summary>
+    Task<(int Total, int Active)> CountAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>One page of listings (with company), newest first, with the overall total.</summary>
+    Task<(IReadOnlyList<Internship> Items, int Total)> ListPagedWithCompanyAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// One page of active listings matching <paramref name="criteria"/>, ordered by how well
     /// they match <paramref name="studentSkillIds"/> (best first) then by recency. Pass a null

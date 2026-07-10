@@ -24,6 +24,24 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.Property(s => s.Bio)
             .HasMaxLength(2000);
 
+        builder.Property(s => s.Headline)
+            .HasMaxLength(150);
+
+        builder.Property(s => s.ProfilePhotoUrl)
+            .HasMaxLength(500);
+
+        builder.Property(s => s.LinkedInUrl)
+            .HasMaxLength(500);
+
+        builder.Property(s => s.GithubUrl)
+            .HasMaxLength(500);
+
+        builder.Property(s => s.PortfolioUrl)
+            .HasMaxLength(500);
+
+        builder.Property(s => s.CvUrl)
+            .HasMaxLength(500);
+
         // One profile per user account.
         builder.HasIndex(s => s.UserId)
             .IsUnique();

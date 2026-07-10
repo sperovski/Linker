@@ -14,26 +14,17 @@ namespace Linker.Infrastructure.Persistence;
 /// </summary>
 public static class DbSeeder
 {
-    private static readonly string[] SkillNames =
-    [
-        "C#", "SQL", "Angular", "Python", "Docker", "Excel", "Power BI", "Git",
-        "Java", "JavaScript", "TypeScript", "Figma", "CSS", "React", "Node.js", "Communication"
-    ];
-
     public static async Task SeedAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken = default)
     {
         await SeedAdminAsync(db, configuration, logger, cancellationToken);
 
+        // The skill taxonomy is real catalogue data, not demo data: upsert it
+        // unconditionally so every environment offers the full picker.
+        await SeedSkillTaxonomyAsync(db, logger, cancellationToken);
+
         if (!configuration.GetValue("Database:SeedDemoData", false))
         {
             return;
-        }
-
-        if (!await db.Skills.AnyAsync(cancellationToken))
-        {
-            db.Skills.AddRange(SkillNames.Select(name => new Skill { Name = name }));
-            await db.SaveChangesAsync(cancellationToken);
-            logger.LogInformation("Seeded {Count} skills", SkillNames.Length);
         }
 
         if (!await db.Companies.AnyAsync(cancellationToken))
@@ -44,6 +35,45 @@ public static class DbSeeder
         if (!await db.Students.AnyAsync(cancellationToken))
         {
             await SeedStudentsAndActivityAsync(db, configuration, logger, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Upserts <see cref="SkillTaxonomy"/> by name: missing skills are inserted,
+    /// existing ones are re-categorised if the taxonomy moved them. Never deletes,
+    /// so skills students already reference stay valid.
+    /// </summary>
+    private static async Task SeedSkillTaxonomyAsync(LinkerDbContext db, ILogger logger, CancellationToken cancellationToken)
+    {
+        var existing = await db.Skills.ToDictionaryAsync(s => s.Name, cancellationToken);
+        var added = 0;
+        var recategorised = 0;
+
+        foreach (var (category, names) in SkillTaxonomy.Categories)
+        {
+            foreach (var name in names)
+            {
+                if (existing.TryGetValue(name, out var skill))
+                {
+                    if (skill.Category != category)
+                    {
+                        skill.Category = category;
+                        recategorised++;
+                    }
+                }
+                else
+                {
+                    db.Skills.Add(new Skill { Name = name, Category = category });
+                    added++;
+                }
+            }
+        }
+
+        if (added > 0 || recategorised > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation(
+                "Skill taxonomy synced: {Added} added, {Recategorised} re-categorised", added, recategorised);
         }
     }
 

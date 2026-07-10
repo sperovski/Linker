@@ -1,4 +1,5 @@
 using Linker.Application.DTOs.Admin;
+using Linker.Application.DTOs.Common;
 using Linker.Application.DTOs.Skills;
 using Linker.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -25,10 +26,13 @@ public class AdminController : ApiControllerBase
     }
 
     [HttpGet("users")]
-    [ProducesResponseType(typeof(IReadOnlyList<AdminUserResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<AdminUserResponse>>> GetUsers(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResponse<AdminUserResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<AdminUserResponse>>> GetUsers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        return Ok(await _adminService.ListUsersAsync(cancellationToken));
+        return Ok(await _adminService.ListUsersAsync(page, pageSize, cancellationToken));
     }
 
     [HttpPost("users/{id:int}/active")]
@@ -42,10 +46,13 @@ public class AdminController : ApiControllerBase
     }
 
     [HttpGet("internships")]
-    [ProducesResponseType(typeof(IReadOnlyList<AdminInternshipResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<AdminInternshipResponse>>> GetInternships(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PagedResponse<AdminInternshipResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<AdminInternshipResponse>>> GetInternships(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        CancellationToken cancellationToken = default)
     {
-        return Ok(await _adminService.ListInternshipsAsync(cancellationToken));
+        return Ok(await _adminService.ListInternshipsAsync(page, pageSize, cancellationToken));
     }
 
     [HttpPost("internships/{id:int}/close")]

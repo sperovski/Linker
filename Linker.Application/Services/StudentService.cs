@@ -1,6 +1,7 @@
 using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Students;
 using Linker.Application.Mappings;
+using Linker.Domain.Entities;
 using Linker.Domain.Repositories;
 
 namespace Linker.Application.Services;
@@ -8,17 +9,28 @@ namespace Linker.Application.Services;
 public class StudentService : IStudentService
 {
     private readonly IStudentRepository _studentRepository;
+    private readonly IExperienceRepository _experienceRepository;
+    private readonly IEducationRepository _educationRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public StudentService(IStudentRepository studentRepository, IUnitOfWork unitOfWork)
+    public StudentService(
+        IStudentRepository studentRepository,
+        IExperienceRepository experienceRepository,
+        IEducationRepository educationRepository,
+        IProjectRepository projectRepository,
+        IUnitOfWork unitOfWork)
     {
         _studentRepository = studentRepository;
+        _experienceRepository = experienceRepository;
+        _educationRepository = educationRepository;
+        _projectRepository = projectRepository;
         _unitOfWork = unitOfWork;
     }
 
     public async Task<StudentProfileResponse> GetByIdAsync(int studentId, CancellationToken cancellationToken = default)
     {
-        var student = await _studentRepository.GetWithSkillsAsync(studentId, cancellationToken)
+        var student = await _studentRepository.GetWithProfileAsync(studentId, cancellationToken)
             ?? throw new NotFoundException("Student", studentId);
 
         return student.ToResponse();
@@ -26,26 +38,214 @@ public class StudentService : IStudentService
 
     public async Task<StudentProfileResponse> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var student = await _studentRepository.GetByUserIdAsync(userId, cancellationToken)
-            ?? throw new NotFoundException($"No student profile exists for user '{userId}'.");
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
 
         return await GetByIdAsync(student.Id, cancellationToken);
     }
 
     public async Task<StudentProfileResponse> UpdateProfileAsync(int userId, UpdateStudentProfileRequest request, CancellationToken cancellationToken = default)
     {
-        var student = await _studentRepository.GetByUserIdAsync(userId, cancellationToken)
-            ?? throw new NotFoundException($"No student profile exists for user '{userId}'.");
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
 
         student.FirstName = request.FirstName;
         student.LastName = request.LastName;
         student.University = request.University;
         student.GraduationYear = request.GraduationYear;
         student.Bio = request.Bio;
+        student.Headline = request.Headline;
+        student.ProfilePhotoUrl = request.ProfilePhotoUrl;
+        student.LinkedInUrl = request.LinkedInUrl;
+        student.GithubUrl = request.GithubUrl;
+        student.PortfolioUrl = request.PortfolioUrl;
+        student.CvUrl = request.CvUrl;
 
         _studentRepository.Update(student);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    // ---- Experience ----
+
+    public async Task<StudentProfileResponse> AddExperienceAsync(int userId, SaveExperienceRequest request, CancellationToken cancellationToken = default)
+    {
+        ValidateDates(request.StartDate, request.EndDate);
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+
+        _experienceRepository.Add(new Experience
+        {
+            StudentId = student.Id,
+            Title = request.Title,
+            Company = request.Company,
+            Location = request.Location,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+            Description = request.Description,
+        });
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> UpdateExperienceAsync(int userId, int experienceId, SaveExperienceRequest request, CancellationToken cancellationToken = default)
+    {
+        ValidateDates(request.StartDate, request.EndDate);
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var experience = await GetOwnedAsync(_experienceRepository, experienceId, student.Id, e => e.StudentId, "Experience", cancellationToken);
+
+        experience.Title = request.Title;
+        experience.Company = request.Company;
+        experience.Location = request.Location;
+        experience.StartDate = request.StartDate;
+        experience.EndDate = request.EndDate;
+        experience.Description = request.Description;
+
+        _experienceRepository.Update(experience);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> DeleteExperienceAsync(int userId, int experienceId, CancellationToken cancellationToken = default)
+    {
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var experience = await GetOwnedAsync(_experienceRepository, experienceId, student.Id, e => e.StudentId, "Experience", cancellationToken);
+
+        _experienceRepository.Remove(experience);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    // ---- Education ----
+
+    public async Task<StudentProfileResponse> AddEducationAsync(int userId, SaveEducationRequest request, CancellationToken cancellationToken = default)
+    {
+        ValidateDates(request.StartDate, request.EndDate);
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+
+        _educationRepository.Add(new Education
+        {
+            StudentId = student.Id,
+            Institution = request.Institution,
+            Degree = request.Degree,
+            FieldOfStudy = request.FieldOfStudy,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate,
+        });
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> UpdateEducationAsync(int userId, int educationId, SaveEducationRequest request, CancellationToken cancellationToken = default)
+    {
+        ValidateDates(request.StartDate, request.EndDate);
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var education = await GetOwnedAsync(_educationRepository, educationId, student.Id, e => e.StudentId, "Education", cancellationToken);
+
+        education.Institution = request.Institution;
+        education.Degree = request.Degree;
+        education.FieldOfStudy = request.FieldOfStudy;
+        education.StartDate = request.StartDate;
+        education.EndDate = request.EndDate;
+
+        _educationRepository.Update(education);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> DeleteEducationAsync(int userId, int educationId, CancellationToken cancellationToken = default)
+    {
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var education = await GetOwnedAsync(_educationRepository, educationId, student.Id, e => e.StudentId, "Education", cancellationToken);
+
+        _educationRepository.Remove(education);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    // ---- Project ----
+
+    public async Task<StudentProfileResponse> AddProjectAsync(int userId, SaveProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+
+        _projectRepository.Add(new Project
+        {
+            StudentId = student.Id,
+            Title = request.Title,
+            Description = request.Description,
+            Url = request.Url,
+            TechStack = request.TechStack,
+        });
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> UpdateProjectAsync(int userId, int projectId, SaveProjectRequest request, CancellationToken cancellationToken = default)
+    {
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var project = await GetOwnedAsync(_projectRepository, projectId, student.Id, p => p.StudentId, "Project", cancellationToken);
+
+        project.Title = request.Title;
+        project.Description = request.Description;
+        project.Url = request.Url;
+        project.TechStack = request.TechStack;
+
+        _projectRepository.Update(project);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> DeleteProjectAsync(int userId, int projectId, CancellationToken cancellationToken = default)
+    {
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+        var project = await GetOwnedAsync(_projectRepository, projectId, student.Id, p => p.StudentId, "Project", cancellationToken);
+
+        _projectRepository.Remove(project);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    // ---- Helpers ----
+
+    private async Task<Student> GetOwnStudentAsync(int userId, CancellationToken cancellationToken)
+    {
+        return await _studentRepository.GetByUserIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException($"No student profile exists for user '{userId}'.");
+    }
+
+    /// <summary>Loads a section entry and verifies it belongs to the calling student.</summary>
+    private static async Task<T> GetOwnedAsync<T>(
+        IRepository<T> repository,
+        int id,
+        int studentId,
+        Func<T, int> studentIdOf,
+        string entityName,
+        CancellationToken cancellationToken) where T : class
+    {
+        var entity = await repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException(entityName, id);
+
+        if (studentIdOf(entity) != studentId)
+        {
+            throw new ForbiddenAccessException($"This {entityName.ToLowerInvariant()} entry belongs to another student.");
+        }
+
+        return entity;
+    }
+
+    private static void ValidateDates(DateOnly startDate, DateOnly? endDate)
+    {
+        if (endDate.HasValue && endDate.Value < startDate)
+        {
+            throw new BadRequestException("The end date cannot be before the start date.");
+        }
     }
 }

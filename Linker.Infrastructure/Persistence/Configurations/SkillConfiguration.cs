@@ -14,6 +14,12 @@ public class SkillConfiguration : IEntityTypeConfiguration<Skill>
             .IsRequired()
             .HasMaxLength(100);
 
+        // Existing rows fall back to the default when the column is added.
+        builder.Property(s => s.Category)
+            .IsRequired()
+            .HasMaxLength(100)
+            .HasDefaultValue("Other");
+
         builder.HasIndex(s => s.Name)
             .IsUnique();
     }

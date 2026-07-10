@@ -38,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IUserTokenRepository, UserTokenRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IExperienceRepository, ExperienceRepository>();
+        services.AddScoped<IEducationRepository, EducationRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
 
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<ICvTextExtractor, CvTextExtractor>();

@@ -25,6 +25,9 @@ public class LinkerApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("Jwt:Audience", "Linker.Client");
         builder.UseSetting("Jwt:Key", "integration-test-signing-key-0123456789abcdef");
         builder.UseSetting("Jwt:AccessTokenMinutes", "15");
+        // Migrate inside app startup (before seeding), matching the production
+        // boot order — startup seeding queries tables the migrations create.
+        builder.UseSetting("Database:MigrateOnStartup", "true");
         // Flow tests share one IP partition; keep the budget well above what a
         // full run needs so they're never throttled. The limiter itself is
         // proven separately in RateLimitTests.
@@ -35,9 +38,10 @@ public class LinkerApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         await _postgres.StartAsync();
 
+        // Touching Services builds and starts the host, which migrates + seeds.
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LinkerDbContext>();
-        await db.Database.MigrateAsync();
+        await db.Database.MigrateAsync(); // no-op safety net; startup already migrated
     }
 
     async Task IAsyncLifetime.DisposeAsync()

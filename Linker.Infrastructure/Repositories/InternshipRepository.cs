@@ -40,6 +40,32 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<(int Total, int Active)> CountAsync(CancellationToken cancellationToken = default)
+    {
+        var counts = await Context.Internships
+            .GroupBy(_ => 1)
+            .Select(g => new { Total = g.Count(), Active = g.Count(i => i.IsActive) })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return counts is null ? (0, 0) : (counts.Total, counts.Active);
+    }
+
+    public async Task<(IReadOnlyList<Internship> Items, int Total)> ListPagedWithCompanyAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = Context.Internships.AsNoTracking();
+
+        var total = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Include(i => i.Company)
+            .OrderByDescending(i => i.CreatedAtUtc)
+            .ThenByDescending(i => i.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
     public async Task<(IReadOnlyList<Internship> Items, int Total)> SearchActiveAsync(
         InternshipSearchCriteria criteria,
         int[]? studentSkillIds,

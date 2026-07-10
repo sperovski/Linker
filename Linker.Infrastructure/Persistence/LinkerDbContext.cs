@@ -23,6 +23,9 @@ public class LinkerDbContext : DbContext, IUnitOfWork
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserToken> UserTokens => Set<UserToken>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Experience> Experiences => Set<Experience>();
+    public DbSet<Education> Educations => Set<Education>();
+    public DbSet<Project> Projects => Set<Project>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

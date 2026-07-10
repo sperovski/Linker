@@ -24,4 +24,18 @@ public class StudentRepository : Repository<Student>, IStudentRepository
             .ThenInclude(ss => ss.Skill)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
+
+    public async Task<Student?> GetWithProfileAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Split query: four collection includes as one SQL join would explode
+        // the row count multiplicatively.
+        return await Context.Students
+            .Include(s => s.Skills)
+            .ThenInclude(ss => ss.Skill)
+            .Include(s => s.Experiences)
+            .Include(s => s.Educations)
+            .Include(s => s.Projects)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
 }

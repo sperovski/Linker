@@ -11,7 +11,34 @@ namespace Linker.Application.Mappings;
 public static class EntityMappings
 {
     public static SkillResponse ToResponse(this Skill skill) =>
-        new(skill.Id, skill.Name);
+        new(skill.Id, skill.Name, skill.Category);
+
+    public static ExperienceResponse ToResponse(this Experience experience) =>
+        new(
+            experience.Id,
+            experience.Title,
+            experience.Company,
+            experience.Location,
+            experience.StartDate,
+            experience.EndDate,
+            experience.Description);
+
+    public static EducationResponse ToResponse(this Education education) =>
+        new(
+            education.Id,
+            education.Institution,
+            education.Degree,
+            education.FieldOfStudy,
+            education.StartDate,
+            education.EndDate);
+
+    public static ProjectResponse ToResponse(this Project project) =>
+        new(
+            project.Id,
+            project.Title,
+            project.Description,
+            project.Url,
+            project.TechStack);
 
     public static StudentProfileResponse ToResponse(this Student student) =>
         new(
@@ -22,9 +49,32 @@ public static class EntityMappings
             student.University,
             student.GraduationYear,
             student.Bio,
+            student.Headline,
+            student.ProfilePhotoUrl,
+            student.LinkedInUrl,
+            student.GithubUrl,
+            student.PortfolioUrl,
+            student.CvUrl,
             student.Skills
                 .Where(ss => ss.Skill is not null)
                 .Select(ss => ss.Skill.ToResponse())
+                .ToList(),
+            // Ongoing entries (no end date) first, then most recent.
+            student.Experiences
+                .OrderBy(e => e.EndDate.HasValue)
+                .ThenByDescending(e => e.EndDate)
+                .ThenByDescending(e => e.StartDate)
+                .Select(e => e.ToResponse())
+                .ToList(),
+            student.Educations
+                .OrderBy(e => e.EndDate.HasValue)
+                .ThenByDescending(e => e.EndDate)
+                .ThenByDescending(e => e.StartDate)
+                .Select(e => e.ToResponse())
+                .ToList(),
+            student.Projects
+                .OrderByDescending(p => p.Id)
+                .Select(p => p.ToResponse())
                 .ToList());
 
     public static CompanyProfileResponse ToResponse(this Company company) =>

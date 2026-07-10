@@ -1,5 +1,6 @@
 using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Admin;
+using Linker.Application.DTOs.Common;
 using Linker.Application.DTOs.Skills;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
@@ -28,24 +29,22 @@ public class AdminService : IAdminService
 
     public async Task<AdminStatsResponse> GetStatsAsync(CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.GetAllAsync(cancellationToken);
-        var internships = await _internshipRepository.GetAllWithCompanyAsync(cancellationToken);
+        var (totalUsers, students, companies) = await _userRepository.CountByRoleAsync(cancellationToken);
+        var (totalInternships, activeInternships) = await _internshipRepository.CountAsync(cancellationToken);
 
-        return new AdminStatsResponse(
-            users.Count,
-            users.Count(u => u.Role == UserRole.Student),
-            users.Count(u => u.Role == UserRole.Company),
-            internships.Count,
-            internships.Count(i => i.IsActive));
+        return new AdminStatsResponse(totalUsers, students, companies, totalInternships, activeInternships);
     }
 
-    public async Task<IReadOnlyList<AdminUserResponse>> ListUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<AdminUserResponse>> ListUsersAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.GetAllAsync(cancellationToken);
-        return users
-            .OrderByDescending(u => u.CreatedAtUtc)
+        (page, pageSize) = Paging.Normalize(page, pageSize);
+        var (users, total) = await _userRepository.ListPagedAsync(page, pageSize, cancellationToken);
+
+        var items = users
             .Select(u => new AdminUserResponse(u.Id, u.Email, u.Role.ToString(), u.IsActive, u.EmailVerified, u.CreatedAtUtc))
             .ToList();
+
+        return new PagedResponse<AdminUserResponse>(items, total, page, pageSize);
     }
 
     public async Task SetUserActiveAsync(int actingUserId, int userId, bool isActive, CancellationToken cancellationToken = default)
@@ -68,12 +67,16 @@ public class AdminService : IAdminService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<AdminInternshipResponse>> ListInternshipsAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<AdminInternshipResponse>> ListInternshipsAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var internships = await _internshipRepository.GetAllWithCompanyAsync(cancellationToken);
-        return internships
+        (page, pageSize) = Paging.Normalize(page, pageSize);
+        var (internships, total) = await _internshipRepository.ListPagedWithCompanyAsync(page, pageSize, cancellationToken);
+
+        var items = internships
             .Select(i => new AdminInternshipResponse(i.Id, i.Title, i.Company.Name, i.IsActive, i.CreatedAtUtc))
             .ToList();
+
+        return new PagedResponse<AdminInternshipResponse>(items, total, page, pageSize);
     }
 
     public async Task CloseInternshipAsync(int internshipId, CancellationToken cancellationToken = default)
@@ -95,10 +98,14 @@ public class AdminService : IAdminService
             throw new ConflictException($"A skill named '{name}' already exists.");
         }
 
-        var skill = new Skill { Name = name };
+        var skill = new Skill
+        {
+            Name = name,
+            Category = string.IsNullOrWhiteSpace(request.Category) ? "Other" : request.Category.Trim(),
+        };
         _skillRepository.Add(skill);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new SkillResponse(skill.Id, skill.Name);
+        return new SkillResponse(skill.Id, skill.Name, skill.Category);
     }
 }

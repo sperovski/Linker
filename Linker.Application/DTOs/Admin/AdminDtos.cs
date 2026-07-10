@@ -26,4 +26,6 @@ public record AdminStatsResponse(
 
 public record SetUserActiveRequest([Required] bool IsActive);
 
-public record CreateSkillRequest([Required, MaxLength(100)] string Name);
+public record CreateSkillRequest(
+    [Required, MaxLength(100)] string Name,
+    [MaxLength(100)] string? Category = null);
