@@ -45,7 +45,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <span class="dz-title">{{ fileName() }}</span>
               <span class="dz-sub">Scanned — click or drop another to replace</span>
             } @else {
-              <span class="dz-title"><app-mask-icon name="cv" [size]="16" /> Import your CV</span>
+              <span class="dz-title">Import your CV</span>
               <span class="dz-sub">Drag &amp; drop or click — PDF, DOCX or TXT, up to 5&nbsp;MB</span>
             }
           </label>
@@ -230,7 +230,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         width: 48px; height: 48px; border-radius: var(--radius-md);
         background: rgba(79, 70, 229, 0.1); color: var(--color-primary); margin-bottom: 4px;
       }
-      .dz-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--color-foreground); word-break: break-word; }
+      .dz-title { font-weight: 700; color: var(--color-foreground); word-break: break-word; }
       .dz-sub { font-size: 0.8125rem; color: var(--color-text-soft); }
 
       .or {
