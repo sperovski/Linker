@@ -10,6 +10,8 @@ primary_region = "fra"
 [env]
   # Fly private networking: the web proxy reaches the API over 6PN.
   API_ORIGIN = "http://linker-api.internal:8080"
+  # Fly's internal DNS, so nginx re-resolves .internal names per request.
+  NGINX_RESOLVER = "[fdaa::3]"
 
 [http_service]
   internal_port = 80
