@@ -6,13 +6,14 @@ import { CvReviewResponse } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { IconComponent } from '../../shared/icon.component';
+import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-cv-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, IconComponent, SelectComponent, LinkButtonComponent],
+  imports: [FormsModule, IconComponent, MaskIconComponent, SelectComponent, LinkButtonComponent],
   template: `
     <div class="container page">
       <div class="page-header">
@@ -39,12 +40,12 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               (change)="onFileInput($event)"
               [disabled]="loading()"
             />
-            <span class="dz-icon"><app-icon name="file-text" [size]="24" /></span>
+            <span class="dz-icon"><app-mask-icon name="cv" [size]="26" /></span>
             @if (fileName()) {
               <span class="dz-title">{{ fileName() }}</span>
               <span class="dz-sub">Scanned — click or drop another to replace</span>
             } @else {
-              <span class="dz-title">Import your CV</span>
+              <span class="dz-title"><app-mask-icon name="cv" [size]="16" /> Import your CV</span>
               <span class="dz-sub">Drag &amp; drop or click — PDF, DOCX or TXT, up to 5&nbsp;MB</span>
             }
           </label>
@@ -91,7 +92,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         <div class="card result-card">
           @if (!result() && !loading()) {
             <div class="placeholder">
-              <span class="ph-icon"><app-icon name="file-text" [size]="26" /></span>
+              <span class="ph-icon"><app-mask-icon name="cv" [size]="28" /></span>
               <h3>Your score appears here</h3>
               <p>The analyser looks at structure, skill coverage, quantified impact and clarity.</p>
             </div>
@@ -229,7 +230,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         width: 48px; height: 48px; border-radius: var(--radius-md);
         background: rgba(79, 70, 229, 0.1); color: var(--color-primary); margin-bottom: 4px;
       }
-      .dz-title { font-weight: 700; color: var(--color-foreground); word-break: break-word; }
+      .dz-title { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--color-foreground); word-break: break-word; }
       .dz-sub { font-size: 0.8125rem; color: var(--color-text-soft); }
 
       .or {

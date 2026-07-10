@@ -5,6 +5,7 @@ import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 const ICON_SRC: Record<string, string> = {
   gear: '/gear_17279605.png',
   trending: '/trending-content_16705905.png',
+  cv: '/cv_3846805.png',
 };
 
 export type MaskIconName = keyof typeof ICON_SRC;
