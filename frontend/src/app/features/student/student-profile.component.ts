@@ -511,6 +511,19 @@ type SectionKind = 'experience' | 'education' | 'project';
               {{ profile()?.cvUrl ? 'Update link' : 'Add link' }}
             </app-link-button>
           </div>
+
+          <div class="resume-or"><span>or</span></div>
+
+          <div class="resume-row">
+            <input #cvFileInput type="file" class="file-input" accept=".pdf,.doc,.docx"
+              (change)="onCvFileSelected($event)" [disabled]="cvUploading()" />
+            <app-link-button size="sm" variant="standard-secondary"
+              [disabled]="cvUploading()" (pressed)="cvFileInput.click()">
+              <app-mask-icon name="cv" [size]="15" />
+              {{ cvUploading() ? 'Uploading…' : 'Import CV' }}
+            </app-link-button>
+            <span class="resume-hint">PDF, DOC or DOCX — up to 5&nbsp;MB</span>
+          </div>
         </div>
       }
       }
@@ -779,6 +792,25 @@ type SectionKind = 'experience' | 'education' | 'project';
 
       .resume-row { display: flex; gap: var(--space-sm); align-items: center; }
 
+      .resume-or {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: var(--color-text-soft);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: var(--space-sm) 0;
+      }
+
+      .resume-or::before, .resume-or::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+      .resume-or span { padding: 0 var(--space-sm); }
+
+      .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+      .resume-hint { font-size: 0.8125rem; color: var(--color-text-soft); }
+
       /* Same chrome as .input for the borderless app-select */
       .field-select {
         border: 1px solid var(--color-border);
@@ -822,6 +854,10 @@ export class StudentProfileComponent implements OnInit {
   protected readonly editingId = signal<number | null>(null);
 
   protected readonly cvUrlDraft = signal('');
+  protected readonly cvUploading = signal(false);
+
+  private static readonly MaxCvUploadBytes = 5 * 1024 * 1024;
+  private static readonly AllowedCvExtensions = ['.pdf', '.doc', '.docx'];
 
   /** Circumference of the completeness ring (r = 32). */
   protected readonly ringCirc = 2 * Math.PI * 32;
@@ -1052,6 +1088,39 @@ export class StudentProfileComponent implements OnInit {
           this.toast.error(apiErrorMessage(err, 'Could not save the resume link.'));
         },
       });
+  }
+
+  protected onCvFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Allow re-selecting the same file later regardless of outcome.
+    input.value = '';
+    if (!file) {
+      return;
+    }
+
+    const extension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    if (!StudentProfileComponent.AllowedCvExtensions.includes(extension)) {
+      this.toast.error('Your CV must be a PDF, DOC or DOCX file.');
+      return;
+    }
+    if (file.size > StudentProfileComponent.MaxCvUploadBytes) {
+      this.toast.error('That file is too large — the limit is 5 MB.');
+      return;
+    }
+
+    this.cvUploading.set(true);
+    this.studentService.uploadCv(file).subscribe({
+      next: (profile) => {
+        this.applyProfile(profile);
+        this.cvUploading.set(false);
+        this.toast.success('CV uploaded');
+      },
+      error: (err) => {
+        this.cvUploading.set(false);
+        this.toast.error(apiErrorMessage(err, 'Could not upload your CV.'));
+      },
+    });
   }
 
   // ---- Section editors ----

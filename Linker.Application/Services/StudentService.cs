@@ -1,4 +1,5 @@
 using Linker.Application.Common.Exceptions;
+using Linker.Application.Common.Interfaces;
 using Linker.Application.DTOs.Students;
 using Linker.Application.Mappings;
 using Linker.Domain.Entities;
@@ -8,10 +9,16 @@ namespace Linker.Application.Services;
 
 public class StudentService : IStudentService
 {
+    private static readonly HashSet<string> AllowedCvExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc", ".docx",
+    };
+
     private readonly IStudentRepository _studentRepository;
     private readonly IExperienceRepository _experienceRepository;
     private readonly IEducationRepository _educationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ICvFileStorage _cvFileStorage;
     private readonly IUnitOfWork _unitOfWork;
 
     public StudentService(
@@ -19,12 +26,14 @@ public class StudentService : IStudentService
         IExperienceRepository experienceRepository,
         IEducationRepository educationRepository,
         IProjectRepository projectRepository,
+        ICvFileStorage cvFileStorage,
         IUnitOfWork unitOfWork)
     {
         _studentRepository = studentRepository;
         _experienceRepository = experienceRepository;
         _educationRepository = educationRepository;
         _projectRepository = projectRepository;
+        _cvFileStorage = cvFileStorage;
         _unitOfWork = unitOfWork;
     }
 
@@ -61,6 +70,28 @@ public class StudentService : IStudentService
 
         _studentRepository.Update(student);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    public async Task<StudentProfileResponse> UploadCvAsync(int userId, string fileName, byte[] content, CancellationToken cancellationToken = default)
+    {
+        var extension = Path.GetExtension(fileName);
+        if (!AllowedCvExtensions.Contains(extension))
+        {
+            throw new BadRequestException("Your CV must be a PDF, DOC or DOCX file.");
+        }
+
+        var student = await GetOwnStudentAsync(userId, cancellationToken);
+
+        var previousUrl = student.CvUrl;
+        student.CvUrl = await _cvFileStorage.SaveAsync(student.Id, fileName, content, cancellationToken);
+
+        _studentRepository.Update(student);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Only after the new file is committed — if SaveChangesAsync throws, the old file stays valid.
+        _cvFileStorage.DeleteIfManaged(previousUrl);
 
         return await GetByIdAsync(student.Id, cancellationToken);
     }

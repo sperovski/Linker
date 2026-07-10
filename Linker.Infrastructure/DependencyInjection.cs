@@ -7,6 +7,7 @@ using Linker.Infrastructure.Cv;
 using Linker.Infrastructure.Email;
 using Linker.Infrastructure.Persistence;
 using Linker.Infrastructure.Repositories;
+using Linker.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<ICvTextExtractor, CvTextExtractor>();
+        services.AddScoped<ICvFileStorage, LocalCvFileStorage>();
 
         // Email: log-only sender by default so verification/reset links show up in
         // the console; a real SMTP sender takes over when Smtp:Host is configured.

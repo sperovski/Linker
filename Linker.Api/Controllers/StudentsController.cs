@@ -1,3 +1,4 @@
+using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Students;
 using Linker.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +9,8 @@ namespace Linker.Api.Controllers;
 [Route("api/students")]
 public class StudentsController : ApiControllerBase
 {
+    private const long MaxCvUploadBytes = 5 * 1024 * 1024;
+
     private readonly IStudentService _studentService;
 
     public StudentsController(IStudentService studentService)
@@ -32,6 +35,33 @@ public class StudentsController : ApiControllerBase
     public async Task<ActionResult<StudentProfileResponse>> UpdateOwnProfile(UpdateStudentProfileRequest request, CancellationToken cancellationToken)
     {
         return Ok(await _studentService.UpdateProfileAsync(CurrentUserId, request, cancellationToken));
+    }
+
+    [HttpPost("me/cv-file")]
+    [Authorize(Roles = "Student")]
+    [RequestSizeLimit(MaxCvUploadBytes)]
+    [ProducesResponseType(typeof(StudentProfileResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<StudentProfileResponse>> UploadCv(IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            throw new BadRequestException("No file was uploaded.");
+        }
+
+        if (file.Length > MaxCvUploadBytes)
+        {
+            throw new BadRequestException("That file is too large — the limit is 5 MB.");
+        }
+
+        byte[] content;
+        await using (var stream = new MemoryStream())
+        {
+            await file.CopyToAsync(stream, cancellationToken);
+            content = stream.ToArray();
+        }
+
+        return Ok(await _studentService.UploadCvAsync(CurrentUserId, file.FileName, content, cancellationToken));
     }
 
     [HttpGet("{id:int}")]

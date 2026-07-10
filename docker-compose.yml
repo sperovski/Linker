@@ -38,6 +38,8 @@ services:
       # network — trust its forwarded headers for real-client-IP rate limiting.
       # Compose's default bridge subnets always fall inside 172.16.0.0/12.
       RateLimiting__TrustedProxies__0: 172.16.0.0/12
+    volumes:
+      - api_uploads:/app/uploads
 
   web:
     build:
@@ -49,3 +51,4 @@ services:
 
 volumes:
   pgdata:
+  api_uploads:

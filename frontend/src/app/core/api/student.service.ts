@@ -23,6 +23,13 @@ export class StudentService {
     return this.http.put<StudentProfile>(`${this.baseUrl}/me`, request);
   }
 
+  /** Uploads a CV file (PDF/DOC/DOCX, 5MB max) and sets it as the profile's CV. */
+  uploadCv(file: File): Observable<StudentProfile> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<StudentProfile>(`${this.baseUrl}/me/cv-file`, form);
+  }
+
   getById(id: number): Observable<StudentProfile> {
     return this.http.get<StudentProfile>(`${this.baseUrl}/${id}`);
   }

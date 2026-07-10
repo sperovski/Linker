@@ -39,3 +39,11 @@ primary_region = "fra"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
+
+# TODO before relying on uploaded CVs in production: student-uploaded CV files
+# are written to /app/uploads, which is ephemeral on Fly without a volume.
+# Provision one and mount it before going live:
+#   fly volumes create linker_uploads --size 1 -c fly.api.toml
+#   [[mounts]]
+#     source = "linker_uploads"
+#     destination = "/app/uploads"
