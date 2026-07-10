@@ -1,6 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Linker.Domain.Entities;
+using Linker.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Linker.Api.IntegrationTests;
 
@@ -130,6 +134,141 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
 
         var facet = Assert.Single(body!.companies, c => c.name == companyName);
         Assert.Equal(3, facet.count);
+    }
+
+    private record ApplicantBody(int id, string studentName, string? university, int? graduationYear, string? bio, List<SkillBody> skills, string status);
+    private record SkillBody(int id, string name);
+    private record ApplicantsPage(List<ApplicantBody> items, int total, int page, int pageSize);
+
+    [Fact]
+    public async Task Applicants_EmbedProfile_SoThePageNeedsNoPerApplicantRequest()
+    {
+        var marker = $"Embed{Guid.NewGuid():N}"[..14];
+        var (company, _) = await CreateCompanyWithListingsAsync(1, marker);
+
+        var anon = _factory.CreateClient();
+        var listing = await anon.GetFromJsonAsync<SearchBody>($"/api/internships?searchText={marker}");
+        var internshipId = listing!.items[0].id;
+
+        // A student with a filled-in profile and one skill.
+        var student = _factory.CreateClient();
+        var email = $"st-{Guid.NewGuid():N}@test.local";
+        var register = await student.PostAsJsonAsync("/api/auth/register/student", new
+        {
+            email,
+            password = "password123",
+            firstName = "Ada",
+            lastName = "Lovelace",
+        });
+        var auth = await register.Content.ReadFromJsonAsync<AuthBody>();
+        student.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.token);
+
+        var profile = await student.PutAsJsonAsync("/api/students/me", new
+        {
+            firstName = "Ada",
+            lastName = "Lovelace",
+            university = "FINKI",
+            graduationYear = 2027,
+            bio = "Likes analytical engines.",
+        });
+        profile.EnsureSuccessStatusCode();
+
+        var skillName = await GiveStudentASkillAsync(auth.userId);
+
+        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId, coverLetter = "Hire me" });
+        Assert.Equal(HttpStatusCode.Created, applied.StatusCode);
+
+        var page = await company.GetFromJsonAsync<ApplicantsPage>($"/api/internships/{internshipId}/applications");
+
+        var applicant = Assert.Single(page!.items);
+        Assert.Equal("Ada Lovelace", applicant.studentName);
+        Assert.Equal("FINKI", applicant.university);
+        Assert.Equal(2027, applicant.graduationYear);
+        Assert.Equal("Likes analytical engines.", applicant.bio);
+        // The Include for student skills is easy to drop; without it this list is
+        // silently empty and the applicants page loses its skill tags.
+        Assert.Equal([skillName], applicant.skills.Select(s => s.name));
+    }
+
+    /// <summary>Attaches one freshly created skill to the student behind <paramref name="userId"/>.</summary>
+    private async Task<string> GiveStudentASkillAsync(int userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LinkerDbContext>();
+
+        var name = $"Skill-{Guid.NewGuid():N}"[..14];
+        var skill = new Skill { Name = name };
+        db.Skills.Add(skill);
+        await db.SaveChangesAsync();
+
+        var student = await db.Students.SingleAsync(s => s.UserId == userId);
+        db.StudentSkills.Add(new StudentSkill { StudentId = student.Id, SkillId = skill.Id });
+        await db.SaveChangesAsync();
+
+        return name;
+    }
+
+    [Fact]
+    public async Task Recommended_TranslatesToSql_AndDropsAppliedListings()
+    {
+        var marker = $"Rec{Guid.NewGuid():N}"[..12];
+        var (company, _) = await CreateCompanyWithListingsAsync(0, marker);
+
+        var student = _factory.CreateClient();
+        var register = await student.PostAsJsonAsync("/api/auth/register/student", new
+        {
+            email = $"rec-{Guid.NewGuid():N}@test.local",
+            password = "password123",
+            firstName = "Rec",
+            lastName = "Student",
+        });
+        var auth = await register.Content.ReadFromJsonAsync<AuthBody>();
+        student.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.token);
+
+        var skillId = await GiveStudentASkillIdAsync(auth.userId);
+
+        // A listing requiring exactly the student's skill.
+        var created = await company.PostAsJsonAsync("/api/internships", new
+        {
+            title = $"{marker} match",
+            description = "Needs the student's skill.",
+            location = "Skopje",
+            type = "Internship",
+            startDate = (string?)null,
+            endDate = (string?)null,
+            applicationDeadline = (string?)null,
+            skillIds = new[] { skillId },
+        });
+        created.EnsureSuccessStatusCode();
+        var listing = await created.Content.ReadFromJsonAsync<ListItem>();
+
+        // The whole match/exclude/order pipeline runs in SQL — a translation
+        // failure here throws rather than silently client-evaluating.
+        var before = await student.GetFromJsonAsync<List<ListItem>>("/api/internships/recommended?take=10");
+        Assert.Contains(before!, i => i.id == listing!.id);
+        Assert.Equal(100, before!.Single(i => i.id == listing!.id).matchScore);
+
+        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId = listing!.id, coverLetter = (string?)null });
+        Assert.Equal(HttpStatusCode.Created, applied.StatusCode);
+
+        var after = await student.GetFromJsonAsync<List<ListItem>>("/api/internships/recommended?take=10");
+        Assert.DoesNotContain(after!, i => i.id == listing.id);
+    }
+
+    private async Task<int> GiveStudentASkillIdAsync(int userId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<LinkerDbContext>();
+
+        var skill = new Skill { Name = $"Sk-{Guid.NewGuid():N}"[..12] };
+        db.Skills.Add(skill);
+        await db.SaveChangesAsync();
+
+        var student = await db.Students.SingleAsync(s => s.UserId == userId);
+        db.StudentSkills.Add(new StudentSkill { StudentId = student.Id, SkillId = skill.Id });
+        await db.SaveChangesAsync();
+
+        return skill.Id;
     }
 
     [Fact]

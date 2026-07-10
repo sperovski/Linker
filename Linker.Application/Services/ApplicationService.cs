@@ -187,7 +187,7 @@ public class ApplicationService : IApplicationService
         return applications.Select(a => a.ToResponse()).ToList();
     }
 
-    public async Task<PagedResponse<ApplicationResponse>> GetByInternshipAsync(
+    public async Task<PagedResponse<ApplicantResponse>> GetByInternshipAsync(
         int userId, int internshipId, int page = 1, int pageSize = Paging.DefaultPageSize, CancellationToken cancellationToken = default)
     {
         var internship = await _internshipRepository.GetByIdAsync(internshipId, cancellationToken)
@@ -205,7 +205,7 @@ public class ApplicationService : IApplicationService
         (page, pageSize) = Paging.Normalize(page, pageSize);
         var (applications, total) = await _applicationRepository.GetByInternshipAsync(internshipId, page, pageSize, cancellationToken);
 
-        return new PagedResponse<ApplicationResponse>(
-            applications.Select(a => a.ToResponse()).ToList(), total, page, pageSize);
+        return new PagedResponse<ApplicantResponse>(
+            applications.Select(a => a.ToApplicantResponse()).ToList(), total, page, pageSize);
     }
 }

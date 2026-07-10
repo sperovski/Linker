@@ -114,4 +114,25 @@ public static class EntityMappings
             application.Status.ToString(),
             application.CoverLetter,
             application.AppliedAtUtc);
+
+    public static ApplicantResponse ToApplicantResponse(this ApplicationEntity application)
+    {
+        var student = application.Student;
+
+        return new ApplicantResponse(
+            application.Id,
+            application.StudentId,
+            student is null ? string.Empty : $"{student.FirstName} {student.LastName}",
+            student?.University,
+            student?.GraduationYear,
+            student?.Bio,
+            student?.Skills
+                .Where(ss => ss.Skill is not null)
+                .OrderBy(ss => ss.Skill.Name)
+                .Select(ss => ss.Skill.ToResponse())
+                .ToList() ?? [],
+            application.Status.ToString(),
+            application.CoverLetter,
+            application.AppliedAtUtc);
+    }
 }

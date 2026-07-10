@@ -24,7 +24,6 @@ public class InternshipServiceTests : IDisposable
             new StudentRepository(context),
             new SkillRepository(context),
             new SavedInternshipRepository(context),
-            new ApplicationRepository(context),
             context);
     }
 
@@ -170,6 +169,91 @@ public class InternshipServiceTests : IDisposable
         // The facet ignores the company filter, so the dropdown still offers Globex.
         Assert.Equal(["Acme", "Globex"], result.Companies.Select(c => c.Name));
         Assert.Equal([2, 1], result.Companies.Select(c => c.Count));
+    }
+
+    [Fact]
+    public async Task Recommended_RanksByMatch_AndSkipsZeroOverlap()
+    {
+        var (student, company) = SeedMatchScenario();
+        _db.AddInternship(company, title: "unrelated", requiredSkillIds: _db.AddSkill("Z").Id);
+
+        var result = await _service.GetRecommendedAsync(student.UserId, 10);
+
+        // "none" has no required skills and "unrelated" shares none: neither is a match.
+        Assert.Equal(["full", "half"], result.Select(i => i.Title));
+    }
+
+    [Fact]
+    public async Task Recommended_ExcludesAlreadyAppliedListings()
+    {
+        var (student, company) = SeedMatchScenario();
+        var applications = new ApplicationService(
+            new ApplicationRepository(_db.Context),
+            new InternshipRepository(_db.Context),
+            new StudentRepository(_db.Context),
+            new CompanyRepository(_db.Context),
+            new NoOpNotificationService(),
+            _db.Context);
+
+        var full = (await _service.GetRecommendedAsync(student.UserId, 10)).First();
+        await applications.ApplyAsync(student.UserId, new DTOs.Applications.CreateApplicationRequest(full.Id, null));
+
+        var after = await _service.GetRecommendedAsync(student.UserId, 10);
+
+        Assert.DoesNotContain(after, i => i.Id == full.Id);
+    }
+
+    [Fact]
+    public async Task Recommended_WithdrawnApplication_IsStillExcluded()
+    {
+        var (student, _) = SeedMatchScenario();
+        var applications = new ApplicationService(
+            new ApplicationRepository(_db.Context),
+            new InternshipRepository(_db.Context),
+            new StudentRepository(_db.Context),
+            new CompanyRepository(_db.Context),
+            new NoOpNotificationService(),
+            _db.Context);
+
+        var full = (await _service.GetRecommendedAsync(student.UserId, 10)).First();
+        var app = await applications.ApplyAsync(student.UserId, new DTOs.Applications.CreateApplicationRequest(full.Id, null));
+        await applications.WithdrawAsync(student.UserId, app.Id);
+
+        // Matches the pre-existing behaviour: any application row suppresses the suggestion.
+        Assert.DoesNotContain(await _service.GetRecommendedAsync(student.UserId, 10), i => i.Id == full.Id);
+    }
+
+    [Fact]
+    public async Task Recommended_RespectsTake()
+    {
+        var (student, _) = SeedMatchScenario();
+
+        var result = await _service.GetRecommendedAsync(student.UserId, 1);
+
+        Assert.Single(result);
+        Assert.Equal("full", result[0].Title);
+    }
+
+    [Fact]
+    public async Task Recommended_StudentWithNoSkills_ReturnsNothing()
+    {
+        var company = _db.AddCompany();
+        var student = _db.AddStudent();
+        _db.AddInternship(company, requiredSkillIds: _db.AddSkill("A").Id);
+
+        Assert.Empty(await _service.GetRecommendedAsync(student.UserId, 10));
+    }
+
+    [Fact]
+    public async Task Recommended_InactiveListing_IsNotSuggested()
+    {
+        var skill = _db.AddSkill("A");
+        var company = _db.AddCompany();
+        var student = _db.AddStudent();
+        _db.GiveStudentSkills(student, skill.Id);
+        _db.AddInternship(company, isActive: false, title: "closed", requiredSkillIds: skill.Id);
+
+        Assert.Empty(await _service.GetRecommendedAsync(student.UserId, 10));
     }
 
     [Fact]
