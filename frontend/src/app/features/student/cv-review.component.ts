@@ -67,7 +67,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
             <app-select
               [options]="targetOptions()"
               [value]="targetId()"
-              icon="target"
+              maskIcon="generate-review"
               ariaLabel="Target role"
               (valueChange)="targetId.set($event)"
             />

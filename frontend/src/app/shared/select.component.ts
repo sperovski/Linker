@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { IconComponent, IconName } from './icon.component';
+import { MaskIconComponent, MaskIconName } from './mask-icon.component';
 
 export interface SelectOption {
   value: string;
@@ -22,7 +23,7 @@ export interface SelectOption {
 @Component({
   selector: 'app-select',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent],
+  imports: [IconComponent, MaskIconComponent],
   host: {
     '(document:click)': 'onDocumentClick($event)',
     '(keydown)': 'onKeydown($event)',
@@ -37,7 +38,9 @@ export interface SelectOption {
         [attr.aria-label]="ariaLabel()"
         aria-haspopup="listbox"
       >
-        @if (icon(); as ic) {
+        @if (maskIcon(); as mi) {
+          <app-mask-icon [name]="mi" [size]="16" />
+        } @else if (icon(); as ic) {
           <app-icon [name]="ic" [size]="16" />
         }
         <span class="sel-value">{{ selectedLabel() }}</span>
@@ -147,6 +150,8 @@ export class SelectComponent {
   readonly value = input('');
   readonly ariaLabel = input('');
   readonly icon = input<IconName | null>(null);
+  /** Optional PNG mask-icon (in /public); takes precedence over `icon` when set. */
+  readonly maskIcon = input<MaskIconName | null>(null);
   readonly placeholder = input('Select…');
   readonly valueChange = output<string>();
 
