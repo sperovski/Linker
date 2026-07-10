@@ -163,11 +163,12 @@ public static class DbSeeder
         var internships = await db.Internships.Include(i => i.Company).ToListAsync(cancellationToken);
         Internship ByTitle(string title) => internships.First(i => i.Title == title);
 
-        // A null Password falls back to the shared demo password; the primary
-        // presentation account gets an explicit password so it always works.
+        // A null Password falls back to the shared demo password (Seed:DemoPassword,
+        // default Demo123!linker). Never hardcode a real personal password here — this
+        // file is committed and the demo stack is public.
         var students = new (string Email, string? Password, string FirstName, string LastName, string University, int GradYear, string Bio, string[] Skills)[]
         {
-            ("stefan.perovski20@gmail.com", "magii1002", "Stefan", "Perovski", "UKIM - FINKI", 2026,
+            ("stefan.perovski20@gmail.com", null, "Stefan", "Perovski", "UKIM - FINKI", 2026,
                 "Third-year CS student who loves building clean UIs and learning backend fundamentals. Looking for a frontend or full-stack internship.",
                 ["Angular", "TypeScript", "CSS", "JavaScript", "Git"]),
             ("marko.ilievski@linker.demo", null, "Marko", "Ilievski", "UKIM - FINKI", 2025,
