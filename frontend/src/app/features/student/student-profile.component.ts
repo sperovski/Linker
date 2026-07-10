@@ -17,6 +17,7 @@ import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { facultyOptions, gradYearOptions } from '../../shared/faculties';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { SelectComponent } from '../../shared/select.component';
 import { SkillPickerComponent } from './skill-picker.component';
 
@@ -30,6 +31,7 @@ type SectionKind = 'experience' | 'education' | 'project';
     EmptyStateComponent,
     IconComponent,
     LinkButtonComponent,
+    MaskIconComponent,
     SelectComponent,
     SkillPickerComponent,
   ],
@@ -388,7 +390,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 5. Projects ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic"><app-icon name="code" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="projects" [size]="17" /></span>
             <div class="grow">
               <h2>Projects</h2>
               <p class="section-sub">Side projects, coursework, hackathons.</p>
@@ -471,7 +473,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 6. Skills ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic green"><app-icon name="check" [size]="17" /></span>
+            <span class="section-ic green"><app-mask-icon name="skills" [size]="17" /></span>
             <div>
               <h2>Your skills</h2>
               <p class="section-sub">Tag your strengths so companies spot the match.</p>
@@ -488,7 +490,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 7. Resume / CV ============ -->
         <div class="card resume-card">
           <div class="resume-body">
-            <span class="resume-ic"><app-icon name="file-text" [size]="24" /></span>
+            <span class="resume-ic"><app-mask-icon name="cv" [size]="24" /></span>
             <div class="grow">
               <h2>Resume</h2>
               @if (profile()?.cvUrl) {
