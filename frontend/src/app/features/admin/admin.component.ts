@@ -107,6 +107,13 @@ type AdminTab = 'users' | 'internships' | 'skills';
                   </tbody>
                 </table>
               </div>
+              @if (users().length < usersTotal()) {
+                <div class="load-more">
+                  <app-link-button size="sm" variant="standard-secondary" (pressed)="loadMoreUsers()">
+                    Load more ({{ users().length }} of {{ usersTotal() }})
+                  </app-link-button>
+                </div>
+              }
             </div>
           }
           @case ('internships') {
@@ -145,6 +152,13 @@ type AdminTab = 'users' | 'internships' | 'skills';
                   </tbody>
                 </table>
               </div>
+              @if (listings().length < listingsTotal()) {
+                <div class="load-more">
+                  <app-link-button size="sm" variant="standard-secondary" (pressed)="loadMoreListings()">
+                    Load more ({{ listings().length }} of {{ listingsTotal() }})
+                  </app-link-button>
+                </div>
+              }
             </div>
           }
           @case ('skills') {
@@ -206,6 +220,12 @@ type AdminTab = 'users' | 'internships' | 'skills';
 
       .table-card { padding: 0; overflow: hidden; }
       .t-scroll { overflow-x: auto; }
+      .load-more {
+        display: flex;
+        justify-content: center;
+        padding: var(--space-sm) 0 var(--space-md);
+        border-top: 1px solid var(--color-border);
+      }
 
       table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
       th {
@@ -241,7 +261,11 @@ export class AdminComponent implements OnInit {
 
   protected readonly stats = signal<AdminStats | null>(null);
   protected readonly users = signal<AdminUser[]>([]);
+  protected readonly usersTotal = signal(0);
   protected readonly listings = signal<AdminInternship[]>([]);
+  protected readonly listingsTotal = signal(0);
+  private usersPage = 1;
+  private listingsPage = 1;
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly busyId = signal<number | null>(null);
@@ -262,8 +286,44 @@ export class AdminComponent implements OnInit {
         this.loading.set(false);
       },
     });
-    this.admin.getUsers().subscribe({ next: (u) => this.users.set(u), error: () => {} });
-    this.admin.getInternships().subscribe({ next: (l) => this.listings.set(l), error: () => {} });
+    this.usersPage = 1;
+    this.listingsPage = 1;
+    this.admin.getUsers(1).subscribe({
+      next: (page) => {
+        this.users.set(page.items);
+        this.usersTotal.set(page.total);
+      },
+      error: () => {},
+    });
+    this.admin.getInternships(1).subscribe({
+      next: (page) => {
+        this.listings.set(page.items);
+        this.listingsTotal.set(page.total);
+      },
+      error: () => {},
+    });
+  }
+
+  protected loadMoreUsers(): void {
+    this.admin.getUsers(this.usersPage + 1).subscribe({
+      next: (page) => {
+        this.usersPage = page.page;
+        this.users.update((list) => [...list, ...page.items]);
+        this.usersTotal.set(page.total);
+      },
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Could not load more users.')),
+    });
+  }
+
+  protected loadMoreListings(): void {
+    this.admin.getInternships(this.listingsPage + 1).subscribe({
+      next: (page) => {
+        this.listingsPage = page.page;
+        this.listings.update((list) => [...list, ...page.items]);
+        this.listingsTotal.set(page.total);
+      },
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Could not load more listings.')),
+    });
   }
 
   protected toggleActive(user: AdminUser): void {

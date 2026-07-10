@@ -71,6 +71,58 @@ export interface RegisterCompanyRequest {
 export interface SkillResponse {
   id: number;
   name: string;
+  category: string;
+}
+
+export interface ExperienceEntry {
+  id: number;
+  title: string;
+  company: string;
+  location: string | null;
+  startDate: string; // ISO date (yyyy-MM-dd)
+  endDate: string | null; // null = current position
+  description: string | null;
+}
+
+export interface SaveExperienceRequest {
+  title: string;
+  company: string;
+  location?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  description?: string | null;
+}
+
+export interface EducationEntry {
+  id: number;
+  institution: string;
+  degree: string | null;
+  fieldOfStudy: string | null;
+  startDate: string;
+  endDate: string | null; // null = still enrolled
+}
+
+export interface SaveEducationRequest {
+  institution: string;
+  degree?: string | null;
+  fieldOfStudy?: string | null;
+  startDate: string;
+  endDate?: string | null;
+}
+
+export interface ProjectEntry {
+  id: number;
+  title: string;
+  description: string | null;
+  url: string | null;
+  techStack: string | null; // comma-separated tags
+}
+
+export interface SaveProjectRequest {
+  title: string;
+  description?: string | null;
+  url?: string | null;
+  techStack?: string | null;
 }
 
 export interface StudentProfile {
@@ -81,7 +133,16 @@ export interface StudentProfile {
   university: string | null;
   graduationYear: number | null;
   bio: string | null;
+  headline: string | null;
+  profilePhotoUrl: string | null;
+  linkedInUrl: string | null;
+  githubUrl: string | null;
+  portfolioUrl: string | null;
+  cvUrl: string | null;
   skills: SkillResponse[];
+  experiences: ExperienceEntry[];
+  educations: EducationEntry[];
+  projects: ProjectEntry[];
 }
 
 export interface UpdateStudentProfileRequest {
@@ -90,6 +151,12 @@ export interface UpdateStudentProfileRequest {
   university?: string | null;
   graduationYear?: number | null;
   bio?: string | null;
+  headline?: string | null;
+  profilePhotoUrl?: string | null;
+  linkedInUrl?: string | null;
+  githubUrl?: string | null;
+  portfolioUrl?: string | null;
+  cvUrl?: string | null;
 }
 
 export interface CompanyProfile {

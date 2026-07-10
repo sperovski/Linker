@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AdminInternship, AdminStats, AdminUser, SkillResponse } from '../models';
+import { AdminInternship, AdminStats, AdminUser, PagedResponse, SkillResponse } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -13,16 +13,20 @@ export class AdminService {
     return this.http.get<AdminStats>(`${this.baseUrl}/stats`);
   }
 
-  getUsers(): Observable<AdminUser[]> {
-    return this.http.get<AdminUser[]>(`${this.baseUrl}/users`);
+  getUsers(page = 1, pageSize = 20): Observable<PagedResponse<AdminUser>> {
+    return this.http.get<PagedResponse<AdminUser>>(`${this.baseUrl}/users`, {
+      params: { page, pageSize },
+    });
   }
 
   setUserActive(id: number, isActive: boolean): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/users/${id}/active`, { isActive });
   }
 
-  getInternships(): Observable<AdminInternship[]> {
-    return this.http.get<AdminInternship[]>(`${this.baseUrl}/internships`);
+  getInternships(page = 1, pageSize = 20): Observable<PagedResponse<AdminInternship>> {
+    return this.http.get<PagedResponse<AdminInternship>>(`${this.baseUrl}/internships`, {
+      params: { page, pageSize },
+    });
   }
 
   closeInternship(id: number): Observable<void> {

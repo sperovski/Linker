@@ -1,10 +1,15 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { SkillService } from '../../core/api/skill.service';
 import { StudentService } from '../../core/api/student.service';
-import { SkillResponse, StudentProfile } from '../../core/models';
+import {
+  EducationEntry,
+  ExperienceEntry,
+  ProjectEntry,
+  SkillResponse,
+  StudentProfile,
+} from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
@@ -13,11 +18,21 @@ import { facultyOptions, gradYearOptions } from '../../shared/faculties';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { SelectComponent } from '../../shared/select.component';
+import { SkillPickerComponent } from './skill-picker.component';
+
+type SectionKind = 'experience' | 'education' | 'project';
 
 @Component({
   selector: 'app-student-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, FormsModule, EmptyStateComponent, IconComponent, LinkButtonComponent, SelectComponent],
+  imports: [
+    ReactiveFormsModule,
+    EmptyStateComponent,
+    IconComponent,
+    LinkButtonComponent,
+    SelectComponent,
+    SkillPickerComponent,
+  ],
   animations: [fadeSlideIn],
   template: `
     <div class="container page narrow">
@@ -28,37 +43,53 @@ import { SelectComponent } from '../../shared/select.component';
           message="Something went wrong on our end or your connection dropped. Refresh the page to try again."
         />
       } @else {
+
+      <!-- ============ 1. Header ============ -->
       @if (!loading()) {
         <div class="profile-hero card" @fadeSlideIn>
           <div class="hero-cover"></div>
           <div class="hero-body">
-            <span class="hero-avatar" [attr.aria-hidden]="true">{{ initials() }}</span>
+            @if (profile()?.profilePhotoUrl) {
+              <img class="hero-avatar photo" [src]="profile()!.profilePhotoUrl" alt="Profile photo" />
+            } @else {
+              <span class="hero-avatar" [attr.aria-hidden]="true">{{ initials() }}</span>
+            }
             <div class="hero-info">
-              <span class="hero-greeting">Welcome back{{ profile()?.firstName ? ', ' + profile()!.firstName : '' }}</span>
               <h1>{{ fullName() || 'Your profile' }}</h1>
+              @if (profile()?.headline) {
+                <p class="hero-headline">{{ profile()!.headline }}</p>
+              }
               <div class="hero-meta">
                 @if (profile()?.university) {
                   <span><app-icon name="building" [size]="14" /> {{ profile()!.university }}</span>
                 }
                 @if (profile()?.graduationYear) {
-                  <span><app-icon name="calendar" [size]="14" /> Class of {{ profile()!.graduationYear }}</span>
+                  <span><app-icon name="graduation-cap" [size]="14" /> Class of {{ profile()!.graduationYear }}</span>
                 }
-                @if (auth.email()) {
-                  <span><app-icon name="user" [size]="14" /> {{ auth.email() }}</span>
+              </div>
+              <div class="hero-links">
+                @if (profile()?.linkedInUrl) {
+                  <a [href]="profile()!.linkedInUrl" target="_blank" rel="noopener" aria-label="LinkedIn profile" title="LinkedIn">
+                    <app-icon name="linkedin" [size]="17" />
+                  </a>
+                }
+                @if (profile()?.githubUrl) {
+                  <a [href]="profile()!.githubUrl" target="_blank" rel="noopener" aria-label="GitHub profile" title="GitHub">
+                    <app-icon name="github" [size]="17" />
+                  </a>
+                }
+                @if (profile()?.portfolioUrl) {
+                  <a [href]="profile()!.portfolioUrl" target="_blank" rel="noopener" aria-label="Portfolio website" title="Portfolio">
+                    <app-icon name="globe" [size]="17" />
+                  </a>
                 }
               </div>
             </div>
             <div class="hero-ring" [attr.aria-label]="completeness() + '% complete'">
               <svg viewBox="0 0 76 76" class="ring">
                 <circle class="ring-bg" cx="38" cy="38" r="32" />
-                <circle
-                  class="ring-fg"
-                  cx="38"
-                  cy="38"
-                  r="32"
-                  [style.stroke-dasharray]="ringCirc"
-                  [style.stroke-dashoffset]="ringOffset()"
-                />
+                <circle class="ring-fg" cx="38" cy="38" r="32"
+                  [style.stroke-dasharray]="ringCirc" [style.stroke-dashoffset]="ringOffset()" />
               </svg>
               <div class="ring-center">
                 <span class="ring-pct">{{ completeness() }}%</span>
@@ -67,10 +98,7 @@ import { SelectComponent } from '../../shared/select.component';
             </div>
           </div>
           @if (completeness() < 100) {
-            <p class="hero-nudge">
-              <app-icon name="arrow-right" [size]="14" />
-              {{ nudge() }}
-            </p>
+            <p class="hero-nudge"><app-icon name="arrow-right" [size]="14" /> {{ nudge() }}</p>
           }
         </div>
       }
@@ -83,6 +111,8 @@ import { SelectComponent } from '../../shared/select.component';
           <div class="skeleton" style="height: 90px; width: 100%;"></div>
         </div>
       } @else {
+
+        <!-- ============ 2. About / basics ============ -->
         <form class="card" [formGroup]="form" (ngSubmit)="save()" novalidate>
           <div class="section-head">
             <span class="section-ic"><app-icon name="user" [size]="17" /></span>
@@ -91,23 +121,28 @@ import { SelectComponent } from '../../shared/select.component';
               <p class="section-sub">The basics companies see first.</p>
             </div>
           </div>
+
           <div class="form-row">
             <div class="field">
               <label class="label" for="firstName">First name</label>
-              <input id="firstName" class="input" formControlName="firstName"
-                [class.invalid]="invalid('firstName')" />
+              <input id="firstName" class="input" formControlName="firstName" [class.invalid]="invalid('firstName')" />
               @if (invalid('firstName')) {
                 <div class="field-error" @fadeSlideIn>First name is required.</div>
               }
             </div>
             <div class="field">
               <label class="label" for="lastName">Last name</label>
-              <input id="lastName" class="input" formControlName="lastName"
-                [class.invalid]="invalid('lastName')" />
+              <input id="lastName" class="input" formControlName="lastName" [class.invalid]="invalid('lastName')" />
               @if (invalid('lastName')) {
                 <div class="field-error" @fadeSlideIn>Last name is required.</div>
               }
             </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="headline">Headline <span class="opt-hint">(a one-line tagline, e.g. “CS student building clean UIs”)</span></label>
+            <input id="headline" class="input" formControlName="headline" maxlength="150"
+              placeholder="What should companies remember about you?" />
           </div>
 
           <div class="form-row">
@@ -142,7 +177,28 @@ import { SelectComponent } from '../../shared/select.component';
           <div class="field">
             <label class="label" for="bio">Bio</label>
             <textarea id="bio" class="textarea" formControlName="bio"
-              placeholder="A few sentences about you, your interests, and links to your CV or portfolio…"></textarea>
+              placeholder="A few sentences about you and your interests…"></textarea>
+          </div>
+
+          <div class="field">
+            <label class="label" for="profilePhotoUrl">Profile photo URL <span class="opt-hint">(paste a link to a hosted image)</span></label>
+            <input id="profilePhotoUrl" class="input" formControlName="profilePhotoUrl" type="url" placeholder="https://…" />
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="label" for="linkedInUrl">LinkedIn</label>
+              <input id="linkedInUrl" class="input" formControlName="linkedInUrl" type="url" placeholder="https://linkedin.com/in/…" />
+            </div>
+            <div class="field">
+              <label class="label" for="githubUrl">GitHub</label>
+              <input id="githubUrl" class="input" formControlName="githubUrl" type="url" placeholder="https://github.com/…" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="label" for="portfolioUrl">Portfolio / website</label>
+            <input id="portfolioUrl" class="input" formControlName="portfolioUrl" type="url" placeholder="https://…" />
           </div>
 
           <app-link-button type="submit" [disabled]="saving()">
@@ -150,7 +206,270 @@ import { SelectComponent } from '../../shared/select.component';
           </app-link-button>
         </form>
 
-        <div class="card skills-card">
+        <!-- ============ 3. Experience ============ -->
+        <div class="card">
+          <div class="section-head">
+            <span class="section-ic"><app-icon name="briefcase" [size]="17" /></span>
+            <div class="grow">
+              <h2>Experience</h2>
+              <p class="section-sub">Internships, part-time work, volunteering.</p>
+            </div>
+            @if (editing() !== 'experience') {
+              <app-link-button size="sm" variant="standard-secondary" (pressed)="startAdd('experience')">
+                <app-icon name="plus" [size]="15" /> Add
+              </app-link-button>
+            }
+          </div>
+
+          @if (editing() === 'experience') {
+            <form class="entry-form" [formGroup]="expForm" (ngSubmit)="saveExperience()" novalidate @fadeSlideIn>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="expTitle">Title</label>
+                  <input id="expTitle" class="input" formControlName="title" placeholder="e.g. Frontend Intern" />
+                </div>
+                <div class="field">
+                  <label class="label" for="expCompany">Company</label>
+                  <input id="expCompany" class="input" formControlName="company" placeholder="e.g. Netcetera" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="expLocation">Location <span class="opt-hint">(optional)</span></label>
+                  <input id="expLocation" class="input" formControlName="location" placeholder="e.g. Skopje" />
+                </div>
+                <div class="field">
+                  <label class="label" for="expStart">Start</label>
+                  <input id="expStart" class="input" formControlName="startMonth" type="month" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="expEnd">End</label>
+                  <input id="expEnd" class="input" formControlName="endMonth" type="month"
+                    [attr.disabled]="expForm.controls.current.value ? '' : null" />
+                </div>
+                <div class="field checkbox-field">
+                  <label class="check-label">
+                    <input type="checkbox" formControlName="current" (change)="onCurrentToggle(expForm)" />
+                    I currently work here
+                  </label>
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="expDesc">Description <span class="opt-hint">(optional)</span></label>
+                <textarea id="expDesc" class="textarea short" formControlName="description"
+                  placeholder="What did you build or learn?"></textarea>
+              </div>
+              <div class="entry-actions">
+                <app-link-button size="sm" type="submit" [disabled]="sectionSaving() || expForm.invalid">
+                  {{ sectionSaving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add experience' }}
+                </app-link-button>
+                <app-link-button size="sm" variant="standard-secondary" (pressed)="cancelEdit()">Cancel</app-link-button>
+              </div>
+            </form>
+          }
+
+          <div class="entries">
+            @for (exp of profile()?.experiences ?? []; track exp.id) {
+              <div class="entry" @fadeSlideIn>
+                <div class="entry-main">
+                  <h3>{{ exp.title }}</h3>
+                  <p class="entry-org">
+                    {{ exp.company }}
+                    @if (exp.location) { <span class="soft">· {{ exp.location }}</span> }
+                  </p>
+                  <p class="entry-dates">{{ formatRange(exp.startDate, exp.endDate) }}</p>
+                  @if (exp.description) { <p class="entry-desc">{{ exp.description }}</p> }
+                </div>
+                <div class="entry-tools">
+                  <button type="button" (click)="startEditExperience(exp)" [attr.aria-label]="'Edit ' + exp.title">
+                    <app-icon name="pencil" [size]="15" />
+                  </button>
+                  <button type="button" class="danger" (click)="deleteEntry('experience', exp.id)" [attr.aria-label]="'Delete ' + exp.title">
+                    <app-icon name="trash" [size]="15" />
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              @if (editing() !== 'experience') {
+                <p class="soft empty-line">No experience added yet.</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- ============ 4. Education ============ -->
+        <div class="card">
+          <div class="section-head">
+            <span class="section-ic"><app-icon name="graduation-cap" [size]="17" /></span>
+            <div class="grow">
+              <h2>Education</h2>
+              <p class="section-sub">Degrees, exchanges, courses.</p>
+            </div>
+            @if (editing() !== 'education') {
+              <app-link-button size="sm" variant="standard-secondary" (pressed)="startAdd('education')">
+                <app-icon name="plus" [size]="15" /> Add
+              </app-link-button>
+            }
+          </div>
+
+          @if (editing() === 'education') {
+            <form class="entry-form" [formGroup]="eduForm" (ngSubmit)="saveEducation()" novalidate @fadeSlideIn>
+              <div class="field">
+                <label class="label" for="eduInst">Institution</label>
+                <input id="eduInst" class="input" formControlName="institution" placeholder="e.g. UKIM — FINKI" />
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="eduDegree">Degree <span class="opt-hint">(optional)</span></label>
+                  <input id="eduDegree" class="input" formControlName="degree" placeholder="e.g. BSc" />
+                </div>
+                <div class="field">
+                  <label class="label" for="eduField">Field of study <span class="opt-hint">(optional)</span></label>
+                  <input id="eduField" class="input" formControlName="fieldOfStudy" placeholder="e.g. Software Engineering" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="eduStart">Start</label>
+                  <input id="eduStart" class="input" formControlName="startMonth" type="month" />
+                </div>
+                <div class="field">
+                  <label class="label" for="eduEnd">End</label>
+                  <input id="eduEnd" class="input" formControlName="endMonth" type="month"
+                    [attr.disabled]="eduForm.controls.current.value ? '' : null" />
+                </div>
+              </div>
+              <div class="field checkbox-field">
+                <label class="check-label">
+                  <input type="checkbox" formControlName="current" (change)="onCurrentToggle(eduForm)" />
+                  I'm currently studying here
+                </label>
+              </div>
+              <div class="entry-actions">
+                <app-link-button size="sm" type="submit" [disabled]="sectionSaving() || eduForm.invalid">
+                  {{ sectionSaving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add education' }}
+                </app-link-button>
+                <app-link-button size="sm" variant="standard-secondary" (pressed)="cancelEdit()">Cancel</app-link-button>
+              </div>
+            </form>
+          }
+
+          <div class="entries">
+            @for (edu of profile()?.educations ?? []; track edu.id) {
+              <div class="entry" @fadeSlideIn>
+                <div class="entry-main">
+                  <h3>{{ edu.institution }}</h3>
+                  @if (edu.degree || edu.fieldOfStudy) {
+                    <p class="entry-org">
+                      {{ edu.degree }}@if (edu.degree && edu.fieldOfStudy) {, }{{ edu.fieldOfStudy }}
+                    </p>
+                  }
+                  <p class="entry-dates">{{ formatRange(edu.startDate, edu.endDate) }}</p>
+                </div>
+                <div class="entry-tools">
+                  <button type="button" (click)="startEditEducation(edu)" [attr.aria-label]="'Edit ' + edu.institution">
+                    <app-icon name="pencil" [size]="15" />
+                  </button>
+                  <button type="button" class="danger" (click)="deleteEntry('education', edu.id)" [attr.aria-label]="'Delete ' + edu.institution">
+                    <app-icon name="trash" [size]="15" />
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              @if (editing() !== 'education') {
+                <p class="soft empty-line">No education added yet.</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- ============ 5. Projects ============ -->
+        <div class="card">
+          <div class="section-head">
+            <span class="section-ic"><app-icon name="code" [size]="17" /></span>
+            <div class="grow">
+              <h2>Projects</h2>
+              <p class="section-sub">Side projects, coursework, hackathons.</p>
+            </div>
+            @if (editing() !== 'project') {
+              <app-link-button size="sm" variant="standard-secondary" (pressed)="startAdd('project')">
+                <app-icon name="plus" [size]="15" /> Add
+              </app-link-button>
+            }
+          </div>
+
+          @if (editing() === 'project') {
+            <form class="entry-form" [formGroup]="projForm" (ngSubmit)="saveProject()" novalidate @fadeSlideIn>
+              <div class="form-row">
+                <div class="field">
+                  <label class="label" for="projTitle">Title</label>
+                  <input id="projTitle" class="input" formControlName="title" placeholder="e.g. Recipe finder app" />
+                </div>
+                <div class="field">
+                  <label class="label" for="projUrl">Link <span class="opt-hint">(optional)</span></label>
+                  <input id="projUrl" class="input" formControlName="url" type="url" placeholder="https://github.com/…" />
+                </div>
+              </div>
+              <div class="field">
+                <label class="label" for="projStack">Tech stack <span class="opt-hint">(comma-separated, e.g. Angular, .NET, Postgres)</span></label>
+                <input id="projStack" class="input" formControlName="techStack" placeholder="Angular, .NET, Postgres" />
+              </div>
+              <div class="field">
+                <label class="label" for="projDesc">Description <span class="opt-hint">(optional)</span></label>
+                <textarea id="projDesc" class="textarea short" formControlName="description"
+                  placeholder="What does it do? What was interesting about building it?"></textarea>
+              </div>
+              <div class="entry-actions">
+                <app-link-button size="sm" type="submit" [disabled]="sectionSaving() || projForm.invalid">
+                  {{ sectionSaving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add project' }}
+                </app-link-button>
+                <app-link-button size="sm" variant="standard-secondary" (pressed)="cancelEdit()">Cancel</app-link-button>
+              </div>
+            </form>
+          }
+
+          <div class="entries">
+            @for (proj of profile()?.projects ?? []; track proj.id) {
+              <div class="entry" @fadeSlideIn>
+                <div class="entry-main">
+                  <h3>
+                    {{ proj.title }}
+                    @if (proj.url) {
+                      <a class="proj-link" [href]="proj.url" target="_blank" rel="noopener" [attr.aria-label]="proj.title + ' link'">
+                        <app-icon name="external-link" [size]="14" />
+                      </a>
+                    }
+                  </h3>
+                  @if (proj.description) { <p class="entry-desc">{{ proj.description }}</p> }
+                  @if (proj.techStack) {
+                    <div class="stack-tags">
+                      @for (tech of splitStack(proj.techStack); track tech) {
+                        <span class="stack-tag">{{ tech }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+                <div class="entry-tools">
+                  <button type="button" (click)="startEditProject(proj)" [attr.aria-label]="'Edit ' + proj.title">
+                    <app-icon name="pencil" [size]="15" />
+                  </button>
+                  <button type="button" class="danger" (click)="deleteEntry('project', proj.id)" [attr.aria-label]="'Delete ' + proj.title">
+                    <app-icon name="trash" [size]="15" />
+                  </button>
+                </div>
+              </div>
+            } @empty {
+              @if (editing() !== 'project') {
+                <p class="soft empty-line">No projects added yet.</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- ============ 6. Skills ============ -->
+        <div class="card">
           <div class="section-head">
             <span class="section-ic green"><app-icon name="check" [size]="17" /></span>
             <div>
@@ -158,38 +477,38 @@ import { SelectComponent } from '../../shared/select.component';
               <p class="section-sub">Tag your strengths so companies spot the match.</p>
             </div>
           </div>
+          <app-skill-picker
+            [allSkills]="allSkills()"
+            [selected]="profile()?.skills ?? []"
+            (added)="addSkill($event)"
+            (removed)="removeSkill($event)"
+          />
+        </div>
 
-          <div class="tags">
-            @for (skill of profile()?.skills ?? []; track skill.id) {
-              <span class="tag" @fadeSlideIn>
-                {{ skill.name }}
-                <button type="button" (click)="removeSkill(skill)" [attr.aria-label]="'Remove ' + skill.name">
-                  <app-icon name="x" [size]="13" />
-                </button>
-              </span>
-            } @empty {
-              <span class="page-sub">No skills added yet.</span>
-            }
-          </div>
-
-          @if (availableToAdd().length > 0) {
-            <div class="add-skill">
-              <label class="label" for="skillSelect">Add a skill</label>
-              <div class="add-skill-row">
-                <select id="skillSelect" class="select" [(ngModel)]="selectedSkillId">
-                  <option [ngValue]="null">Choose a skill…</option>
-                  @for (skill of availableToAdd(); track skill.id) {
-                    <option [ngValue]="skill.id">{{ skill.name }}</option>
-                  }
-                </select>
-                <app-link-button size="sm" (pressed)="addSkill()"
-                  [disabled]="selectedSkillId === null">
-                  <app-icon name="plus" [size]="15" />
-                  Add
-                </app-link-button>
-              </div>
+        <!-- ============ 7. Resume / CV ============ -->
+        <div class="card resume-card">
+          <div class="resume-body">
+            <span class="resume-ic"><app-icon name="file-text" [size]="24" /></span>
+            <div class="grow">
+              <h2>Resume</h2>
+              @if (profile()?.cvUrl) {
+                <p class="section-sub">
+                  Your CV is linked —
+                  <a class="resume-link" [href]="profile()!.cvUrl" target="_blank" rel="noopener">open it <app-icon name="external-link" [size]="12" /></a>
+                </p>
+              } @else {
+                <p class="section-sub">Link your CV so companies can read the full story.</p>
+              }
             </div>
-          }
+          </div>
+          <div class="resume-row">
+            <input class="input grow" type="url" placeholder="https://link-to-your-cv.pdf"
+              [value]="cvUrlDraft()" (input)="cvUrlDraft.set($any($event.target).value)" />
+            <app-link-button size="sm" (pressed)="saveCv()" [disabled]="saving()">
+              <app-icon name="link" [size]="15" />
+              {{ profile()?.cvUrl ? 'Update link' : 'Add link' }}
+            </app-link-button>
+          </div>
         </div>
       }
       }
@@ -198,10 +517,11 @@ import { SelectComponent } from '../../shared/select.component';
   styles: [
     `
       .narrow { max-width: 720px; }
-
       .card { margin-bottom: var(--space-lg); }
+      .grow { flex: 1; min-width: 0; }
+      .soft { color: var(--color-text-soft); }
 
-      /* ---- Homey profile hero ---- */
+      /* ---- Hero ---- */
       .profile-hero { padding: 0; overflow: hidden; }
 
       .hero-cover {
@@ -236,19 +556,17 @@ import { SelectComponent } from '../../shared/select.component';
         box-shadow: 0 10px 24px -10px rgba(79, 70, 229, 0.6);
       }
 
-      .hero-info { flex: 1; min-width: 0; padding-bottom: 4px; }
+      .hero-avatar.photo { object-fit: cover; }
 
-      .hero-greeting {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 700;
-        /* Sits on the coloured cover — keep it light for contrast. */
-        color: rgba(255, 255, 255, 0.95);
-        text-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
-        margin-bottom: 4px;
+      .hero-info { flex: 1; min-width: 0; padding-top: 48px; }
+      .hero-info h1 { font-size: 1.6rem; margin: 0 0 2px; letter-spacing: -0.02em; }
+
+      .hero-headline {
+        margin: 0 0 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--color-text-soft);
       }
-
-      .hero-info h1 { font-size: 1.6rem; margin: 0 0 6px; letter-spacing: -0.02em; }
 
       .hero-meta {
         display: flex;
@@ -260,6 +578,23 @@ import { SelectComponent } from '../../shared/select.component';
       }
 
       .hero-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+      .hero-links { display: flex; gap: 6px; margin-top: 10px; }
+
+      .hero-links a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        color: var(--color-primary);
+        background: rgba(79, 70, 229, 0.1);
+        transition: background 150ms ease, color 150ms ease;
+        cursor: pointer;
+      }
+
+      .hero-links a:hover { background: var(--color-primary); color: var(--color-on-primary); }
 
       /* completeness ring */
       .hero-ring { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
@@ -318,31 +653,129 @@ import { SelectComponent } from '../../shared/select.component';
       }
 
       .section-ic.green { background: #dcfce7; color: #166534; }
-
       .section-head h2 { font-size: 1.15rem; margin: 0; }
       .section-sub { margin: 1px 0 0; font-size: 0.85rem; color: var(--color-text-soft); }
-
       .card h2 { font-size: 1.125rem; }
 
-      .tags {
+      /* ---- Section entries ---- */
+      .entries { display: flex; flex-direction: column; }
+
+      .entry {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-sm);
+        gap: var(--space-md);
+        padding: var(--space-md) 0;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .entry:first-child { border-top: none; padding-top: 0; }
+
+      .entry-main { flex: 1; min-width: 0; }
+      .entry-main h3 {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 2px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .entry-org { margin: 0 0 2px; font-size: 0.9rem; font-weight: 600; color: var(--color-foreground); }
+      .entry-dates { margin: 0; font-size: 0.82rem; color: var(--color-text-soft); font-weight: 500; }
+      .entry-desc { margin: 8px 0 0; font-size: 0.9rem; color: var(--color-text-soft); white-space: pre-line; }
+
+      .entry-tools { display: flex; gap: 4px; align-items: flex-start; flex-shrink: 0; }
+
+      .entry-tools button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        color: var(--color-text-soft);
+        cursor: pointer;
+        transition: background 150ms ease, color 150ms ease;
+      }
+
+      .entry-tools button:hover { background: var(--color-muted); color: var(--color-primary); }
+      .entry-tools button.danger:hover { background: #fee2e2; color: var(--color-destructive); }
+
+      .proj-link { display: inline-flex; color: var(--color-primary); }
+      .proj-link:hover { color: var(--color-secondary); }
+
+      .stack-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+      .stack-tag {
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: var(--color-muted);
+        color: var(--color-primary);
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .empty-line { margin: 0; font-size: 0.9rem; }
+
+      /* ---- Inline entry form ---- */
+      .entry-form {
+        padding: var(--space-md);
+        border: 1px dashed var(--color-border);
+        border-radius: var(--radius-md, 8px);
+        margin-bottom: var(--space-md);
+        background: var(--color-background);
+      }
+
+      .entry-actions { display: flex; gap: var(--space-sm); margin-top: 4px; }
+
+      .textarea.short { min-height: 74px; }
+
+      .checkbox-field { display: flex; align-items: flex-end; padding-bottom: 10px; }
+
+      .check-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--color-foreground);
+        cursor: pointer;
+      }
+
+      .check-label input { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
+
+      /* ---- Resume card ---- */
+      .resume-card { border: 1px solid var(--color-border); }
+
+      .resume-body {
+        display: flex;
+        align-items: center;
+        gap: var(--space-md);
         margin-bottom: var(--space-md);
       }
 
-      .add-skill {
-        border-top: 1px dashed var(--color-border);
-        padding-top: var(--space-md);
-      }
-
-      .add-skill-row {
-        display: flex;
-        gap: var(--space-sm);
+      .resume-ic {
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: rgba(79, 70, 229, 0.1);
+        color: var(--color-primary);
+        flex-shrink: 0;
       }
 
-      .add-skill-row .select { max-width: 280px; }
+      .resume-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        color: var(--color-primary);
+        font-weight: 600;
+      }
+
+      .resume-row { display: flex; gap: var(--space-sm); align-items: center; }
 
       /* Same chrome as .input for the borderless app-select */
       .field-select {
@@ -363,6 +796,7 @@ import { SelectComponent } from '../../shared/select.component';
       @media (max-width: 520px) {
         .hero-body { flex-wrap: wrap; }
         .hero-ring { margin-left: auto; }
+        .resume-row { flex-wrap: wrap; }
       }
     `,
   ],
@@ -379,15 +813,16 @@ export class StudentProfileComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly saving = signal(false);
-  protected selectedSkillId: number | null = null;
+  protected readonly sectionSaving = signal(false);
+
+  /** Which section has an open editor, and which entry (null = adding new). */
+  protected readonly editing = signal<SectionKind | null>(null);
+  protected readonly editingId = signal<number | null>(null);
+
+  protected readonly cvUrlDraft = signal('');
 
   /** Circumference of the completeness ring (r = 32). */
   protected readonly ringCirc = 2 * Math.PI * 32;
-
-  protected readonly availableToAdd = computed(() => {
-    const owned = new Set((this.profile()?.skills ?? []).map((s) => s.id));
-    return this.allSkills().filter((s) => !owned.has(s.id));
-  });
 
   protected readonly fullName = computed(() => {
     const p = this.profile();
@@ -402,17 +837,21 @@ export class StudentProfileComponent implements OnInit {
     return (a + b) || '?';
   });
 
-  /** Share of profile fields that are filled in — drives the ring + nudge. */
+  /** Share of profile sections filled in — drives the ring + nudge. */
   protected readonly completeness = computed(() => {
     const p = this.profile();
     if (!p) return 0;
     const parts = [
-      !!p.firstName,
-      !!p.lastName,
+      !!p.firstName && !!p.lastName,
       !!p.university,
-      !!p.graduationYear,
-      !!(p.bio && p.bio.trim().length > 0),
+      !!(p.headline && p.headline.trim()),
+      !!(p.bio && p.bio.trim()),
       (p.skills?.length ?? 0) > 0,
+      (p.experiences?.length ?? 0) > 0,
+      (p.educations?.length ?? 0) > 0,
+      (p.projects?.length ?? 0) > 0,
+      !!p.cvUrl,
+      !!(p.linkedInUrl || p.githubUrl || p.portfolioUrl),
     ];
     return Math.round((parts.filter(Boolean).length / parts.length) * 100);
   });
@@ -423,10 +862,14 @@ export class StudentProfileComponent implements OnInit {
   protected readonly nudge = computed(() => {
     const p = this.profile();
     if (!p) return '';
-    if (!p.university) return 'Add your university so companies know where you study.';
-    if (!p.graduationYear) return 'Add your graduation year to round out the basics.';
+    if (!(p.headline && p.headline.trim())) return 'Add a headline — a one-liner that sticks.';
+    if (!p.university) return 'Add your faculty so companies know where you study.';
     if (!(p.bio && p.bio.trim())) return 'Write a short bio — it’s your chance to stand out.';
     if ((p.skills?.length ?? 0) === 0) return 'Add a few skills so companies can spot the match.';
+    if ((p.experiences?.length ?? 0) === 0) return 'Add an experience entry — even volunteering counts.';
+    if ((p.educations?.length ?? 0) === 0) return 'Add your education so the timeline is complete.';
+    if ((p.projects?.length ?? 0) === 0) return 'Show off a project — code speaks louder than grades.';
+    if (!p.cvUrl) return 'Link your CV to finish your profile.';
     return 'Almost there — a fuller profile gets more replies.';
   });
 
@@ -436,6 +879,37 @@ export class StudentProfileComponent implements OnInit {
     university: [''],
     graduationYear: [null as number | null, [Validators.min(1950), Validators.max(2100)]],
     bio: [''],
+    headline: [''],
+    profilePhotoUrl: [''],
+    linkedInUrl: [''],
+    githubUrl: [''],
+    portfolioUrl: [''],
+  });
+
+  protected readonly expForm = this.fb.nonNullable.group({
+    title: ['', Validators.required],
+    company: ['', Validators.required],
+    location: [''],
+    startMonth: ['', Validators.required],
+    endMonth: [''],
+    current: [false],
+    description: [''],
+  });
+
+  protected readonly eduForm = this.fb.nonNullable.group({
+    institution: ['', Validators.required],
+    degree: [''],
+    fieldOfStudy: [''],
+    startMonth: ['', Validators.required],
+    endMonth: [''],
+    current: [false],
+  });
+
+  protected readonly projForm = this.fb.nonNullable.group({
+    title: ['', Validators.required],
+    url: [''],
+    techStack: [''],
+    description: [''],
   });
 
   // Signal mirrors of the two select-backed controls so [value] stays reactive.
@@ -475,16 +949,7 @@ export class StudentProfileComponent implements OnInit {
   ngOnInit(): void {
     this.studentService.getMe().subscribe({
       next: (profile) => {
-        this.profile.set(profile);
-        this.form.patchValue({
-          firstName: profile.firstName,
-          lastName: profile.lastName,
-          university: profile.university ?? '',
-          graduationYear: profile.graduationYear,
-          bio: profile.bio ?? '',
-        });
-        this.universitySignal.set(profile.university ?? '');
-        this.gradYearSignal.set(profile.graduationYear);
+        this.applyProfile(profile);
         this.loading.set(false);
       },
       error: () => {
@@ -496,10 +961,31 @@ export class StudentProfileComponent implements OnInit {
     this.skillService.getAll().subscribe((skills) => this.allSkills.set(skills));
   }
 
+  private applyProfile(profile: StudentProfile): void {
+    this.profile.set(profile);
+    this.form.patchValue({
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      university: profile.university ?? '',
+      graduationYear: profile.graduationYear,
+      bio: profile.bio ?? '',
+      headline: profile.headline ?? '',
+      profilePhotoUrl: profile.profilePhotoUrl ?? '',
+      linkedInUrl: profile.linkedInUrl ?? '',
+      githubUrl: profile.githubUrl ?? '',
+      portfolioUrl: profile.portfolioUrl ?? '',
+    });
+    this.universitySignal.set(profile.university ?? '');
+    this.gradYearSignal.set(profile.graduationYear);
+    this.cvUrlDraft.set(profile.cvUrl ?? '');
+  }
+
   protected invalid(control: string): boolean {
     const c = this.form.get(control);
     return !!c && c.invalid && (c.touched || c.dirty);
   }
+
+  // ---- About form ----
 
   protected save(): void {
     if (this.form.invalid) {
@@ -516,10 +1002,16 @@ export class StudentProfileComponent implements OnInit {
         university: value.university || null,
         graduationYear: value.graduationYear,
         bio: value.bio || null,
+        headline: value.headline || null,
+        profilePhotoUrl: value.profilePhotoUrl || null,
+        linkedInUrl: value.linkedInUrl || null,
+        githubUrl: value.githubUrl || null,
+        portfolioUrl: value.portfolioUrl || null,
+        cvUrl: this.profile()?.cvUrl ?? null,
       })
       .subscribe({
         next: (profile) => {
-          this.profile.set(profile);
+          this.applyProfile(profile);
           this.saving.set(false);
           this.toast.success('Profile saved');
         },
@@ -530,23 +1022,216 @@ export class StudentProfileComponent implements OnInit {
       });
   }
 
-  protected addSkill(): void {
-    if (this.selectedSkillId === null) {
+  protected saveCv(): void {
+    const value = this.form.getRawValue();
+    this.saving.set(true);
+    this.studentService
+      .updateMe({
+        firstName: value.firstName,
+        lastName: value.lastName,
+        university: value.university || null,
+        graduationYear: value.graduationYear,
+        bio: value.bio || null,
+        headline: value.headline || null,
+        profilePhotoUrl: value.profilePhotoUrl || null,
+        linkedInUrl: value.linkedInUrl || null,
+        githubUrl: value.githubUrl || null,
+        portfolioUrl: value.portfolioUrl || null,
+        cvUrl: this.cvUrlDraft().trim() || null,
+      })
+      .subscribe({
+        next: (profile) => {
+          this.applyProfile(profile);
+          this.saving.set(false);
+          this.toast.success(profile.cvUrl ? 'Resume link saved' : 'Resume link removed');
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.toast.error(apiErrorMessage(err, 'Could not save the resume link.'));
+        },
+      });
+  }
+
+  // ---- Section editors ----
+
+  protected startAdd(kind: SectionKind): void {
+    this.editing.set(kind);
+    this.editingId.set(null);
+    if (kind === 'experience') this.expForm.reset();
+    else if (kind === 'education') this.eduForm.reset();
+    else this.projForm.reset();
+  }
+
+  protected cancelEdit(): void {
+    this.editing.set(null);
+    this.editingId.set(null);
+  }
+
+  protected onCurrentToggle(form: typeof this.expForm | typeof this.eduForm): void {
+    if (form.controls.current.value) {
+      form.controls.endMonth.setValue('');
+    }
+  }
+
+  protected startEditExperience(exp: ExperienceEntry): void {
+    this.editing.set('experience');
+    this.editingId.set(exp.id);
+    this.expForm.setValue({
+      title: exp.title,
+      company: exp.company,
+      location: exp.location ?? '',
+      startMonth: exp.startDate.slice(0, 7),
+      endMonth: exp.endDate ? exp.endDate.slice(0, 7) : '',
+      current: exp.endDate === null,
+      description: exp.description ?? '',
+    });
+  }
+
+  protected startEditEducation(edu: EducationEntry): void {
+    this.editing.set('education');
+    this.editingId.set(edu.id);
+    this.eduForm.setValue({
+      institution: edu.institution,
+      degree: edu.degree ?? '',
+      fieldOfStudy: edu.fieldOfStudy ?? '',
+      startMonth: edu.startDate.slice(0, 7),
+      endMonth: edu.endDate ? edu.endDate.slice(0, 7) : '',
+      current: edu.endDate === null,
+    });
+  }
+
+  protected startEditProject(proj: ProjectEntry): void {
+    this.editing.set('project');
+    this.editingId.set(proj.id);
+    this.projForm.setValue({
+      title: proj.title,
+      url: proj.url ?? '',
+      techStack: proj.techStack ?? '',
+      description: proj.description ?? '',
+    });
+  }
+
+  protected saveExperience(): void {
+    if (this.expForm.invalid) {
+      this.expForm.markAllAsTouched();
       return;
     }
-    this.skillService.assign(this.selectedSkillId).subscribe({
+    const v = this.expForm.getRawValue();
+    const request = {
+      title: v.title,
+      company: v.company,
+      location: v.location || null,
+      startDate: `${v.startMonth}-01`,
+      endDate: v.current || !v.endMonth ? null : `${v.endMonth}-01`,
+      description: v.description || null,
+    };
+    const id = this.editingId();
+    this.runSectionSave(
+      id === null
+        ? this.studentService.addExperience(request)
+        : this.studentService.updateExperience(id, request),
+      id === null ? 'Experience added' : 'Experience updated',
+    );
+  }
+
+  protected saveEducation(): void {
+    if (this.eduForm.invalid) {
+      this.eduForm.markAllAsTouched();
+      return;
+    }
+    const v = this.eduForm.getRawValue();
+    const request = {
+      institution: v.institution,
+      degree: v.degree || null,
+      fieldOfStudy: v.fieldOfStudy || null,
+      startDate: `${v.startMonth}-01`,
+      endDate: v.current || !v.endMonth ? null : `${v.endMonth}-01`,
+    };
+    const id = this.editingId();
+    this.runSectionSave(
+      id === null
+        ? this.studentService.addEducation(request)
+        : this.studentService.updateEducation(id, request),
+      id === null ? 'Education added' : 'Education updated',
+    );
+  }
+
+  protected saveProject(): void {
+    if (this.projForm.invalid) {
+      this.projForm.markAllAsTouched();
+      return;
+    }
+    const v = this.projForm.getRawValue();
+    const request = {
+      title: v.title,
+      url: v.url || null,
+      techStack: v.techStack || null,
+      description: v.description || null,
+    };
+    const id = this.editingId();
+    this.runSectionSave(
+      id === null
+        ? this.studentService.addProject(request)
+        : this.studentService.updateProject(id, request),
+      id === null ? 'Project added' : 'Project updated',
+    );
+  }
+
+  protected deleteEntry(kind: SectionKind, id: number): void {
+    const call =
+      kind === 'experience'
+        ? this.studentService.deleteExperience(id)
+        : kind === 'education'
+          ? this.studentService.deleteEducation(id)
+          : this.studentService.deleteProject(id);
+    this.runSectionSave(call, 'Entry removed');
+  }
+
+  private runSectionSave(call: ReturnType<StudentService['getMe']>, successMessage: string): void {
+    this.sectionSaving.set(true);
+    call.subscribe({
       next: (profile) => {
-        this.profile.set(profile);
-        this.selectedSkillId = null;
+        this.applyProfile(profile);
+        this.sectionSaving.set(false);
+        this.cancelEdit();
+        this.toast.success(successMessage);
       },
+      error: (err) => {
+        this.sectionSaving.set(false);
+        this.toast.error(apiErrorMessage(err, 'Could not save that entry.'));
+      },
+    });
+  }
+
+  // ---- Skills ----
+
+  protected addSkill(skill: SkillResponse): void {
+    this.skillService.assign(skill.id).subscribe({
+      next: (profile) => this.applyProfile(profile),
       error: (err) => this.toast.error(apiErrorMessage(err, 'Could not add that skill.')),
     });
   }
 
   protected removeSkill(skill: SkillResponse): void {
     this.skillService.remove(skill.id).subscribe({
-      next: (profile) => this.profile.set(profile),
+      next: (profile) => this.applyProfile(profile),
       error: (err) => this.toast.error(apiErrorMessage(err, 'Could not remove that skill.')),
     });
+  }
+
+  // ---- Display helpers ----
+
+  protected splitStack(stack: string): string[] {
+    return stack.split(',').map((t) => t.trim()).filter(Boolean);
+  }
+
+  protected formatRange(start: string, end: string | null): string {
+    return `${this.formatMonth(start)} — ${end ? this.formatMonth(end) : 'Present'}`;
+  }
+
+  private formatMonth(isoDate: string): string {
+    const [year, month] = isoDate.split('-').map(Number);
+    const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${names[(month ?? 1) - 1]} ${year}`;
   }
 }
