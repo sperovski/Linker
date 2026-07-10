@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  ApplicationResponse,
+  Applicant,
   CreateInternshipRequest,
   InternshipDetail,
   InternshipListItem,
@@ -72,8 +72,8 @@ export class InternshipService {
     return this.http.post<InternshipDetail>(`${this.baseUrl}/${id}/close`, {});
   }
 
-  getApplications(id: number, page = 1, pageSize = 20): Observable<PagedResponse<ApplicationResponse>> {
-    return this.http.get<PagedResponse<ApplicationResponse>>(`${this.baseUrl}/${id}/applications`, {
+  getApplications(id: number, page = 1, pageSize = 20): Observable<PagedResponse<Applicant>> {
+    return this.http.get<PagedResponse<Applicant>>(`${this.baseUrl}/${id}/applications`, {
       params: new HttpParams().set('page', page).set('pageSize', pageSize),
     });
   }

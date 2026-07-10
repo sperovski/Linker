@@ -14,7 +14,6 @@ public class InternshipService : IInternshipService
     private readonly IStudentRepository _studentRepository;
     private readonly ISkillRepository _skillRepository;
     private readonly ISavedInternshipRepository _savedInternshipRepository;
-    private readonly IApplicationRepository _applicationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public InternshipService(
@@ -23,7 +22,6 @@ public class InternshipService : IInternshipService
         IStudentRepository studentRepository,
         ISkillRepository skillRepository,
         ISavedInternshipRepository savedInternshipRepository,
-        IApplicationRepository applicationRepository,
         IUnitOfWork unitOfWork)
     {
         _internshipRepository = internshipRepository;
@@ -31,7 +29,6 @@ public class InternshipService : IInternshipService
         _studentRepository = studentRepository;
         _skillRepository = skillRepository;
         _savedInternshipRepository = savedInternshipRepository;
-        _applicationRepository = applicationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -156,19 +153,13 @@ public class InternshipService : IInternshipService
         }
 
         IReadOnlySet<int> savedIds = (await _savedInternshipRepository.GetSavedInternshipIdsAsync(student.Id, cancellationToken)).ToHashSet();
-        var applied = (await _applicationRepository.GetByStudentAsync(student.Id, cancellationToken))
-            .Select(a => a.InternshipId)
-            .ToHashSet();
 
-        var active = await _internshipRepository.GetActiveWithDetailsAsync(cancellationToken);
+        // Match, exclude-applied, order and limit all happen in SQL; only the
+        // handful of rows actually shown are materialized.
+        var matches = await _internshipRepository.GetRecommendedForStudentAsync(
+            student.Id, skillIds.ToArray(), take, cancellationToken);
 
-        return active
-            .Where(i => !applied.Contains(i.Id))
-            .Select(i => i.ToListItemResponse(skillIds, savedIds))
-            .Where(r => r.MatchScore is > 0)
-            .OrderByDescending(r => r.MatchScore)
-            .Take(take)
-            .ToList();
+        return matches.Select(i => i.ToListItemResponse(skillIds, savedIds)).ToList();
     }
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetPopularAsync(int take, int? userId = null, CancellationToken cancellationToken = default)

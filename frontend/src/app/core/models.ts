@@ -221,6 +221,20 @@ export interface ApplicationResponse {
   appliedAtUtc: string;
 }
 
+/** An application plus the applicant's profile, as the reviewing company sees it. */
+export interface Applicant {
+  id: number;
+  studentId: number;
+  studentName: string;
+  university: string | null;
+  graduationYear: number | null;
+  bio: string | null;
+  skills: SkillResponse[];
+  status: ApplicationStatus;
+  coverLetter: string | null;
+  appliedAtUtc: string;
+}
+
 export interface CreateApplicationRequest {
   internshipId: number;
   coverLetter?: string | null;

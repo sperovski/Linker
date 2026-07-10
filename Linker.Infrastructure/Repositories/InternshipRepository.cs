@@ -40,13 +40,6 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Internship>> GetActiveWithDetailsAsync(CancellationToken cancellationToken = default)
-    {
-        return await WithDetails(ActiveQuery(new InternshipSearchCriteria()))
-            .OrderByDescending(i => i.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
-    }
-
     public async Task<(IReadOnlyList<Internship> Items, int Total)> SearchActiveAsync(
         InternshipSearchCriteria criteria,
         int[]? studentSkillIds,
@@ -66,6 +59,26 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
             .ToListAsync(cancellationToken);
 
         return (items, total);
+    }
+
+    public async Task<IReadOnlyList<Internship>> GetRecommendedForStudentAsync(
+        int studentId, int[] studentSkillIds, int take, CancellationToken cancellationToken = default)
+    {
+        if (studentSkillIds.Length == 0)
+        {
+            return [];
+        }
+
+        var candidates = ActiveQuery(new InternshipSearchCriteria())
+            // At least one skill in common — the SQL equivalent of the old
+            // `MatchScore is > 0` filter, applied before anything is materialized.
+            .Where(i => i.RequiredSkills.Any(rs => studentSkillIds.Contains(rs.SkillId)))
+            // Already applied to (in any status, including withdrawn) — don't re-suggest.
+            .Where(i => !i.Applications.Any(a => a.StudentId == studentId));
+
+        return await OrderForStudent(WithDetails(candidates), studentSkillIds)
+            .Take(take)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<CompanyRoleCount>> GetCompanyFacetsAsync(

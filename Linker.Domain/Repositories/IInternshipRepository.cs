@@ -9,9 +9,6 @@ public interface IInternshipRepository : IRepository<Internship>
     Task<IReadOnlyList<Internship>> GetActiveAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Internship>> GetAllWithCompanyAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Every active listing with company and skills loaded, newest first.</summary>
-    Task<IReadOnlyList<Internship>> GetActiveWithDetailsAsync(CancellationToken cancellationToken = default);
-
     /// <summary>
     /// One page of active listings matching <paramref name="criteria"/>, ordered by how well
     /// they match <paramref name="studentSkillIds"/> (best first) then by recency. Pass a null
@@ -23,6 +20,13 @@ public interface IInternshipRepository : IRepository<Internship>
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The <paramref name="take"/> best-matching active listings for a student: those sharing at
+    /// least one skill, excluding any they have already applied to. Scored and ordered in SQL.
+    /// </summary>
+    Task<IReadOnlyList<Internship>> GetRecommendedForStudentAsync(
+        int studentId, int[] studentSkillIds, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Open-role counts per company across the whole result set for <paramref name="criteria"/>.

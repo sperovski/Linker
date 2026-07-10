@@ -32,9 +32,13 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
 
         var total = await filtered.CountAsync(cancellationToken);
 
+        // Student skills are included so the applicants page can render each
+        // profile from this one query instead of a request per applicant.
         // Id breaks AppliedAtUtc ties so a row can't straddle two pages.
         var items = await filtered
             .Include(a => a.Student)
+                .ThenInclude(s => s.Skills)
+                .ThenInclude(ss => ss.Skill)
             .Include(a => a.Internship)
             .ThenInclude(i => i.Company)
             .OrderByDescending(a => a.AppliedAtUtc)

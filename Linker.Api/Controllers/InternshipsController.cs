@@ -137,10 +137,10 @@ public class InternshipsController : ApiControllerBase
 
     [HttpGet("{id:int}/applications")]
     [Authorize(Roles = "Company")]
-    [ProducesResponseType(typeof(PagedResponse<ApplicationResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResponse<ApplicantResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PagedResponse<ApplicationResponse>>> GetApplications(
+    public async Task<ActionResult<PagedResponse<ApplicantResponse>>> GetApplications(
         int id,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = Paging.DefaultPageSize,

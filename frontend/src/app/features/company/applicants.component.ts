@@ -12,13 +12,11 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApplicationService } from '../../core/api/application.service';
 import { InternshipService } from '../../core/api/internship.service';
-import { StudentService } from '../../core/api/student.service';
 import {
-  ApplicationResponse,
+  Applicant,
   ApplicationStatus,
   InternshipDetail,
   PagedResponse,
-  StudentProfile,
 } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
@@ -117,25 +115,23 @@ const PAGE_SIZE = 10;
                     </div>
                   </div>
 
-                  @if (studentDetails().get(app.studentId); as student) {
-                    @if (student.university || student.graduationYear) {
-                      <p class="student-meta">
-                        {{ student.university ?? 'University not specified' }}
-                        @if (student.graduationYear) {
-                          · Class of {{ student.graduationYear }}
-                        }
-                      </p>
-                    }
-                    @if (student.skills.length > 0) {
-                      <div class="tags">
-                        @for (skill of student.skills; track skill.id) {
-                          <span class="tag">{{ skill.name }}</span>
-                        }
-                      </div>
-                    }
-                    @if (student.bio) {
-                      <p class="student-bio">{{ student.bio }}</p>
-                    }
+                  @if (app.university || app.graduationYear) {
+                    <p class="student-meta">
+                      {{ app.university ?? 'University not specified' }}
+                      @if (app.graduationYear) {
+                        · Class of {{ app.graduationYear }}
+                      }
+                    </p>
+                  }
+                  @if (app.skills.length > 0) {
+                    <div class="tags">
+                      @for (skill of app.skills; track skill.id) {
+                        <span class="tag">{{ skill.name }}</span>
+                      }
+                    </div>
+                  }
+                  @if (app.bio) {
+                    <p class="student-bio">{{ app.bio }}</p>
                   }
 
                   @if (app.coverLetter) {
@@ -303,7 +299,6 @@ const PAGE_SIZE = 10;
 export class ApplicantsComponent implements OnInit {
   private readonly internshipService = inject(InternshipService);
   private readonly applicationService = inject(ApplicationService);
-  private readonly studentService = inject(StudentService);
   private readonly toast = inject(ToastService);
 
   readonly id = input.required({ transform: numberAttribute });
@@ -312,8 +307,7 @@ export class ApplicantsComponent implements OnInit {
   protected readonly formatDate = formatDate;
 
   protected readonly internship = signal<InternshipDetail | null>(null);
-  protected readonly applications = signal<ApplicationResponse[]>([]);
-  protected readonly studentDetails = signal(new Map<number, StudentProfile>());
+  protected readonly applications = signal<Applicant[]>([]);
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
@@ -361,16 +355,14 @@ export class ApplicantsComponent implements OnInit {
     });
   }
 
-  private applyPage(result: PagedResponse<ApplicationResponse>): void {
+  private applyPage(result: PagedResponse<Applicant>): void {
     this.applications.set(result.items);
     this.total.set(result.total);
     this.page.set(result.page);
     this.pageSize.set(result.pageSize);
-    // Only the current page's students need profile lookups.
-    this.loadStudentDetails(result.items);
   }
 
-  protected updateStatus(app: ApplicationResponse, event: Event): void {
+  protected updateStatus(app: Applicant, event: Event): void {
     const status = (event.target as HTMLSelectElement).value as ApplicationStatus;
     if (status === app.status) {
       return;
@@ -379,7 +371,10 @@ export class ApplicantsComponent implements OnInit {
     this.updatingId.set(app.id);
     this.applicationService.updateStatus(app.id, status).subscribe({
       next: (updated) => {
-        this.applications.update((apps) => apps.map((a) => (a.id === updated.id ? updated : a)));
+        // Patch only the status: the response carries no profile fields.
+        this.applications.update((apps) =>
+          apps.map((a) => (a.id === updated.id ? { ...a, status: updated.status } : a)),
+        );
         this.updatingId.set(null);
         this.toast.success(`${app.studentName}: ${updated.status}`);
       },
@@ -390,15 +385,4 @@ export class ApplicantsComponent implements OnInit {
     });
   }
 
-  private loadStudentDetails(applications: ApplicationResponse[]): void {
-    for (const app of applications) {
-      this.studentService.getById(app.studentId).subscribe((student) => {
-        this.studentDetails.update((map) => {
-          const next = new Map(map);
-          next.set(student.id, student);
-          return next;
-        });
-      });
-    }
-  }
 }

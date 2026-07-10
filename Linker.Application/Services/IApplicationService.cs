@@ -10,6 +10,6 @@ public interface IApplicationService
     Task<ApplicationResponse> WithdrawAsync(int userId, int applicationId, CancellationToken cancellationToken = default);
     Task<ApplicationResponse> GetByIdAsync(int userId, int applicationId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ApplicationResponse>> GetOwnApplicationsAsync(int userId, CancellationToken cancellationToken = default);
-    Task<PagedResponse<ApplicationResponse>> GetByInternshipAsync(
+    Task<PagedResponse<ApplicantResponse>> GetByInternshipAsync(
         int userId, int internshipId, int page = 1, int pageSize = Paging.DefaultPageSize, CancellationToken cancellationToken = default);
 }
