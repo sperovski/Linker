@@ -66,7 +66,7 @@ import { TYPE_LABELS } from './dates';
       >
         @for (item of items(); track item.id; let i = $index) {
           <a
-            class="mini card card-hover"
+            class="mini card"
             [routerLink]="['/internships', item.id]"
             [style.animation-delay.ms]="i * 55"
           >
@@ -176,6 +176,8 @@ import { TYPE_LABELS } from './dates';
       .nav-btn:active { transform: translateY(0); }
       .nav-btn.prev app-icon { display: inline-flex; transform: rotate(180deg); }
 
+      .strip-scroll { perspective: 1200px; }
+
       .strip-scroll {
         display: grid;
         grid-auto-flow: column;
@@ -204,8 +206,37 @@ import { TYPE_LABELS } from './dates';
         gap: 6px;
         color: inherit;
         scroll-snap-align: start;
-        animation: mini-in 400ms ease both;
+        animation: mini-in 400ms ease backwards;
+        cursor: pointer;
+        transform-style: preserve-3d;
+        transition:
+          transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+          box-shadow 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
       }
+
+      .mini:hover,
+      .mini:focus-visible {
+        transform: rotate3d(1, -0.35, 0, 6deg) translateY(-4px);
+        box-shadow:
+          0 18px 32px -18px rgba(23, 26, 43, 0.35),
+          0 8px 14px -12px rgba(79, 70, 229, 0.25);
+      }
+
+      .mini:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 3px;
+      }
+
+      .mini-top,
+      .mini h3 {
+        transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+      }
+
+      .mini:hover .mini-top,
+      .mini:focus-visible .mini-top { transform: translateZ(24px); }
+
+      .mini:hover h3,
+      .mini:focus-visible h3 { transform: translateZ(14px); }
 
       @keyframes mini-in {
         from { opacity: 0; transform: translateY(10px); }
@@ -268,7 +299,17 @@ import { TYPE_LABELS } from './dates';
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .mini { animation: none; }
+        .mini { animation: none; transition: box-shadow 0.2s ease; }
+        .mini:hover,
+        .mini:focus-visible {
+          transform: none;
+          box-shadow: 0 10px 20px -12px rgba(23, 26, 43, 0.25);
+        }
+        .mini-top, .mini h3, .mini:hover .mini-top, .mini:hover h3,
+        .mini:focus-visible .mini-top, .mini:focus-visible h3 {
+          transition: none;
+          transform: none;
+        }
         .strip-scroll { scroll-behavior: auto; }
       }
     `,

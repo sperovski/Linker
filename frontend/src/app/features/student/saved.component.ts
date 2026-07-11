@@ -67,9 +67,11 @@ import { TYPE_LABELS, deadlineCountdown, daysUntil } from '../../shared/dates';
                       (savedChange)="onSavedChange(internship.id, $event)"
                     />
                   </div>
-                  <a class="card card-hover internship-card" [routerLink]="['/internships', internship.id]">
+                  <a class="internship-card" [routerLink]="['/internships', internship.id]">
                     <div class="card-top">
-                      <app-company-logo [name]="internship.companyName" [size]="44" />
+                      <span class="logo-layer">
+                        <app-company-logo [name]="internship.companyName" [size]="44" />
+                      </span>
                       <div class="card-top-text">
                         <span class="company">{{ internship.companyName }}</span>
                         <h3>{{ internship.title }}</h3>
@@ -115,56 +117,8 @@ import { TYPE_LABELS, deadlineCountdown, daysUntil } from '../../shared/dates';
   `,
   styles: [
     `
+      /* Card look + 3D hover come from the shared .internship-card styles in styles.css. */
       .result-count { color: var(--color-text-soft); font-size: 0.875rem; font-weight: 600; }
-
-      .card-wrap { position: relative; }
-
-      .card-overlay {
-        position: absolute;
-        top: var(--space-md);
-        right: var(--space-md);
-        z-index: 2;
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-      }
-
-      .internship-card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-md);
-        color: inherit;
-        height: 100%;
-      }
-
-      .internship-card:hover { text-decoration: none; }
-
-      .card-top { display: flex; gap: var(--space-sm); align-items: flex-start; padding-right: 40px; }
-      .card-top-text { min-width: 0; }
-      .internship-card h3 { margin: 2px 0 0; }
-      .company {
-        display: block;
-        color: var(--color-text-soft);
-        font-size: 0.8125rem;
-        font-weight: 600;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-
-      .skill-chip {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--color-text-soft);
-        background: var(--color-muted);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        padding: 3px 8px;
-      }
-
-      .badges { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: auto; }
     `,
   ],
 })
