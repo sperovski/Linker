@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Cv;
 using Linker.Application.Services;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +45,16 @@ public class ClaudeCvReviewService : ICvReviewService
             var ai = await CallClaudeAsync(request, analysis, cancellationToken);
             if (ai is not null)
             {
+                if (!ai.IsCv)
+                {
+                    // Second net behind the heuristic gate: the model can spot
+                    // CV-shaped non-CVs (a job ad, a cover letter, an essay
+                    // peppered with skill words) that keyword signals can't.
+                    throw new BadRequestException(
+                        "That doesn't look like a CV — it reads like a different kind of document. "
+                        + "Paste or upload your actual CV.");
+                }
+
                 return new CvReviewResponse(
                     Math.Clamp(ai.Score, 5, 99),
                     ai.Summary,
@@ -55,6 +66,11 @@ public class ClaudeCvReviewService : ICvReviewService
                     analysis.RoleFit,
                     "ai");
             }
+        }
+        catch (BadRequestException)
+        {
+            // A deliberate rejection, not an AI failure — never fall back past it.
+            throw;
         }
         catch (Exception ex)
         {
@@ -75,8 +91,13 @@ public class ClaudeCvReviewService : ICvReviewService
             You are a supportive but honest career coach reviewing a student's CV for internships.
             {{roleContext}}
 
+            First decide whether the text below actually is a CV/resume. A cover letter,
+            job posting, essay, report, or any other kind of document is NOT a CV, even
+            if it mentions skills or education.
+
             Return ONLY minified JSON with this exact shape:
-            {"score": <integer 0-100>, "summary": "<=2 sentences", "strengths": ["..."], "improvements": ["..."]}
+            {"isCv": <boolean>, "score": <integer 0-100>, "summary": "<=2 sentences", "strengths": ["..."], "improvements": ["..."]}
+            If isCv is false, still fill the other fields with your best guess but they will be ignored.
             Give 2-4 strengths and 2-4 concrete, actionable improvements. Be specific to the CV.
 
             CV:
@@ -124,5 +145,7 @@ public class ClaudeCvReviewService : ICvReviewService
         return start >= 0 && end > start ? text[start..(end + 1)] : null;
     }
 
-    private sealed record AiFeedback(int Score, string Summary, List<string> Strengths, List<string> Improvements);
+    // IsCv defaults to true so older/partial model output that omits the field
+    // never rejects a legitimate CV.
+    private sealed record AiFeedback(int Score, string Summary, List<string> Strengths, List<string> Improvements, bool IsCv = true);
 }

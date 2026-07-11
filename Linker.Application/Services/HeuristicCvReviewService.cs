@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Linker.Application.Common;
+using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Cv;
 using Linker.Domain.Repositories;
 
@@ -111,6 +112,28 @@ public class HeuristicCvReviewService : ICvReviewService
         var hasSkillsSection = ContainsAny(text, "skills", "technologies", "tech stack", "tools");
         var hasQuantified = Regex.IsMatch(text, @"\d+\s?%|\b\d{2,}\b");
         var actionVerbCount = ActionVerbs.Count(v => text.Contains(v, StringComparison.OrdinalIgnoreCase));
+
+        // --- CV-ness gate -------------------------------------------------------
+        // Scoring arbitrary text (an essay, a report, meeting notes) as if it were
+        // a CV produces confident nonsense. Require a few independent CV signals
+        // before reviewing; this covers the AI backend too, which calls
+        // AnalyzeAsync before talking to the model.
+        var cvSignals = new[]
+        {
+            hasEducation,
+            hasExperience,
+            hasProjects,
+            hasContact,
+            hasSkillsSection,
+            actionVerbCount >= 2,
+        }.Count(signal => signal);
+
+        if (cvSignals < 3)
+        {
+            throw new BadRequestException(
+                "That doesn't look like a CV — we couldn't find the usual sections "
+                + "(education, experience, skills, contact details). Paste or upload your actual CV.");
+        }
 
         // --- Role fit ---------------------------------------------------------
         // How well the CV matches THIS specific position: required-skill coverage
