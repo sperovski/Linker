@@ -127,14 +127,14 @@ type SectionKind = 'experience' | 'education' | 'project';
           <div class="form-row">
             <div class="field">
               <label class="label" for="firstName">First name</label>
-              <input id="firstName" class="input" formControlName="firstName" [class.invalid]="invalid('firstName')" />
+              <input id="firstName" class="field-input" formControlName="firstName" [class.invalid]="invalid('firstName')" />
               @if (invalid('firstName')) {
                 <div class="field-error" @fadeSlideIn>First name is required.</div>
               }
             </div>
             <div class="field">
               <label class="label" for="lastName">Last name</label>
-              <input id="lastName" class="input" formControlName="lastName" [class.invalid]="invalid('lastName')" />
+              <input id="lastName" class="field-input" formControlName="lastName" [class.invalid]="invalid('lastName')" />
               @if (invalid('lastName')) {
                 <div class="field-error" @fadeSlideIn>Last name is required.</div>
               }
@@ -143,7 +143,7 @@ type SectionKind = 'experience' | 'education' | 'project';
 
           <div class="field">
             <label class="label" for="headline">Headline <span class="opt-hint">(a one-line tagline, e.g. “CS student building clean UIs”)</span></label>
-            <input id="headline" class="input" formControlName="headline" maxlength="150"
+            <input id="headline" class="field-input" formControlName="headline" maxlength="150"
               placeholder="What should companies remember about you?" />
           </div>
 
@@ -184,23 +184,23 @@ type SectionKind = 'experience' | 'education' | 'project';
 
           <div class="field">
             <label class="label" for="profilePhotoUrl">Profile photo URL <span class="opt-hint">(paste a link to a hosted image)</span></label>
-            <input id="profilePhotoUrl" class="input" formControlName="profilePhotoUrl" type="url" placeholder="https://…" />
+            <input id="profilePhotoUrl" class="field-input" formControlName="profilePhotoUrl" type="url" placeholder="https://…" />
           </div>
 
           <div class="form-row">
             <div class="field">
               <label class="label" for="linkedInUrl">LinkedIn</label>
-              <input id="linkedInUrl" class="input" formControlName="linkedInUrl" type="url" placeholder="https://linkedin.com/in/…" />
+              <input id="linkedInUrl" class="field-input" formControlName="linkedInUrl" type="url" placeholder="https://linkedin.com/in/…" />
             </div>
             <div class="field">
               <label class="label" for="githubUrl">GitHub</label>
-              <input id="githubUrl" class="input" formControlName="githubUrl" type="url" placeholder="https://github.com/…" />
+              <input id="githubUrl" class="field-input" formControlName="githubUrl" type="url" placeholder="https://github.com/…" />
             </div>
           </div>
 
           <div class="field">
             <label class="label" for="portfolioUrl">Portfolio / website</label>
-            <input id="portfolioUrl" class="input" formControlName="portfolioUrl" type="url" placeholder="https://…" />
+            <input id="portfolioUrl" class="field-input" formControlName="portfolioUrl" type="url" placeholder="https://…" />
           </div>
 
           <app-link-button type="submit" [disabled]="saving()">
@@ -228,27 +228,27 @@ type SectionKind = 'experience' | 'education' | 'project';
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="expTitle">Title</label>
-                  <input id="expTitle" class="input" formControlName="title" placeholder="e.g. Frontend Intern" />
+                  <input id="expTitle" class="field-input" formControlName="title" placeholder="e.g. Frontend Intern" />
                 </div>
                 <div class="field">
                   <label class="label" for="expCompany">Company</label>
-                  <input id="expCompany" class="input" formControlName="company" placeholder="e.g. Netcetera" />
+                  <input id="expCompany" class="field-input" formControlName="company" placeholder="e.g. Netcetera" />
                 </div>
               </div>
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="expLocation">Location <span class="opt-hint">(optional)</span></label>
-                  <input id="expLocation" class="input" formControlName="location" placeholder="e.g. Skopje" />
+                  <input id="expLocation" class="field-input" formControlName="location" placeholder="e.g. Skopje" />
                 </div>
                 <div class="field">
                   <label class="label" for="expStart">Start</label>
-                  <input id="expStart" class="input" formControlName="startMonth" type="month" />
+                  <input id="expStart" class="field-input" formControlName="startMonth" type="month" />
                 </div>
               </div>
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="expEnd">End</label>
-                  <input id="expEnd" class="input" formControlName="endMonth" type="month"
+                  <input id="expEnd" class="field-input" formControlName="endMonth" type="month"
                     [attr.disabled]="expForm.controls.current.value ? '' : null" />
                 </div>
                 <div class="field checkbox-field">
@@ -320,26 +320,26 @@ type SectionKind = 'experience' | 'education' | 'project';
             <form class="entry-form" [formGroup]="eduForm" (ngSubmit)="saveEducation()" novalidate @fadeSlideIn>
               <div class="field">
                 <label class="label" for="eduInst">Institution</label>
-                <input id="eduInst" class="input" formControlName="institution" placeholder="e.g. UKIM — FINKI" />
+                <input id="eduInst" class="field-input" formControlName="institution" placeholder="e.g. UKIM — FINKI" />
               </div>
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="eduDegree">Degree <span class="opt-hint">(optional)</span></label>
-                  <input id="eduDegree" class="input" formControlName="degree" placeholder="e.g. BSc" />
+                  <input id="eduDegree" class="field-input" formControlName="degree" placeholder="e.g. BSc" />
                 </div>
                 <div class="field">
                   <label class="label" for="eduField">Field of study <span class="opt-hint">(optional)</span></label>
-                  <input id="eduField" class="input" formControlName="fieldOfStudy" placeholder="e.g. Software Engineering" />
+                  <input id="eduField" class="field-input" formControlName="fieldOfStudy" placeholder="e.g. Software Engineering" />
                 </div>
               </div>
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="eduStart">Start</label>
-                  <input id="eduStart" class="input" formControlName="startMonth" type="month" />
+                  <input id="eduStart" class="field-input" formControlName="startMonth" type="month" />
                 </div>
                 <div class="field">
                   <label class="label" for="eduEnd">End</label>
-                  <input id="eduEnd" class="input" formControlName="endMonth" type="month"
+                  <input id="eduEnd" class="field-input" formControlName="endMonth" type="month"
                     [attr.disabled]="eduForm.controls.current.value ? '' : null" />
                 </div>
               </div>
@@ -407,16 +407,16 @@ type SectionKind = 'experience' | 'education' | 'project';
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="projTitle">Title</label>
-                  <input id="projTitle" class="input" formControlName="title" placeholder="e.g. Recipe finder app" />
+                  <input id="projTitle" class="field-input" formControlName="title" placeholder="e.g. Recipe finder app" />
                 </div>
                 <div class="field">
                   <label class="label" for="projUrl">Link <span class="opt-hint">(optional)</span></label>
-                  <input id="projUrl" class="input" formControlName="url" type="url" placeholder="https://github.com/…" />
+                  <input id="projUrl" class="field-input" formControlName="url" type="url" placeholder="https://github.com/…" />
                 </div>
               </div>
               <div class="field">
                 <label class="label" for="projStack">Tech stack <span class="opt-hint">(comma-separated, e.g. Angular, .NET, Postgres)</span></label>
-                <input id="projStack" class="input" formControlName="techStack" placeholder="Angular, .NET, Postgres" />
+                <input id="projStack" class="field-input" formControlName="techStack" placeholder="Angular, .NET, Postgres" />
               </div>
               <div class="field">
                 <label class="label" for="projDesc">Description <span class="opt-hint">(optional)</span></label>
@@ -504,7 +504,7 @@ type SectionKind = 'experience' | 'education' | 'project';
             </div>
           </div>
           <div class="resume-row">
-            <input class="input grow" type="url" placeholder="https://link-to-your-cv.pdf"
+            <input class="field-input grow" type="url" placeholder="https://link-to-your-cv.pdf"
               [value]="cvUrlDraft()" (input)="cvUrlDraft.set($any($event.target).value)" />
             <app-link-button size="sm" (pressed)="saveCv()" [disabled]="saving()">
               <app-icon name="link" [size]="15" />

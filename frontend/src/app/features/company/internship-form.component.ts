@@ -63,7 +63,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
             <div class="step-body">
               <div class="field">
                 <label class="label" for="title">Title</label>
-                <input id="title" class="input" formControlName="title"
+                <input id="title" class="field-input" formControlName="title"
                   placeholder="e.g. Backend Engineering Intern" [class.invalid]="invalid('title')" />
                 @if (invalid('title')) {
                   <div class="field-error" @fadeSlideIn>Title is required.</div>
@@ -94,7 +94,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="location">Location</label>
-                  <input id="location" class="input" formControlName="location" placeholder="e.g. Skopje / Remote" />
+                  <input id="location" class="field-input" formControlName="location" placeholder="e.g. Skopje / Remote" />
                 </div>
                 <div class="field">
                   <label class="label" for="type">Type</label>
@@ -123,11 +123,11 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="startDate">Start date</label>
-                  <input id="startDate" type="date" class="input" formControlName="startDate" />
+                  <input id="startDate" type="date" class="field-input" formControlName="startDate" />
                 </div>
                 <div class="field">
                   <label class="label" for="endDate">End date</label>
-                  <input id="endDate" type="date" class="input" formControlName="endDate"
+                  <input id="endDate" type="date" class="field-input" formControlName="endDate"
                     [class.invalid]="form.hasError('dateOrder')" />
                 </div>
               </div>
@@ -138,7 +138,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               }
               <div class="field">
                 <label class="label" for="applicationDeadline">Application deadline <span class="opt">(optional)</span></label>
-                <input id="applicationDeadline" type="date" class="input" formControlName="applicationDeadline" />
+                <input id="applicationDeadline" type="date" class="field-input" formControlName="applicationDeadline" />
                 <p class="field-hint">After this date the role stops accepting applications automatically.</p>
               </div>
             </div>

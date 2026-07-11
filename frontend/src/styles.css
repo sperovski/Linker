@@ -318,6 +318,50 @@ a.btn:hover { text-decoration: none; }
   margin-bottom: var(--space-md);
 }
 
+/* ---------------------------------------------------------------------------
+   Standard text input — the raised lavender field used everywhere except the
+   auth cards (those get the icon-input treatment).
+
+   Named .field-input, not .field: .field is already the form-field *wrapper*
+   (<div class="field">, 51 of them), so styling .field here would give every
+   wrapper a background, padding and a shadow.
+--------------------------------------------------------------------------- */
+.field-input {
+  background-color: #eef0f7;
+  border: none;
+  padding: 0.9rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  width: 100%;
+  border-radius: 12px;
+  color: #171a2b;
+  /* The 0.35rem offset is the field's "lift"; focus presses it down to 0.15rem. */
+  box-shadow: 0 0.35rem #d7d9ee;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.field-input::placeholder { color: #94a3b8; }
+
+.field-input:focus {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  transform: translateY(2px);
+  box-shadow: 0 0.15rem #d7d9ee;
+}
+
+.field-input.invalid {
+  outline: 2px solid var(--color-destructive);
+  outline-offset: 2px;
+}
+
+/* Native date/month pickers render an indicator that is invisible on lavender. */
+.field-input::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .field-input { transition: none; }
+  .field-input:focus { transform: none; }
+}
+
 .field-error {
   color: var(--color-destructive);
   font-size: 0.8125rem;

@@ -167,7 +167,7 @@ type AdminTab = 'users' | 'internships' | 'skills';
               <p class="page-sub">New skills become available to students and listings immediately.</p>
               <div class="skill-row">
                 <input
-                  class="input"
+                  class="field-input"
                   placeholder="e.g. Kubernetes"
                   [(ngModel)]="newSkill"
                   (keydown.enter)="addSkill()"

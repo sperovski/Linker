@@ -54,7 +54,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
 
           <div class="field">
             <label class="label" for="name">Company name</label>
-            <input id="name" class="input" formControlName="name" [class.invalid]="invalid('name')" />
+            <input id="name" class="field-input" formControlName="name" [class.invalid]="invalid('name')" />
             @if (invalid('name')) {
               <div class="field-error" @fadeSlideIn>Company name is required.</div>
             }
@@ -68,7 +68,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
 
           <div class="field">
             <label class="label" for="website">Website</label>
-            <input id="website" type="url" class="input" formControlName="website" placeholder="https://…" />
+            <input id="website" type="url" class="field-input" formControlName="website" placeholder="https://…" />
           </div>
 
           <app-link-button type="submit" [disabled]="saving()">
