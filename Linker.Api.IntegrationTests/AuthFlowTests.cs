@@ -120,23 +120,23 @@ public class AuthFlowTests : IClassFixture<LinkerApiFactory>
         var studentClient = _factory.CreateClient();
         studentClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", student!.token);
 
-        var apply = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing!.id, coverLetter = "first" });
+        var apply = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing!.id, coverNote = "first" });
         Assert.Equal(HttpStatusCode.Created, apply.StatusCode);
         var application = await apply.Content.ReadFromJsonAsync<ApplicationBody>();
 
         // Duplicate apply is rejected.
-        var duplicate = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing.id, coverLetter = "dupe" });
+        var duplicate = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing.id, coverNote = "dupe" });
         Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
 
         // Withdraw, then re-apply reactivates.
         var withdraw = await studentClient.PostAsync($"/api/applications/{application!.id}/withdraw", null);
         Assert.Equal(HttpStatusCode.OK, withdraw.StatusCode);
 
-        var reapply = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing.id, coverLetter = "second" });
+        var reapply = await studentClient.PostAsJsonAsync("/api/applications", new { internshipId = listing.id, coverNote = "second" });
         Assert.Equal(HttpStatusCode.Created, reapply.StatusCode);
         var reapplied = await reapply.Content.ReadFromJsonAsync<ApplicationBody>();
         Assert.Equal(application.id, reapplied!.id);
-        Assert.Equal("Pending", reapplied.status);
+        Assert.Equal("Submitted", reapplied.status);
     }
 
     private record InternshipDetail(int id, string title);

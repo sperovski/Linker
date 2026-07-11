@@ -175,7 +175,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
 
         var skillName = await GiveStudentASkillAsync(auth.userId);
 
-        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId, coverLetter = "Hire me" });
+        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId, coverNote = "Hire me" });
         Assert.Equal(HttpStatusCode.Created, applied.StatusCode);
 
         var page = await company.GetFromJsonAsync<ApplicantsPage>($"/api/internships/{internshipId}/applications");
@@ -248,7 +248,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
         Assert.Contains(before!, i => i.id == listing!.id);
         Assert.Equal(100, before!.Single(i => i.id == listing!.id).matchScore);
 
-        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId = listing!.id, coverLetter = (string?)null });
+        var applied = await student.PostAsJsonAsync("/api/applications", new { internshipId = listing!.id, coverNote = (string?)null });
         Assert.Equal(HttpStatusCode.Created, applied.StatusCode);
 
         var after = await student.GetFromJsonAsync<List<ListItem>>("/api/internships/recommended?take=10");

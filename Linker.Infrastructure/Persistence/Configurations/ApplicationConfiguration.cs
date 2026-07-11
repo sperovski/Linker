@@ -14,10 +14,13 @@ public class ApplicationConfiguration : IEntityTypeConfiguration<ApplicationEnti
         builder.Property(a => a.Status)
             .IsRequired();
 
-        builder.Property(a => a.CoverLetter)
-            .HasMaxLength(4000);
+        builder.Property(a => a.CoverNote)
+            .HasMaxLength(1000);
 
-        builder.Property(a => a.AppliedAtUtc)
+        builder.Property(a => a.CreatedAt)
+            .IsRequired();
+
+        builder.Property(a => a.UpdatedAt)
             .IsRequired();
 
         // A student can apply to a given internship only once.

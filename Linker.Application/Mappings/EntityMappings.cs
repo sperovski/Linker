@@ -162,8 +162,9 @@ public static class EntityMappings
             application.Internship?.Title ?? string.Empty,
             application.Internship?.Company?.Name ?? string.Empty,
             application.Status.ToString(),
-            application.CoverLetter,
-            application.AppliedAtUtc);
+            application.CoverNote,
+            application.CreatedAt,
+            application.UpdatedAt);
 
     public static ApplicantResponse ToApplicantResponse(this ApplicationEntity application)
     {
@@ -182,7 +183,8 @@ public static class EntityMappings
                 .Select(ss => ss.Skill.ToResponse())
                 .ToList() ?? [],
             application.Status.ToString(),
-            application.CoverLetter,
-            application.AppliedAtUtc);
+            application.CoverNote,
+            application.CreatedAt,
+            application.UpdatedAt);
     }
 }

@@ -34,14 +34,14 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
 
         // Student skills are included so the applicants page can render each
         // profile from this one query instead of a request per applicant.
-        // Id breaks AppliedAtUtc ties so a row can't straddle two pages.
+        // Id breaks CreatedAt ties so a row can't straddle two pages.
         var items = await filtered
             .Include(a => a.Student)
                 .ThenInclude(s => s.Skills)
                 .ThenInclude(ss => ss.Skill)
             .Include(a => a.Internship)
             .ThenInclude(i => i.Company)
-            .OrderByDescending(a => a.AppliedAtUtc)
+            .OrderByDescending(a => a.CreatedAt)
             .ThenByDescending(a => a.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -58,7 +58,7 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .Include(a => a.Internship)
             .ThenInclude(i => i.Company)
             .Where(a => a.Internship.CompanyId == companyId)
-            .OrderByDescending(a => a.AppliedAtUtc)
+            .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
     }
 

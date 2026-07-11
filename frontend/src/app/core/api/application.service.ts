@@ -22,7 +22,7 @@ export class ApplicationService {
   }
 
   updateStatus(id: number, status: ApplicationStatus): Observable<ApplicationResponse> {
-    return this.http.put<ApplicationResponse>(`${this.baseUrl}/${id}/status`, { status });
+    return this.http.patch<ApplicationResponse>(`${this.baseUrl}/${id}/status`, { status });
   }
 
   withdraw(id: number): Observable<ApplicationResponse> {

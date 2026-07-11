@@ -6,6 +6,7 @@ import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate, deadlineCountdown } from '../../shared/dates';
+import { statusLabel } from '../../shared/application-status';
 
 @Component({
   selector: 'app-company-dashboard',
@@ -120,8 +121,8 @@ import { formatDate, deadlineCountdown } from '../../shared/dates';
                       <span class="applicant-role">{{ app.internshipTitle }}</span>
                     </div>
                     <div class="applicant-side">
-                      <span class="badge" [class]="'badge badge-' + app.status.toLowerCase()">{{ app.status }}</span>
-                      <span class="applicant-date">{{ formatDate(app.appliedAtUtc) }}</span>
+                      <span class="badge" [class]="'badge badge-' + app.status.toLowerCase()">{{ statusLabel(app.status) }}</span>
+                      <span class="applicant-date">{{ formatDate(app.createdAt) }}</span>
                     </div>
                   </a>
                 }
@@ -264,6 +265,7 @@ export class CompanyDashboardComponent implements OnInit {
   protected readonly data = signal<CompanyDashboard | null>(null);
   protected readonly loading = signal(true);
   protected readonly formatDate = formatDate;
+  protected readonly statusLabel = statusLabel;
 
   ngOnInit(): void {
     this.companyService.getDashboard().subscribe({

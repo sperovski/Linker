@@ -163,11 +163,12 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
               @if (applyError()) {
                 <div class="apply-error" @fadeSlideIn role="alert">{{ applyError() }}</div>
               }
-              <label class="label" for="coverLetter">Cover letter <span class="hint-inline">(optional)</span></label>
+              <label class="label" for="coverNote">Cover note <span class="hint-inline">(optional)</span></label>
               <textarea
-                id="coverLetter"
+                id="coverNote"
+                maxlength="1000"
                 class="textarea"
-                [(ngModel)]="coverLetter"
+                [(ngModel)]="coverNote"
                 placeholder="Tell {{ job.companyName }} why you're a great fit…"
               ></textarea>
               <app-link-button
@@ -451,7 +452,7 @@ export class InternshipDetailComponent implements OnInit {
   protected readonly submitting = signal(false);
   protected readonly applied = signal(false);
   protected readonly applyError = signal<string | null>(null);
-  protected coverLetter = '';
+  protected coverNote = '';
 
   protected readonly formatDate = formatDate;
 
@@ -524,7 +525,7 @@ export class InternshipDetailComponent implements OnInit {
     this.applyError.set(null);
     this.submitting.set(true);
     this.applicationService
-      .apply({ internshipId: job.id, coverLetter: this.coverLetter.trim() || null })
+      .apply({ internshipId: job.id, coverNote: this.coverNote.trim() || null })
       .subscribe({
         next: () => {
           this.applied.set(true);

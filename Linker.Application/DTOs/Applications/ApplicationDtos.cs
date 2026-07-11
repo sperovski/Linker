@@ -5,7 +5,7 @@ namespace Linker.Application.DTOs.Applications;
 
 public record CreateApplicationRequest(
     [Range(1, int.MaxValue)] int InternshipId,
-    [MaxLength(4000)] string? CoverLetter);
+    [MaxLength(1000)] string? CoverNote);
 
 public record UpdateApplicationStatusRequest(
     [Required] string Status);
@@ -18,8 +18,9 @@ public record ApplicationResponse(
     string InternshipTitle,
     string CompanyName,
     string Status,
-    string? CoverLetter,
-    DateTime AppliedAtUtc);
+    string? CoverNote,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);
 
 /// <summary>
 /// An application as the reviewing company sees it: the applicant's profile is
@@ -34,5 +35,6 @@ public record ApplicantResponse(
     string? Bio,
     IReadOnlyList<SkillResponse> Skills,
     string Status,
-    string? CoverLetter,
-    DateTime AppliedAtUtc);
+    string? CoverNote,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);

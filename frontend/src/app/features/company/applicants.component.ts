@@ -26,8 +26,10 @@ import { IconComponent } from '../../shared/icon.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate } from '../../shared/dates';
+import { statusLabel } from '../../shared/application-status';
 
-const STATUS_OPTIONS: ApplicationStatus[] = ['Pending', 'Accepted', 'Rejected'];
+// Only the statuses a company may set (matches the API's allowlist).
+const STATUS_OPTIONS: ApplicationStatus[] = ['UnderReview', 'Accepted', 'Rejected'];
 
 /** Applicant lists are long-form cards; a smaller page keeps the view scannable. */
 const PAGE_SIZE = 10;
@@ -88,13 +90,13 @@ const PAGE_SIZE = 10;
                         <h3>{{ app.studentName }}</h3>
                         <span class="applied-at">
                           <app-icon name="calendar" [size]="13" />
-                          Applied {{ formatDate(app.appliedAtUtc) }}
+                          Applied {{ formatDate(app.createdAt) }}
                         </span>
                       </div>
                     </div>
                     <div class="status-control">
                       <span class="badge" [class]="'badge badge-' + app.status.toLowerCase()">
-                        {{ app.status }}
+                        {{ statusLabel(app.status) }}
                       </span>
                       <label class="visually-hidden" [attr.for]="'status-' + app.id">
                         Update status for {{ app.studentName }}
@@ -105,11 +107,12 @@ const PAGE_SIZE = 10;
                         [disabled]="updatingId() === app.id"
                         (change)="updateStatus(app, $event)"
                       >
-                        @for (status of statusOptions; track status) {
-                          <option [value]="status" [selected]="status === app.status">{{ status }}</option>
+                        @if (!statusOptions.includes(app.status)) {
+                          <!-- Submitted / Withdrawn: shown as the current value but not re-settable. -->
+                          <option [value]="app.status" selected disabled>{{ statusLabel(app.status) }}</option>
                         }
-                        @if (app.status === 'Withdrawn') {
-                          <option value="Withdrawn" selected>Withdrawn</option>
+                        @for (status of statusOptions; track status) {
+                          <option [value]="status" [selected]="status === app.status">{{ statusLabel(status) }}</option>
                         }
                       </select>
                     </div>
@@ -134,13 +137,13 @@ const PAGE_SIZE = 10;
                     <p class="student-bio">{{ app.bio }}</p>
                   }
 
-                  @if (app.coverLetter) {
+                  @if (app.coverNote) {
                     <div class="cover-letter">
                       <h4>
                         <app-icon name="file-text" [size]="14" />
-                        Cover letter
+                        Cover note
                       </h4>
-                      <p>{{ app.coverLetter }}</p>
+                      <p>{{ app.coverNote }}</p>
                     </div>
                   }
                 </div>
@@ -304,6 +307,7 @@ export class ApplicantsComponent implements OnInit {
   readonly id = input.required({ transform: numberAttribute });
 
   protected readonly statusOptions = STATUS_OPTIONS;
+  protected readonly statusLabel = statusLabel;
   protected readonly formatDate = formatDate;
 
   protected readonly internship = signal<InternshipDetail | null>(null);

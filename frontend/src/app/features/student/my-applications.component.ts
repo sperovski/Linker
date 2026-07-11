@@ -10,10 +10,12 @@ import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate } from '../../shared/dates';
+import { statusLabel } from '../../shared/application-status';
 
 const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
   'All',
-  'Pending',
+  'Submitted',
+  'UnderReview',
   'Accepted',
   'Rejected',
   'Withdrawn',
@@ -42,7 +44,7 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
             [class.active]="filter() === status"
             (click)="filter.set(status)"
           >
-            {{ status }}
+            {{ statusLabel(status) }}
             @if (status !== 'All') {
               <span class="count">{{ countByStatus(status) }}</span>
             }
@@ -92,14 +94,17 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
                       </span>
                       <span class="app-date">
                         <app-icon name="calendar" [size]="13" />
-                        Applied {{ formatDate(app.appliedAtUtc) }}
+                        Applied {{ formatDate(app.createdAt) }}
                       </span>
                     </div>
                   </div>
                   <div class="app-actions">
                     <span class="badge" [class]="'badge badge-' + app.status.toLowerCase()">
-                      {{ app.status }}
+                      {{ statusLabel(app.status) }}
                     </span>
+                    @if (app.updatedAt !== app.createdAt) {
+                      <span class="status-updated">Updated {{ formatDate(app.updatedAt) }}</span>
+                    }
                     @if (canWithdraw(app)) {
                       <app-link-button
                         size="sm"
@@ -201,6 +206,12 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
         font-weight: 500;
       }
 
+      .status-updated {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--color-text-soft);
+      }
+
       .app-actions {
         display: flex;
         flex-direction: column;
@@ -220,6 +231,7 @@ export class MyApplicationsComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   protected readonly statusFilters = STATUS_FILTERS;
+  protected readonly statusLabel = statusLabel;
   protected readonly formatDate = formatDate;
 
   protected readonly applications = signal<ApplicationResponse[]>([]);
@@ -255,7 +267,7 @@ export class MyApplicationsComponent implements OnInit {
   }
 
   protected canWithdraw(app: ApplicationResponse): boolean {
-    return app.status === 'Pending' || app.status === 'Accepted';
+    return app.status === 'Submitted' || app.status === 'UnderReview' || app.status === 'Accepted';
   }
 
   protected withdraw(app: ApplicationResponse): void {

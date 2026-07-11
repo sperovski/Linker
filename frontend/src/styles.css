@@ -373,6 +373,8 @@ a.btn:hover { text-decoration: none; }
 .badge-type { background: #E0F2FE; color: #075985; }
 .badge-location { background: var(--color-muted); color: var(--color-text-soft); }
 .badge-pending { background: #FEF3C7; color: #92400E; }
+.badge-submitted { background: #FEF3C7; color: #92400E; }
+.badge-underreview { background: #EEEEF7; color: #4F46E5; }
 .badge-accepted { background: #DCFCE7; color: #166534; }
 .badge-rejected { background: #FEE2E2; color: #991B1B; }
 .badge-withdrawn { background: var(--color-muted); color: #475569; }

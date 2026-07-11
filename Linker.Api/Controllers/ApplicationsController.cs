@@ -56,7 +56,7 @@ public class ApplicationsController : ApiControllerBase
         return Ok(await _applicationService.WithdrawAsync(CurrentUserId, id, cancellationToken));
     }
 
-    [HttpPut("{id:int}/status")]
+    [HttpPatch("{id:int}/status")]
     [Authorize(Roles = "Company")]
     [ProducesResponseType(typeof(ApplicationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

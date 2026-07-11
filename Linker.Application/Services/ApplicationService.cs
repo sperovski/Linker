@@ -61,9 +61,10 @@ public class ApplicationService : IApplicationService
 
             // Re-applying after a withdrawal reactivates the original application
             // (a unique index on StudentId+InternshipId means one row per pair).
-            existing.Status = ApplicationStatus.Pending;
-            existing.CoverLetter = request.CoverLetter;
-            existing.AppliedAtUtc = DateTime.UtcNow;
+            existing.Status = ApplicationStatus.Submitted;
+            existing.CoverNote = request.CoverNote;
+            existing.CreatedAt = DateTime.UtcNow;
+            existing.UpdatedAt = existing.CreatedAt;
             NotifyCompanyOfApplication(internship, student);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -72,13 +73,15 @@ public class ApplicationService : IApplicationService
             return existing.ToResponse();
         }
 
+        var now = DateTime.UtcNow;
         var application = new ApplicationEntity
         {
             StudentId = student.Id,
             InternshipId = internship.Id,
-            Status = ApplicationStatus.Pending,
-            CoverLetter = request.CoverLetter,
-            AppliedAtUtc = DateTime.UtcNow
+            Status = ApplicationStatus.Submitted,
+            CoverNote = request.CoverNote,
+            CreatedAt = now,
+            UpdatedAt = now
         };
         _applicationRepository.Add(application);
         NotifyCompanyOfApplication(internship, student);
@@ -97,12 +100,22 @@ public class ApplicationService : IApplicationService
             $"/company/internships/{internship.Id}/applicants");
     }
 
+    // Statuses a company may set. Submitted is the system's initial state and
+    // Withdrawn belongs to the student, so neither is assignable here.
+    private static readonly ApplicationStatus[] CompanySettableStatuses =
+    [
+        ApplicationStatus.UnderReview,
+        ApplicationStatus.Accepted,
+        ApplicationStatus.Rejected,
+    ];
+
     public async Task<ApplicationResponse> UpdateStatusAsync(int userId, int applicationId, UpdateApplicationStatusRequest request, CancellationToken cancellationToken = default)
     {
-        if (!Enum.TryParse<ApplicationStatus>(request.Status, ignoreCase: true, out var status))
+        if (!Enum.TryParse<ApplicationStatus>(request.Status, ignoreCase: true, out var status)
+            || !CompanySettableStatuses.Contains(status))
         {
-            var validValues = string.Join(", ", Enum.GetNames<ApplicationStatus>());
-            throw new BadRequestException($"'{request.Status}' is not a valid application status. Valid values: {validValues}.");
+            var validValues = string.Join(", ", CompanySettableStatuses);
+            throw new BadRequestException($"'{request.Status}' is not a status a company can set. Valid values: {validValues}.");
         }
 
         var application = await _applicationRepository.GetWithDetailsAsync(applicationId, cancellationToken)
@@ -117,6 +130,7 @@ public class ApplicationService : IApplicationService
         }
 
         application.Status = status;
+        application.UpdatedAt = DateTime.UtcNow;
         // Let the applicant know the moment their status changes.
         _notificationService.Create(
             application.Student.UserId,
@@ -151,6 +165,7 @@ public class ApplicationService : IApplicationService
         }
 
         application.Status = ApplicationStatus.Withdrawn;
+        application.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return application.ToResponse();

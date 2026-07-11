@@ -244,18 +244,18 @@ public static class DbSeeder
         var elena = studentEntities["elena.stojanova@linker.demo"];
 
         var now = DateTime.UtcNow;
-        var applications = new (Student Student, Internship Internship, ApplicationStatus Status, int DaysAgo, string? CoverLetter)[]
+        var applications = new (Student Student, Internship Internship, ApplicationStatus Status, int DaysAgo, string? CoverNote)[]
         {
             (stefan, ByTitle("Frontend Intern"), ApplicationStatus.Accepted, 9,
                 "I've shipped several Angular side projects and would love to bring that experience to a team building for real banking customers."),
-            (stefan, ByTitle("Frontend Intern"), ApplicationStatus.Pending, 2, null),
+            (stefan, ByTitle("Frontend Intern"), ApplicationStatus.Submitted, 2, null),
             (stefan, ByTitle("UX/UI Design Intern"), ApplicationStatus.Rejected, 14,
                 "I'm mostly a developer but have picked up Figma for a couple of class projects and would love to grow into design."),
-            (marko, ByTitle("Backend Intern"), ApplicationStatus.Pending, 3,
+            (marko, ByTitle("Backend Intern"), ApplicationStatus.Submitted, 3,
                 "I've built a few C#/SQL side projects and I'm excited about working on payments infrastructure."),
             (marko, ByTitle("DevOps Intern"), ApplicationStatus.Accepted, 6, null),
             (marko, ByTitle("IT Support Intern"), ApplicationStatus.Withdrawn, 20, null),
-            (elena, ByTitle("UX/UI Design Intern"), ApplicationStatus.Pending, 1,
+            (elena, ByTitle("UX/UI Design Intern"), ApplicationStatus.Submitted, 1,
                 "I've been running small usability tests for my coursework and would love real mentorship on product design."),
             (elena, ByTitle("Business Analysis Intern"), ApplicationStatus.Rejected, 11, null),
         };
@@ -264,7 +264,7 @@ public static class DbSeeder
         {
             // Frontend Intern title exists at two different companies; disambiguate the second Ana application.
             var internship = a.Internship;
-            if (a.Student == stefan && a.Status == ApplicationStatus.Pending && internship.Title == "Frontend Intern")
+            if (a.Student == stefan && a.Status == ApplicationStatus.Submitted && internship.Title == "Frontend Intern")
             {
                 internship = internships.First(i => i.Title == "Frontend Intern" && i.Company.Name == "Makedonski Telekom");
             }
@@ -274,8 +274,9 @@ public static class DbSeeder
                 Student = a.Student,
                 Internship = internship,
                 Status = a.Status,
-                CoverLetter = a.CoverLetter,
-                AppliedAtUtc = now.AddDays(-a.DaysAgo)
+                CoverNote = a.CoverNote,
+                CreatedAt = now.AddDays(-a.DaysAgo),
+                UpdatedAt = now.AddDays(-a.DaysAgo)
             });
         }
 

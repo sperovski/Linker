@@ -2,7 +2,7 @@ export type UserRole = 'Student' | 'Company' | 'Admin';
 
 export type InternshipType = 'Internship' | 'PartTime' | 'FullTime';
 
-export type ApplicationStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Withdrawn';
+export type ApplicationStatus = 'Submitted' | 'UnderReview' | 'Accepted' | 'Rejected' | 'Withdrawn';
 
 export interface AuthResponse {
   userId: number;
@@ -242,7 +242,7 @@ export interface DashboardApplicant {
   internshipId: number;
   internshipTitle: string;
   status: ApplicationStatus;
-  appliedAtUtc: string;
+  createdAt: string;
 }
 
 export interface InternshipSearchFilters {
@@ -284,8 +284,9 @@ export interface ApplicationResponse {
   internshipTitle: string;
   companyName: string;
   status: ApplicationStatus;
-  coverLetter: string | null;
-  appliedAtUtc: string;
+  coverNote: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** An application plus the applicant's profile, as the reviewing company sees it. */
@@ -298,13 +299,14 @@ export interface Applicant {
   bio: string | null;
   skills: SkillResponse[];
   status: ApplicationStatus;
-  coverLetter: string | null;
-  appliedAtUtc: string;
+  coverNote: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateApplicationRequest {
   internshipId: number;
-  coverLetter?: string | null;
+  coverNote?: string | null;
 }
 
 export interface CvReviewRequest {

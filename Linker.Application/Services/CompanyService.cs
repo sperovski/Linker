@@ -79,7 +79,7 @@ public class CompanyService : ICompanyService
                     i.IsActive,
                     i.ApplicationDeadline,
                     apps.Count,
-                    apps.Count(a => a.Status == ApplicationStatus.Pending));
+                    apps.Count(a => a.Status is ApplicationStatus.Submitted or ApplicationStatus.UnderReview));
             })
             .ToList();
 
@@ -91,14 +91,15 @@ public class CompanyService : ICompanyService
                 a.InternshipId,
                 a.Internship.Title,
                 a.Status.ToString(),
-                a.AppliedAtUtc))
+                a.CreatedAt))
             .ToList();
 
         return new CompanyDashboardResponse(
             internships.Count,
             internships.Count(i => i.IsActive),
             applications.Count,
-            applications.Count(a => a.Status == ApplicationStatus.Pending),
+            // "Pending" here means awaiting a decision: newly submitted or under review.
+            applications.Count(a => a.Status is ApplicationStatus.Submitted or ApplicationStatus.UnderReview),
             applications.Count(a => a.Status == ApplicationStatus.Accepted),
             listings,
             recent);

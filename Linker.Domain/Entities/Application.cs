@@ -8,8 +8,10 @@ public class Application
     public int StudentId { get; set; }
     public int InternshipId { get; set; }
     public ApplicationStatus Status { get; set; }
-    public string? CoverLetter { get; set; }
-    public DateTime AppliedAtUtc { get; set; }
+    public string? CoverNote { get; set; }
+    public DateTime CreatedAt { get; set; }
+    /// <summary>Last status change; equals CreatedAt until the application is acted on.</summary>
+    public DateTime UpdatedAt { get; set; }
 
     public Student Student { get; set; } = null!;
     public Internship Internship { get; set; } = null!;

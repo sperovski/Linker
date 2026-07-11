@@ -26,15 +26,15 @@ public class ApplicationServiceTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
-    public async Task Apply_CreatesPendingApplication()
+    public async Task Apply_CreatesSubmittedApplication()
     {
         var student = _db.AddStudent();
         var internship = _db.AddInternship(_db.AddCompany());
 
         var response = await _service.ApplyAsync(student.UserId, new CreateApplicationRequest(internship.Id, "hello"));
 
-        Assert.Equal("Pending", response.Status);
-        Assert.Equal("hello", response.CoverLetter);
+        Assert.Equal("Submitted", response.Status);
+        Assert.Equal("hello", response.CoverNote);
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public class ApplicationServiceTests : IDisposable
         var second = await _service.ApplyAsync(student.UserId, new CreateApplicationRequest(internship.Id, "second"));
 
         Assert.Equal(first.Id, second.Id);
-        Assert.Equal("Pending", second.Status);
-        Assert.Equal("second", second.CoverLetter);
+        Assert.Equal("Submitted", second.Status);
+        Assert.Equal("second", second.CoverNote);
     }
 
     [Fact]

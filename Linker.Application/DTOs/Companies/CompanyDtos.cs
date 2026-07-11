@@ -37,4 +37,4 @@ public record DashboardApplicantResponse(
     int InternshipId,
     string InternshipTitle,
     string Status,
-    DateTime AppliedAtUtc);
+    DateTime CreatedAt);
