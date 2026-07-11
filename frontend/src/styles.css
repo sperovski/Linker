@@ -279,7 +279,6 @@ a.btn:hover { text-decoration: none; }
   color: var(--color-foreground);
 }
 
-.input,
 .select,
 .textarea {
   width: 100%;
@@ -298,7 +297,6 @@ a.btn:hover { text-decoration: none; }
   resize: vertical;
 }
 
-.input:focus,
 .select:focus,
 .textarea:focus {
   border-color: var(--color-primary);
@@ -306,13 +304,70 @@ a.btn:hover { text-decoration: none; }
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
 }
 
-.input.invalid,
 .select.invalid,
 .textarea.invalid {
   border-color: var(--color-destructive);
 }
 
 .select { cursor: pointer; }
+
+/* ---------------------------------------------------------------------------
+   Auth card icon-input — .group wraps a leading icon plus .input. Used only by
+   the auth cards (login / register / forgot / reset); every other input in the
+   app is .field-input above.
+
+   The 3rem left padding is what makes room for the icon, so .input and .group
+   must always ship together: a bare .input would indent its text into empty
+   space. Hover/focus are scoped to the .input class (never a bare `input`
+   selector), so they cannot leak onto other inputs on the page.
+--------------------------------------------------------------------------- */
+.group {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+}
+
+.input {
+  width: 100%;
+  height: 48px;
+  padding: 0 1rem 0 3rem;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  background-color: #f8fafc;
+  color: #0d0c22;
+  transition: 0.3s ease;
+}
+
+.input::placeholder { color: #94a3b8; }
+
+.input:hover { border-color: #cfd3f9; }
+
+/* outline:none above is replaced by a visible 5px ring + indigo border here, so
+   keyboard focus stays obvious. */
+.input:focus {
+  border-color: #818cf8;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 5px rgb(129 140 248 / 30%);
+}
+
+.input.invalid { border-color: var(--color-destructive); }
+
+.group .icon {
+  position: absolute;
+  left: 1rem;
+  display: inline-flex;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input { transition: none; }
+}
 
 .field {
   margin-bottom: var(--space-md);

@@ -32,8 +32,11 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
           <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
             <div class="field">
               <label class="label" for="email">Email</label>
-              <input id="email" type="email" class="input" formControlName="email"
+              <div class="group">
+                <app-icon class="icon" name="mail" [size]="18" />
+                <input id="email" type="email" class="input" formControlName="email"
                 autocomplete="email" [class.invalid]="showError()" />
+              </div>
               @if (showError()) {
                 <div class="field-error" @fadeSlideIn>Enter a valid email address.</div>
               }

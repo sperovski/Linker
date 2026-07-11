@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
+import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -25,14 +26,17 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <div class="field">
             <label class="label" for="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              class="input"
-              formControlName="email"
-              autocomplete="email"
-              [class.invalid]="showError('email')"
-            />
+            <div class="group">
+              <app-icon class="icon" name="mail" [size]="18" />
+              <input
+                id="email"
+                type="email"
+                class="input"
+                formControlName="email"
+                autocomplete="email"
+                [class.invalid]="showError('email')"
+              />
+            </div>
             @if (showError('email')) {
               <div class="field-error" @fadeSlideIn>Enter a valid email address.</div>
             }
@@ -43,14 +47,17 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <label class="label" for="password">Password</label>
               <a routerLink="/forgot-password" class="forgot-link">Forgot password?</a>
             </div>
-            <input
-              id="password"
-              type="password"
-              class="input"
-              formControlName="password"
-              autocomplete="current-password"
-              [class.invalid]="showError('password')"
-            />
+            <div class="group">
+              <app-icon class="icon" name="lock" [size]="18" />
+              <input
+                id="password"
+                type="password"
+                class="input"
+                formControlName="password"
+                autocomplete="current-password"
+                [class.invalid]="showError('password')"
+              />
+            </div>
             @if (showError('password')) {
               <div class="field-error" @fadeSlideIn>Password is required.</div>
             }

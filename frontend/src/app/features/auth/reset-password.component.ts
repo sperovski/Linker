@@ -5,12 +5,13 @@ import { ToastService } from '../../core/toast.service';
 import { AccountService } from '../../core/api/account.service';
 import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
+import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-reset-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent, IconComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -26,8 +27,11 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <div class="field">
             <label class="label" for="password">New password</label>
-            <input id="password" type="password" class="input" formControlName="password"
+            <div class="group">
+              <app-icon class="icon" name="lock" [size]="18" />
+              <input id="password" type="password" class="input" formControlName="password"
               autocomplete="new-password" [class.invalid]="showError('password')" />
+            </div>
             @if (showError('password')) {
               <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
             }
@@ -35,8 +39,11 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
 
           <div class="field">
             <label class="label" for="confirm">Confirm password</label>
-            <input id="confirm" type="password" class="input" formControlName="confirm"
+            <div class="group">
+              <app-icon class="icon" name="lock" [size]="18" />
+              <input id="confirm" type="password" class="input" formControlName="confirm"
               autocomplete="new-password" [class.invalid]="mismatch()" />
+            </div>
             @if (mismatch()) {
               <div class="field-error" @fadeSlideIn>Passwords don't match.</div>
             }

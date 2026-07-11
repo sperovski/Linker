@@ -60,16 +60,22 @@ type RegisterRole = 'student' | 'company';
               <div class="form-row">
                 <div class="field">
                   <label class="label" for="firstName">First name</label>
+                  <div class="group">
+                  <app-icon class="icon" name="user" [size]="18" />
                   <input id="firstName" class="input" formControlName="firstName"
                     [class.invalid]="invalid(studentForm, 'firstName')" />
+                </div>
                   @if (invalid(studentForm, 'firstName')) {
                     <div class="field-error" @fadeSlideIn>First name is required.</div>
                   }
                 </div>
                 <div class="field">
                   <label class="label" for="lastName">Last name</label>
+                  <div class="group">
+                  <app-icon class="icon" name="user" [size]="18" />
                   <input id="lastName" class="input" formControlName="lastName"
                     [class.invalid]="invalid(studentForm, 'lastName')" />
+                </div>
                   @if (invalid(studentForm, 'lastName')) {
                     <div class="field-error" @fadeSlideIn>Last name is required.</div>
                   }
@@ -111,8 +117,11 @@ type RegisterRole = 'student' | 'company';
               <div class="form-section-title">Your account</div>
               <div class="field">
                 <label class="label" for="sEmail">Email</label>
-                <input id="sEmail" type="email" class="input" formControlName="email"
+                <div class="group">
+                  <app-icon class="icon" name="mail" [size]="18" />
+                  <input id="sEmail" type="email" class="input" formControlName="email"
                   autocomplete="email" [class.invalid]="invalid(studentForm, 'email')" />
+                </div>
                 @if (invalid(studentForm, 'email')) {
                   <div class="field-error" @fadeSlideIn>Enter a valid email address.</div>
                 }
@@ -120,8 +129,11 @@ type RegisterRole = 'student' | 'company';
 
               <div class="field">
                 <label class="label" for="sPassword">Password</label>
-                <input id="sPassword" type="password" class="input" formControlName="password"
+                <div class="group">
+                  <app-icon class="icon" name="lock" [size]="18" />
+                  <input id="sPassword" type="password" class="input" formControlName="password"
                   autocomplete="new-password" [class.invalid]="invalid(studentForm, 'password')" />
+                </div>
                 @if (invalid(studentForm, 'password')) {
                   <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
                 }
@@ -138,8 +150,11 @@ type RegisterRole = 'student' | 'company';
               <div class="form-section-title">Your company</div>
               <div class="field">
                 <label class="label" for="companyName">Company name</label>
-                <input id="companyName" class="input" formControlName="name"
+                <div class="group">
+                  <app-icon class="icon" name="building" [size]="18" />
+                  <input id="companyName" class="input" formControlName="name"
                   [class.invalid]="invalid(companyForm, 'name')" />
+                </div>
                 @if (invalid(companyForm, 'name')) {
                   <div class="field-error" @fadeSlideIn>Company name is required.</div>
                 }
@@ -147,8 +162,11 @@ type RegisterRole = 'student' | 'company';
 
               <div class="field">
                 <label class="label" for="website">Website <span class="optional">(optional)</span></label>
-                <input id="website" type="url" class="input" formControlName="website"
+                <div class="group">
+                  <app-icon class="icon" name="link" [size]="18" />
+                  <input id="website" type="url" class="input" formControlName="website"
                   placeholder="https://…" />
+                </div>
               </div>
 
               <div class="field">
@@ -162,8 +180,11 @@ type RegisterRole = 'student' | 'company';
               <div class="form-section-title">Your account</div>
               <div class="field">
                 <label class="label" for="cEmail">Work email</label>
-                <input id="cEmail" type="email" class="input" formControlName="email"
+                <div class="group">
+                  <app-icon class="icon" name="mail" [size]="18" />
+                  <input id="cEmail" type="email" class="input" formControlName="email"
                   autocomplete="email" [class.invalid]="invalid(companyForm, 'email')" />
+                </div>
                 @if (invalid(companyForm, 'email')) {
                   <div class="field-error" @fadeSlideIn>Enter a valid email address.</div>
                 }
@@ -171,8 +192,11 @@ type RegisterRole = 'student' | 'company';
 
               <div class="field">
                 <label class="label" for="cPassword">Password</label>
-                <input id="cPassword" type="password" class="input" formControlName="password"
+                <div class="group">
+                  <app-icon class="icon" name="lock" [size]="18" />
+                  <input id="cPassword" type="password" class="input" formControlName="password"
                   autocomplete="new-password" [class.invalid]="invalid(companyForm, 'password')" />
+                </div>
                 @if (invalid(companyForm, 'password')) {
                   <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
                 }
