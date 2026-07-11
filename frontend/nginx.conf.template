@@ -44,6 +44,17 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # index.html must always be revalidated. It is the only file naming the
+    # hashed asset bundles, and those are served immutable below — so a browser
+    # allowed to cache this HTML keeps pointing at a previous build's CSS/JS and
+    # never sees a deploy. (Without an explicit header nginx sends none, and
+    # browsers then cache HTML heuristically, which is exactly this bug.)
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+
+    # Content-addressed bundles: the hash changes when the content does, so a
+    # long immutable TTL is safe and gives repeat visits a free ride.
     location ~* \.(js|css|png|jpg|jpeg|svg|woff2?)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";
