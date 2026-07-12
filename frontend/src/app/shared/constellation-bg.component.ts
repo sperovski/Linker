@@ -16,8 +16,11 @@ const NODE_COUNT = 46;
 
 // Max distance at which two nodes still draw a connecting line.
 const CONNECT_DIST = 160;
-// Line opacity at distance 0, fading linearly to 0 at CONNECT_DIST.
-const MAX_LINE_ALPHA = 0.1;
+// Line opacity at distance 0, fading linearly to 0 at CONNECT_DIST. The spec's
+// 0.10 is correct in a zoomed screenshot but reads as essentially invisible on a
+// real monitor at 1x pixel density — same lesson as app-bg-decor's icons, bumped
+// the same ~2.2x for consistency between the two.
+const MAX_LINE_ALPHA = 0.22;
 // Per-frame drift speed (px/frame) — every node moves at this same magnitude,
 // just in a random initial direction, so the field never looks jittery.
 const NODE_SPEED = 0.12;
@@ -442,11 +445,14 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
       const envelope = isPulsingNode ? pulseEnvelope : 0;
 
       if (n.isIcon && n.iconKey) {
-        const baseAlpha = 0.16;
-        drawIcon(ctx, n.iconKey, n.x, n.y, 16, baseAlpha + (0.5 - baseAlpha) * envelope);
+        // Bumped from the spec's 0.16 for the same real-monitor visibility reason
+        // as MAX_LINE_ALPHA above; stays fainter than the plain dots below, as
+        // specced, just scaled up together.
+        const baseAlpha = 0.32;
+        drawIcon(ctx, n.iconKey, n.x, n.y, 16, baseAlpha + (0.55 - baseAlpha) * envelope);
       } else {
-        const baseRadius = 1.6;
-        const baseAlpha = 0.35;
+        const baseRadius = 1.8;
+        const baseAlpha = 0.5;
         ctx.beginPath();
         ctx.arc(n.x, n.y, baseRadius + baseRadius * 0.8 * envelope, 0, Math.PI * 2);
         ctx.fillStyle = envelope > 0 ? '#818cf8' : '#4f46e5';
