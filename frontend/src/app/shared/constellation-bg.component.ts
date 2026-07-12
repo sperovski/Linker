@@ -45,73 +45,46 @@ const MAX_DPR = 2;
 const CURSOR_DIST = 190;
 const CURSOR_PULL = 0.0016;
 
-type IconKey =
-  | 'paperclip'
-  | 'graduation-cap'
-  | 'briefcase'
-  | 'map-pin'
-  | 'code'
-  | 'mail'
-  | 'bookmark'
-  | 'link';
+// The 8 icon nodes render the real product icons from /public. They're raster
+// PNGs, so each is pre-tinted once into small offscreen canvases (base indigo +
+// light indigo for the firing flash) and then blitted per frame — far cheaper
+// than recolouring a 512px source on every draw.
+const ICON_SRCS = [
+  '/cv_3846805.png',
+  '/graduation-cap_417180.png',
+  '/paperclip_309037.png',
+  '/briefcase_5782884.png',
+  '/skills_11253617.png',
+  '/projects.png',
+  '/generate_review.png',
+  '/gear_17279605.png',
+];
 
-type IconOp =
-  | { op: 'path'; d: string }
-  | { op: 'circle'; cx: number; cy: number; r: number }
-  | { op: 'rect'; x: number; y: number; w: number; h: number; rx: number }
-  | { op: 'polyline'; points: [number, number][] };
+const INDIGO = '79, 70, 229'; // #4f46e5
+const INDIGO_LIGHT = '129, 140, 248'; // #818cf8
 
-/**
- * Path/shape data cloned from the shared IconComponent's inline SVGs (Lucide-style
- * outlines, 24x24 viewBox, stroke-only). Canvas has no equivalent of an SVG
- * <circle>/<rect>/<polyline> element — Path2D only parses `d` path syntax — so
- * those three shape kinds are drawn with plain canvas primitives instead.
- */
-const ICON_OPS: Record<IconKey, IconOp[]> = {
-  paperclip: [
-    { op: 'path', d: 'M13.234 20.252 21 12.3a2.5 2.5 0 0 0-3.536-3.536L8.464 17.77a4.5 4.5 0 0 0 6.364 6.364' },
-    { op: 'path', d: 'm21 12.3-9.9 9.9a5.5 5.5 0 0 1-7.78-7.78l8.49-8.49' },
-  ],
-  'graduation-cap': [
-    { op: 'path', d: 'M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z' },
-    { op: 'path', d: 'M22 10v6' },
-    { op: 'path', d: 'M6 12.5V16a6 3 0 0 0 12 0v-3.5' },
-  ],
-  briefcase: [
-    { op: 'path', d: 'M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16' },
-    { op: 'rect', x: 2, y: 6, w: 20, h: 14, rx: 2 },
-  ],
-  'map-pin': [
-    { op: 'path', d: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' },
-    { op: 'circle', cx: 12, cy: 10, r: 3 },
-  ],
-  code: [
-    { op: 'polyline', points: [[16, 18], [22, 12], [16, 6]] },
-    { op: 'polyline', points: [[8, 6], [2, 12], [8, 18]] },
-  ],
-  mail: [
-    { op: 'path', d: 'm22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' },
-    { op: 'rect', x: 2, y: 4, w: 20, h: 16, rx: 2 },
-  ],
-  bookmark: [
-    { op: 'path', d: 'm19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z' },
-  ],
-  link: [
-    { op: 'path', d: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71' },
-    { op: 'path', d: 'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' },
-  ],
-};
+// Pre-rendered tint size. Icon nodes draw ~16-20px, so 44 downscales crisply
+// without a large offscreen.
+const ICON_SPRITE_PX = 44;
 
-// Path2D parsing is cheap, but there's no reason to re-parse the same `d` string
-// every frame for every icon node — memoise by string.
-const path2DCache = new Map<string, Path2D>();
-function getPath2D(d: string): Path2D {
-  let cached = path2DCache.get(d);
-  if (!cached) {
-    cached = new Path2D(d);
-    path2DCache.set(d, cached);
-  }
-  return cached;
+/** A loaded icon with its two tint variants, ready to blit. */
+interface IconSprite {
+  base: HTMLCanvasElement;
+  light: HTMLCanvasElement;
+}
+
+/** Offscreen canvas of `img` recoloured to `rgb`, preserving the icon's alpha. */
+function tintSprite(img: HTMLImageElement, rgb: string): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = ICON_SPRITE_PX;
+  c.height = ICON_SPRITE_PX;
+  const g = c.getContext('2d')!;
+  g.drawImage(img, 0, 0, ICON_SPRITE_PX, ICON_SPRITE_PX);
+  // Keep the silhouette, replace the colour.
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = `rgb(${rgb})`;
+  g.fillRect(0, 0, ICON_SPRITE_PX, ICON_SPRITE_PX);
+  return c;
 }
 
 interface NetNode {
@@ -122,7 +95,8 @@ interface NetNode {
   /** 0 = far, 1 = near. Drives size, alpha and drift speed, giving the field depth. */
   z: number;
   isIcon: boolean;
-  iconKey?: IconKey;
+  /** Index into ICON_SRCS / the loaded sprite array, for icon nodes. */
+  iconIndex?: number;
   /** Timestamp this node last received a signal; drives its flash + glow. */
   firedAt: number;
 }
@@ -142,40 +116,6 @@ interface Rect {
   y: number;
   w: number;
   h: number;
-}
-
-const INDIGO = '79, 70, 229'; // #4f46e5
-const INDIGO_LIGHT = '129, 140, 248'; // #818cf8
-
-function drawIcon(ctx: CanvasRenderingContext2D, key: IconKey, x: number, y: number, sizePx: number, alpha: number): void {
-  const scale = sizePx / 24; // source icons are drawn on a 24x24 viewBox
-  ctx.save();
-  ctx.translate(x - sizePx / 2, y - sizePx / 2);
-  ctx.scale(scale, scale);
-  ctx.globalAlpha = alpha;
-  ctx.lineWidth = 2; // matches the source icons' stroke-width in their own 24x24 space
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  for (const op of ICON_OPS[key]) {
-    if (op.op === 'path') {
-      ctx.stroke(getPath2D(op.d));
-    } else if (op.op === 'circle') {
-      ctx.beginPath();
-      ctx.arc(op.cx, op.cy, op.r, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (op.op === 'rect') {
-      ctx.beginPath();
-      ctx.roundRect(op.x, op.y, op.w, op.h, op.rx);
-      ctx.stroke();
-    } else if (op.op === 'polyline') {
-      ctx.beginPath();
-      ctx.moveTo(op.points[0][0], op.points[0][1]);
-      for (let i = 1; i < op.points.length; i++) ctx.lineTo(op.points[i][0], op.points[i][1]);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
 }
 
 /**
@@ -234,6 +174,8 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
 
   private ctx!: CanvasRenderingContext2D;
   private nodes: NetNode[] = [];
+  /** Loaded icon sprites, indexed like ICON_SRCS; null until the PNG loads. */
+  private sprites: (IconSprite | null)[] = ICON_SRCS.map(() => null);
   private signals: Signal[] = [];
   private width = 0;
   private height = 0;
@@ -279,6 +221,7 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
     this.ctx = this.canvasRef.nativeElement.getContext('2d')!;
     this.measureAndResize();
     this.seedNodes();
+    this.loadSprites();
 
     // Layout can change without a window resize (font load reflow, sidebar
     // toggles) — watch the actual host box, not just the window.
@@ -408,7 +351,7 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
   }
 
   private seedNodes(): void {
-    const iconKeys = Object.keys(ICON_OPS) as IconKey[]; // exactly 8
+    const iconCount = ICON_SRCS.length; // exactly 8
     this.signals = [];
     this.nodes = Array.from({ length: NODE_COUNT }, (_, i) => {
       const angle = Math.random() * Math.PI * 2;
@@ -421,10 +364,24 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         z,
-        isIcon: i < iconKeys.length,
-        iconKey: i < iconKeys.length ? iconKeys[i] : undefined,
+        isIcon: i < iconCount,
+        iconIndex: i < iconCount ? i : undefined,
         firedAt: -Infinity,
       };
+    });
+  }
+
+  /** Loads each icon PNG and builds its two tint variants. Async: a node draws a
+   *  plain dot until its sprite is ready, then swaps in. In reduced motion the
+   *  static frame is repainted on each load so the icons still appear. */
+  private loadSprites(): void {
+    ICON_SRCS.forEach((src, i) => {
+      const img = new Image();
+      img.onload = () => {
+        this.sprites[i] = { base: tintSprite(img, INDIGO), light: tintSprite(img, INDIGO_LIGHT) };
+        if (this.reducedMotion) this.render(performance.now());
+      };
+      img.src = src;
     });
   }
 
@@ -720,17 +677,22 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
     for (const n of this.nodes) {
       const flash = this.flashOf(n, now);
 
-      if (n.isIcon && n.iconKey) {
-        const base = 0.22 + n.z * 0.16;
-        ctx.strokeStyle = flash > 0.02 ? `rgb(${INDIGO_LIGHT})` : `rgb(${INDIGO})`;
+      const sprite = n.iconIndex !== undefined ? this.sprites[n.iconIndex] : null;
+      if (n.isIcon && sprite) {
+        const size = 17 + n.z * 6;
+        const base = 0.24 + n.z * 0.18;
         if (flash > 0.02) {
           ctx.shadowBlur = 12 * flash;
           ctx.shadowColor = `rgba(${INDIGO_LIGHT}, ${flash})`;
         }
-        drawIcon(ctx, n.iconKey, n.x, n.y, 15 + n.z * 4, base + (0.85 - base) * flash);
+        ctx.globalAlpha = base + (0.9 - base) * flash;
+        // Swap to the light-tinted variant while the node is firing.
+        ctx.drawImage(flash > 0.02 ? sprite.light : sprite.base, n.x - size / 2, n.y - size / 2, size, size);
+        ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
         continue;
       }
+      // Icon node whose sprite hasn't loaded yet: fall through to draw a dot.
 
       const radius = 1.1 + n.z * 1.7 + 1.6 * flash;
       const base = 0.28 + n.z * 0.34;
