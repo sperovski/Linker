@@ -19,6 +19,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { SelectComponent } from '../../shared/select.component';
+import { LoaderComponent } from '../../shared/loader.component';
 import { SkillPickerComponent } from './skill-picker.component';
 
 type SectionKind = 'experience' | 'education' | 'project';
@@ -26,7 +27,7 @@ type SectionKind = 'experience' | 'education' | 'project';
 @Component({
   selector: 'app-student-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [LoaderComponent, 
     ReactiveFormsModule,
     EmptyStateComponent,
     IconComponent,
@@ -204,7 +205,11 @@ type SectionKind = 'experience' | 'education' | 'project';
           </div>
 
           <app-link-button type="submit" [disabled]="saving()">
-            {{ saving() ? 'Saving…' : 'Save profile' }}
+            @if (saving()) {
+              <app-loader mode="inline" label="Saving" /> Saving…
+            } @else {
+              Save profile
+            }
           </app-link-button>
         </form>
 

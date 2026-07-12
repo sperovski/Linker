@@ -7,11 +7,12 @@ import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
+import { LoaderComponent } from '../../shared/loader.component';
 
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, BgDecorComponent],
+  imports: [LoaderComponent, ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, BgDecorComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -66,7 +67,11 @@ import { BgDecorComponent } from '../../shared/bg-decor.component';
           </div>
 
           <app-link-button type="submit" block [disabled]="submitting()">
-            {{ submitting() ? 'Logging in…' : 'Log in' }}
+            @if (submitting()) {
+              <app-loader mode="inline" label="Logging in" /> Logging in…
+            } @else {
+              Log in
+            }
           </app-link-button>
         </form>
 

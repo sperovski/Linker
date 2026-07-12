@@ -14,6 +14,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
 
@@ -194,7 +195,7 @@ const TESTIMONIALS = [
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent],
+  imports: [BgDecorComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -219,6 +220,7 @@ const TESTIMONIALS = [
   template: `
     <!-- ============================== HERO ============================== -->
     <section class="hero band-tint">
+      <app-bg-decor variant="subtle" />
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">The internship platform for students</span>
@@ -596,7 +598,9 @@ const TESTIMONIALS = [
   styles: [
     `
       /* ------------------------------- hero ------------------------------ */
-      .hero { padding: var(--space-3xl) 0; overflow: hidden; }
+      /* position: relative anchors app-bg-decor; the grid sits above it. */
+      .hero { position: relative; padding: var(--space-3xl) 0; overflow: hidden; }
+      .hero > .container, .hero .hero-grid { position: relative; z-index: 1; }
 
       .hero-grid {
         display: grid;

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IconComponent } from './icon.component';
 
 /**
@@ -15,7 +15,7 @@ import { IconComponent } from './icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   template: `
-    <div class="bg-decor" aria-hidden="true">
+    <div class="bg-decor" [class.subtle]="variant() === 'subtle'" aria-hidden="true">
       <span class="bg-block tl"></span>
       <span class="bg-block br"></span>
 
@@ -47,7 +47,7 @@ import { IconComponent } from './icon.component';
         height: 320px;
         border-radius: 40px;
         filter: blur(70px);
-        opacity: 0.18;
+        opacity: 0.42;
       }
 
       .bg-block.tl {
@@ -67,8 +67,15 @@ import { IconComponent } from './icon.component';
       .bg-icon {
         display: inline-flex;
         color: #4f46e5;
-        opacity: 0.06;
+        opacity: 0.13;
       }
+
+      /* Content pages: quieter, and the two icons nearest the middle are dropped
+         so nothing sits behind a card. */
+      .bg-decor.subtle .bg-icon { opacity: 0.07; }
+      .bg-decor.subtle .bg-block { opacity: 0.22; }
+      .bg-decor.subtle .bg-icon.i7,
+      .bg-decor.subtle .bg-icon.i8 { display: none; }
 
       /* Corners and edges only — nothing lands in the middle, where the card sits. */
       .bg-icon.i1 { top: 8%;  left: 5%;   --tilt: -12deg; }
@@ -107,8 +114,10 @@ import { IconComponent } from './icon.component';
       }
 
       @media (max-width: 640px) {
-        .bg-icon { opacity: 0.04; }
-        .bg-block { opacity: 0.12; }
+        .bg-icon { opacity: 0.09; }
+        .bg-block { opacity: 0.28; }
+        .bg-decor.subtle .bg-icon { opacity: 0.05; }
+        .bg-decor.subtle .bg-block { opacity: 0.16; }
         /* The two icons nearest the middle would crowd the card on a narrow screen. */
         .bg-icon.i7,
         .bg-icon.i8 { display: none; }
@@ -116,4 +125,11 @@ import { IconComponent } from './icon.component';
     `,
   ],
 })
-export class BgDecorComponent {}
+export class BgDecorComponent {
+  /**
+   * `full`   — auth screens, where the decor is the only thing behind the card.
+   * `subtle` — content pages (internship grid, landing): fainter and edge-only,
+   *            so it never competes with the cards it sits behind.
+   */
+  readonly variant = input<'full' | 'subtle'>('full');
+}

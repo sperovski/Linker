@@ -9,11 +9,12 @@ import { IconComponent } from '../../shared/icon.component';
 import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { LoaderComponent } from '../../shared/loader.component';
 
 @Component({
   selector: 'app-cv-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, IconComponent, MaskIconComponent, SelectComponent, LinkButtonComponent],
+  imports: [LoaderComponent, FormsModule, IconComponent, MaskIconComponent, SelectComponent, LinkButtonComponent],
   template: `
     <div class="container page">
       <div class="page-header">
@@ -79,7 +80,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
             (pressed)="rate()"
           >
             @if (loading()) {
-              <span class="spinner" aria-hidden="true"></span> Analysing…
+              <app-loader mode="inline" label="Analysing your CV" /> Analysing…
             } @else {
               <app-icon name="target" [size]="16" /> Rate my CV
             }
@@ -98,7 +99,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
             </div>
           } @else if (loading()) {
             <div class="placeholder">
-              <span class="ring-skeleton"></span>
+              <app-loader mode="inline" label="Reading your CV" class="ph-loader" />
               <p>Reading your CV…</p>
             </div>
           } @else if (result(); as r) {
@@ -276,6 +277,8 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         width: 56px; height: 56px; border-radius: var(--radius-lg);
         background: var(--color-muted); color: var(--color-text-soft); margin-bottom: var(--space-md);
       }
+      .ph-loader { --loader-scale: 0.8; margin-bottom: var(--space-md); }
+
       .ring-skeleton {
         display: inline-block; width: 120px; height: 120px; border-radius: 50%;
         border: 10px solid var(--color-muted); border-top-color: var(--color-primary);
