@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<ISavedInternshipService, SavedInternshipService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IChatService, ChatService>();
 
         // Offline heuristic CV reviewer is the default. Infrastructure swaps in an
         // AI-backed reviewer when an Anthropic API key is configured.

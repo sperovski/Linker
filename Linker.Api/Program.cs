@@ -30,6 +30,8 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<Linker.Infrastructure.Persistence.LinkerDbContext>("database");
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<Linker.Api.RateLimiting.IChatRateLimiter, Linker.Api.RateLimiting.ChatRateLimiter>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -140,6 +142,25 @@ builder.Services
             // Default 5-minute clock skew defeats a 15-minute token; keep it tight.
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+
+        // WebSockets can't send an Authorization header, so SignalR passes the JWT
+        // as the access_token query param. Only honour it for the chat hub path —
+        // query-string tokens can leak into logs/referrers, so the exposure is kept
+        // to the one endpoint that needs it; every other route still requires the
+        // header.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 // Opt-in gate (Auth__RequireVerifiedEmail=true): applying and posting require a
@@ -215,6 +236,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Real-time chat hub. It sits behind UseAuthentication/UseAuthorization above and
+// UseCors, so the WebSocket handshake obeys the same restrictive origin allowlist
+// as the REST API — it is not opened up wide. CloseOnAuthenticationExpiration
+// tears the connection down when the JWT expires, so a socket can't linger with
+// stale auth; the client reconnects with a fresh token.
+app.MapHub<Linker.Api.Hubs.ChatHub>("/hubs/chat", options =>
+{
+    options.CloseOnAuthenticationExpiration = true;
+});
 
 // Liveness/readiness for containers and cloud hosts (checks Postgres).
 app.MapHealthChecks("/health").AllowAnonymous();

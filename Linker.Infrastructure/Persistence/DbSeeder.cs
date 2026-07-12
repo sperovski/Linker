@@ -22,6 +22,10 @@ public static class DbSeeder
         // unconditionally so every environment offers the full picker.
         await SeedSkillTaxonomyAsync(db, logger, cancellationToken);
 
+        // The General "FINKI Students" room is a singleton the whole app shares,
+        // so ensure it exists in every environment (not just demo stacks).
+        await EnsureGeneralChatRoomAsync(db, logger, cancellationToken);
+
         if (!configuration.GetValue("Database:SeedDemoData", false))
         {
             return;
@@ -36,6 +40,19 @@ public static class DbSeeder
         {
             await SeedStudentsAndActivityAsync(db, configuration, logger, cancellationToken);
         }
+    }
+
+    /// <summary>Creates the single General chat room if it isn't there yet.</summary>
+    private static async Task EnsureGeneralChatRoomAsync(LinkerDbContext db, ILogger logger, CancellationToken cancellationToken)
+    {
+        if (await db.ChatRooms.AnyAsync(r => r.Type == ChatRoomType.General, cancellationToken))
+        {
+            return;
+        }
+
+        db.ChatRooms.Add(ChatRoom.CreateGeneral("FINKI Students", DateTime.UtcNow));
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded the General chat room");
     }
 
     /// <summary>
