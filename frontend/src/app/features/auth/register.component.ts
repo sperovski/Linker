@@ -9,19 +9,19 @@ import { facultyOptions, gradYearOptions } from '../../shared/faculties';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { SelectComponent } from '../../shared/select.component';
-import { BgDecorComponent } from '../../shared/bg-decor.component';
+import { ConstellationBgComponent } from '../../shared/constellation-bg.component';
 
 type RegisterRole = 'student' | 'company';
 
 @Component({
   selector: 'app-register',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, SelectComponent, BgDecorComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, SelectComponent, ConstellationBgComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
     <div class="auth-page">
-      <app-bg-decor />
+      <app-constellation-bg />
       <div class="auth-card">
         <h1>Create your account</h1>
         <p class="auth-sub">Join Linker as a student or a company.</p>
