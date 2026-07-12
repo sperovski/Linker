@@ -1,12 +1,20 @@
+/* position: relative anchors app-bg-decor (which is inset: 0); min-height gives
+   the corner gradient blocks room to read on short pages like forgot-password. */
 .auth-page {
+  position: relative;
   display: flex;
   justify-content: center;
   padding: var(--space-2xl) var(--space-md);
+  min-height: 100vh;
 }
 
+/* Above the decor, which sits at z-index 0. */
 .auth-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 460px;
+  height: fit-content;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);

@@ -6,15 +6,17 @@ import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, BgDecorComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
     <div class="auth-page">
+      <app-bg-decor />
       <div class="auth-card">
         <h1>Welcome back</h1>
         <p class="auth-sub">Log in to your Linker account.</p>

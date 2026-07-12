@@ -5,15 +5,17 @@ import { AccountService } from '../../core/api/account.service';
 import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 
 @Component({
   selector: 'app-forgot-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, BgDecorComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
     <div class="auth-page">
+      <app-bg-decor />
       <div class="auth-card">
         @if (sent()) {
           <div class="sent-block">

@@ -7,15 +7,17 @@ import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 
 @Component({
   selector: 'app-reset-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent, IconComponent],
+  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent, IconComponent, BgDecorComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
     <div class="auth-page">
+      <app-bg-decor />
       <div class="auth-card">
         <h1>Choose a new password</h1>
         <p class="auth-sub">Enter a new password for your account.</p>
