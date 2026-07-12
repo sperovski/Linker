@@ -17,7 +17,7 @@ import { CompanyFilterComponent, CompanyOption } from '../../shared/company-filt
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { InternshipStripComponent } from '../../shared/internship-strip.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
-import { ConstellationBgComponent } from '../../shared/constellation-bg.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../../shared/dates';
 
 /** Matches the API default; the server clamps anything above 50. */
@@ -26,7 +26,7 @@ const PAGE_SIZE = 12;
 @Component({
   selector: 'app-browse',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConstellationBgComponent, 
+  imports: [BgDecorComponent, 
     FormsModule,
     RouterLink,
     IconComponent,
@@ -43,7 +43,7 @@ const PAGE_SIZE = 12;
   animations: [listStagger],
   template: `
     <div class="container page">
-      <app-constellation-bg [avoidSelector]="null" />
+      <app-bg-decor variant="subtle" />
       <div class="page-header">
         <div>
           <span class="eyebrow">Open roles</span>
