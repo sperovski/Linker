@@ -20,7 +20,7 @@ const CONNECT_DIST = 160;
 // 0.10 is correct in a zoomed screenshot but reads as essentially invisible on a
 // real monitor at 1x pixel density — same lesson as app-bg-decor's icons, bumped
 // the same ~2.2x for consistency between the two.
-const MAX_LINE_ALPHA = 0.22;
+const MAX_LINE_ALPHA = 0.45;
 // Per-frame drift speed (px/frame) — every node moves at this same magnitude,
 // just in a random initial direction, so the field never looks jittery.
 const NODE_SPEED = 0.12;
@@ -430,7 +430,9 @@ export class ConstellationBgComponent implements AfterViewInit, OnDestroy {
 
         ctx.strokeStyle = isPulsing ? '#818cf8' : '#4f46e5';
         ctx.globalAlpha = isPulsing ? baseAlpha + (0.65 - baseAlpha) * pulseEnvelope : baseAlpha;
-        ctx.lineWidth = 1;
+        // 1px hairlines at low alpha get swallowed by antialiasing on a light
+        // background; 1.3 keeps them legible without turning into a heavy web.
+        ctx.lineWidth = 1.3;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
