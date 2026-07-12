@@ -11,4 +11,7 @@ public interface IApplicationRepository : IRepository<Application>
     Task<IReadOnlyList<Application>> GetByCompanyAsync(int companyId, CancellationToken cancellationToken = default);
     Task<Application?> GetByStudentAndInternshipAsync(int studentId, int internshipId, CancellationToken cancellationToken = default);
     Task<Application?> GetWithDetailsAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>True if the student has ever applied to any internship owned by the company.</summary>
+    Task<bool> ExistsForStudentAndCompanyAsync(int studentId, int companyId, CancellationToken cancellationToken = default);
 }

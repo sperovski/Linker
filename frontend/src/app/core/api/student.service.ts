@@ -30,6 +30,15 @@ export class StudentService {
     return this.http.post<StudentProfile>(`${this.baseUrl}/me/cv-file`, form);
   }
 
+  /**
+   * Fetches an uploaded CV as a blob. CV files are served only through this
+   * authenticated endpoint (the auth interceptor attaches the token) — they are
+   * no longer public static files, so a plain anchor href would 401.
+   */
+  downloadCvFile(studentId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${studentId}/cv`, { responseType: 'blob' });
+  }
+
   getById(id: number): Observable<StudentProfile> {
     return this.http.get<StudentProfile>(`${this.baseUrl}/${id}`);
   }

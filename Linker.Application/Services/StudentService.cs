@@ -18,6 +18,8 @@ public class StudentService : IStudentService
     private readonly IExperienceRepository _experienceRepository;
     private readonly IEducationRepository _educationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ICompanyRepository _companyRepository;
+    private readonly IApplicationRepository _applicationRepository;
     private readonly ICvFileStorage _cvFileStorage;
     private readonly IUnitOfWork _unitOfWork;
 
@@ -26,6 +28,8 @@ public class StudentService : IStudentService
         IExperienceRepository experienceRepository,
         IEducationRepository educationRepository,
         IProjectRepository projectRepository,
+        ICompanyRepository companyRepository,
+        IApplicationRepository applicationRepository,
         ICvFileStorage cvFileStorage,
         IUnitOfWork unitOfWork)
     {
@@ -33,6 +37,8 @@ public class StudentService : IStudentService
         _experienceRepository = experienceRepository;
         _educationRepository = educationRepository;
         _projectRepository = projectRepository;
+        _companyRepository = companyRepository;
+        _applicationRepository = applicationRepository;
         _cvFileStorage = cvFileStorage;
         _unitOfWork = unitOfWork;
     }
@@ -94,6 +100,49 @@ public class StudentService : IStudentService
         _cvFileStorage.DeleteIfManaged(previousUrl);
 
         return await GetByIdAsync(student.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Streams a student's uploaded CV, but only to the student themselves or a company they've
+    /// applied to. A CV is personal data, so it is never served as an anonymous static file —
+    /// this is the sole read path, and it authorises every request.
+    /// </summary>
+    public async Task<CvFileContent> GetCvFileAsync(int requesterUserId, int studentId, CancellationToken cancellationToken = default)
+    {
+        var student = await _studentRepository.GetByIdAsync(studentId, cancellationToken)
+            ?? throw new NotFoundException("Student", studentId);
+
+        // Only uploaded files are served here; an externally-linked CvUrl isn't ours to stream.
+        if (!_cvFileStorage.IsManaged(student.CvUrl))
+        {
+            throw new NotFoundException("This student has no uploaded CV.");
+        }
+
+        if (!await CanViewCvAsync(requesterUserId, studentId, cancellationToken))
+        {
+            throw new ForbiddenAccessException("You do not have access to this CV.");
+        }
+
+        return await _cvFileStorage.OpenAsync(student.CvUrl, cancellationToken)
+            ?? throw new NotFoundException("This student's CV file could not be found.");
+    }
+
+    /// <summary>The owning student, or a company the student has applied to, may view a CV.</summary>
+    private async Task<bool> CanViewCvAsync(int requesterUserId, int studentId, CancellationToken cancellationToken)
+    {
+        var requestingStudent = await _studentRepository.GetByUserIdAsync(requesterUserId, cancellationToken);
+        if (requestingStudent is not null)
+        {
+            return requestingStudent.Id == studentId;
+        }
+
+        var company = await _companyRepository.GetByUserIdAsync(requesterUserId, cancellationToken);
+        if (company is not null)
+        {
+            return await _applicationRepository.ExistsForStudentAndCompanyAsync(studentId, company.Id, cancellationToken);
+        }
+
+        return false;
     }
 
     // ---- Experience ----

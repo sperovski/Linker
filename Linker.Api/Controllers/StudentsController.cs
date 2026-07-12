@@ -64,6 +64,22 @@ public class StudentsController : ApiControllerBase
         return Ok(await _studentService.UploadCvAsync(CurrentUserId, file.FileName, content, cancellationToken));
     }
 
+    // Streams an uploaded CV to authorised callers only (the owning student, or a
+    // company they applied to). CV files are personal data and are never served as
+    // anonymous static content — this is the single, authorised read path.
+    [HttpGet("{id:int}/cv")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadCv(int id, CancellationToken cancellationToken)
+    {
+        var cv = await _studentService.GetCvFileAsync(CurrentUserId, id, cancellationToken);
+        // File(...) with a download name sets Content-Disposition: attachment, so the
+        // browser never renders untrusted upload content inline at our origin.
+        return File(cv.Content, cv.ContentType, cv.FileName);
+    }
+
     [HttpGet("{id:int}")]
     [Authorize]
     [ProducesResponseType(typeof(StudentProfileResponse), StatusCodes.Status200OK)]

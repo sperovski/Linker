@@ -68,6 +68,12 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .FirstOrDefaultAsync(a => a.StudentId == studentId && a.InternshipId == internshipId, cancellationToken);
     }
 
+    public async Task<bool> ExistsForStudentAndCompanyAsync(int studentId, int companyId, CancellationToken cancellationToken = default)
+    {
+        return await Context.Applications
+            .AnyAsync(a => a.StudentId == studentId && a.Internship.CompanyId == companyId, cancellationToken);
+    }
+
     public async Task<ApplicationEntity?> GetWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return await Context.Applications

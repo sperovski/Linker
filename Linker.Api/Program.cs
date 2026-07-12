@@ -8,7 +8,6 @@ using Linker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
@@ -202,16 +201,11 @@ app.Use(async (context, next) =>
 
 app.UseHttpsRedirection();
 
-// Uploaded CVs (see LocalCvFileStorage) — served straight off disk at the same
-// "/uploads" prefix the storage layer returns. Same physical folder Docker
-// Compose / Fly mount as a volume, so files survive container restarts.
+// Ensure the uploads volume exists on boot. CV files are NOT served as static
+// content — a CV is personal data, so it's streamed only through the authorised
+// GET /api/students/{id}/cv endpoint (see StudentsController.DownloadCv).
 var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), app.Configuration["Storage:UploadsPath"] ?? "uploads");
 Directory.CreateDirectory(uploadsPath);
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads",
-});
 
 app.UseCors(CorsPolicy);
 

@@ -501,7 +501,13 @@ type SectionKind = 'experience' | 'education' | 'project';
               @if (profile()?.cvUrl) {
                 <p class="section-sub">
                   Your CV is linked —
-                  <a class="resume-link" [href]="profile()!.cvUrl" target="_blank" rel="noopener">open it <app-icon name="external-link" [size]="12" /></a>
+                  @if (isUploadedCv(profile()!.cvUrl)) {
+                    <button type="button" class="resume-link resume-link-btn" (click)="openCv()" [disabled]="cvOpening()">
+                      {{ cvOpening() ? 'Opening…' : 'open it' }} <app-icon name="external-link" [size]="12" />
+                    </button>
+                  } @else {
+                    <a class="resume-link" [href]="profile()!.cvUrl" target="_blank" rel="noopener">open it <app-icon name="external-link" [size]="12" /></a>
+                  }
                 </p>
               } @else {
                 <p class="section-sub">Link your CV so companies can read the full story.</p>
@@ -795,6 +801,16 @@ type SectionKind = 'experience' | 'education' | 'project';
         font-weight: 600;
       }
 
+      .resume-link-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .resume-link-btn:disabled { opacity: 0.6; cursor: default; }
+
       .resume-row { display: flex; gap: var(--space-sm); align-items: center; }
 
       .resume-or {
@@ -860,6 +876,7 @@ export class StudentProfileComponent implements OnInit {
 
   protected readonly cvUrlDraft = signal('');
   protected readonly cvUploading = signal(false);
+  protected readonly cvOpening = signal(false);
 
   private static readonly MaxCvUploadBytes = 5 * 1024 * 1024;
   private static readonly AllowedCvExtensions = ['.pdf', '.doc', '.docx'];
@@ -1124,6 +1141,34 @@ export class StudentProfileComponent implements OnInit {
       error: (err) => {
         this.cvUploading.set(false);
         this.toast.error(apiErrorMessage(err, 'Could not upload your CV.'));
+      },
+    });
+  }
+
+  /** An uploaded CV is stored under /uploads; an externally-pasted link is not. */
+  protected isUploadedCv(cvUrl: string | null): boolean {
+    return !!cvUrl && cvUrl.startsWith('/uploads/');
+  }
+
+  /** Uploaded CVs are behind an authenticated endpoint, so fetch as a blob (the
+   *  auth interceptor adds the token) and open the object URL in a new tab. */
+  protected openCv(): void {
+    const id = this.profile()?.id;
+    if (id === undefined) {
+      return;
+    }
+    this.cvOpening.set(true);
+    this.studentService.downloadCvFile(id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+        // Give the new tab time to read the blob before revoking.
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.cvOpening.set(false);
+      },
+      error: (err) => {
+        this.cvOpening.set(false);
+        this.toast.error(apiErrorMessage(err, 'Could not open your CV.'));
       },
     });
   }

@@ -28,17 +28,6 @@ server {
         client_max_body_size 10m;
     }
 
-    # Uploaded CVs (see LocalCvFileStorage / Program.cs's UseStaticFiles) live
-    # on the API's disk, not this container's, so they need the same
-    # same-origin proxy treatment as /api/ — otherwise this location falls
-    # through to the SPA catch-all below, which happily 200s with index.html
-    # for any path and silently masks a missing or unreachable file.
-    location /uploads/ {
-        set $api_origin ${API_ORIGIN};
-        proxy_pass $api_origin$request_uri;
-        proxy_set_header Host $host;
-    }
-
     # SPA fallback: unknown paths render index.html and Angular routes them.
     location / {
         try_files $uri $uri/ /index.html;
