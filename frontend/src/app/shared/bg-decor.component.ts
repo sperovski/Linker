@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IconComponent } from './icon.component';
+import { MaskIconComponent } from './mask-icon.component';
 
 /**
  * Decorative background: two blurred gradient blocks in opposite corners plus
@@ -13,16 +14,19 @@ import { IconComponent } from './icon.component';
 @Component({
   selector: 'app-bg-decor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IconComponent],
+  imports: [IconComponent, MaskIconComponent],
   template: `
     <div class="bg-decor" [class.subtle]="variant() === 'subtle'" aria-hidden="true">
       <span class="bg-block tl"></span>
       <span class="bg-block br"></span>
 
-      <!-- Every icon sits in an outer band; the middle of the viewport stays clear. -->
+      <!-- Every icon sits in an outer band; the middle of the viewport stays clear.
+           Graduation cap and briefcase use the /public PNGs (as mask-icons, so they
+           tint indigo like the rest); no PNG exists for the other six, so those stay
+           as stroke SVGs from the shared icon set. -->
       <app-icon class="bg-icon i1" name="paperclip" [size]="34" />
-      <app-icon class="bg-icon i2" name="graduation-cap" [size]="34" />
-      <app-icon class="bg-icon i3" name="briefcase" [size]="34" />
+      <app-mask-icon class="bg-icon i2" name="bg-graduation-cap" [size]="34" />
+      <app-mask-icon class="bg-icon i3" name="bg-briefcase" [size]="34" />
       <app-icon class="bg-icon i4" name="map-pin" [size]="34" />
       <app-icon class="bg-icon i5" name="code" [size]="34" />
       <app-icon class="bg-icon i6" name="mail" [size]="34" />
@@ -62,8 +66,9 @@ import { IconComponent } from './icon.component';
         background: radial-gradient(circle, #a5b4fc, transparent 70%);
       }
 
-      /* app-icon renders an <svg stroke="currentColor" fill="none">, so colour comes
-         from the color property here, not from stroke. */
+      /* app-icon renders an <svg stroke="currentColor" fill="none">, and app-mask-icon
+         a background-color:currentColor span — both pick up colour from here, not
+         from a stroke/fill/background set directly on them. */
       .bg-icon {
         display: inline-flex;
         color: #4f46e5;

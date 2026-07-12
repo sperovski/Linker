@@ -9,6 +9,8 @@ const ICON_SRC: Record<string, string> = {
   'generate-review': '/generate_review.png',
   projects: '/projects.png',
   skills: '/skills_11253617.png',
+  'bg-briefcase': '/briefcase_5782884.png',
+  'bg-graduation-cap': '/graduation-cap_417180.png',
 };
 
 export type MaskIconName = keyof typeof ICON_SRC;
