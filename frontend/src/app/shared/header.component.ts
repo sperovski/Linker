@@ -15,7 +15,7 @@ import { NotificationBellComponent } from './notification-bell.component';
     <header class="header" [class.elevated]="scrolled()">
       <div class="container header-inner">
         <a [routerLink]="auth.isLoggedIn() ? auth.homePath() : '/'" class="brand">
-          <img src="/linker-logo.png" alt="Linker" class="brand-logo" />
+          <img src="/linker-logo-v2.png" alt="Linker" class="brand-logo" />
         </a>
 
         <button

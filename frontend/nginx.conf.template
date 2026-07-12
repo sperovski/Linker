@@ -53,10 +53,24 @@ server {
         add_header Cache-Control "no-cache";
     }
 
-    # Content-addressed bundles: the hash changes when the content does, so a
-    # long immutable TTL is safe and gives repeat visits a free ride.
-    location ~* \.(js|css|png|jpg|jpeg|svg|woff2?)$ {
+    # Angular's own build output only: main-<hash>.js, chunk-<hash>.js,
+    # styles-<hash>.css. The hash changes whenever the content does, so a long
+    # immutable TTL is safe here — a new build is always a new URL.
+    location ~* ^/(main|polyfills|chunk|styles)-[A-Za-z0-9_-]+\.(js|css)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";
+    }
+
+    # Plain files copied as-is from public/ (logo, favicon, decorative icons)
+    # keep their ORIGINAL filename forever — replacing one (as we did with the
+    # logo) is a same-URL content change. "immutable" specifically tells the
+    # browser never to revalidate even on a manual hard refresh, so a prior
+    # immutable response here meant the new logo was invisible no matter what
+    # the user did on their end. Short cache + revalidation instead: fast on
+    # repeat loads, but nginx's automatic ETag/Last-Modified makes that
+    # revalidation a cheap 304, and a real update is picked up within minutes.
+    location ~* \.(png|jpg|jpeg|svg|woff2?|ico)$ {
+        expires 5m;
+        add_header Cache-Control "public, must-revalidate";
     }
 }
