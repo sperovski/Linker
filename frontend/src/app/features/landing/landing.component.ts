@@ -219,7 +219,7 @@ const TESTIMONIALS = [
   ],
   template: `
     <!-- ============================== HERO ============================== -->
-    <section class="hero band-tint">
+    <section class="hero band-tint" (mousemove)="onHeroMove($event)">
       <app-bg-decor variant="subtle" />
       <div class="container hero-grid">
         <div class="hero-copy">
@@ -249,8 +249,10 @@ const TESTIMONIALS = [
           <p class="hero-note">Free for students. Always.</p>
         </div>
 
-        <div class="hero-visual" aria-hidden="true">
+        <div class="hero-visual" #heroVisual aria-hidden="true">
           <div class="hero-blob"></div>
+          <div class="hero-glow hero-glow-follow"></div>
+          <div class="hero-glow hero-glow-fixed"></div>
           @if (scene() === 0) {
             <div class="scene" @sceneSwap>
               <!-- floating card peeking out from behind the phone -->
@@ -654,6 +656,38 @@ const TESTIMONIALS = [
         background: #e3e1f9; /* soft indigo tint of --color-primary */
         border-radius: 58% 42% 55% 45% / 48% 55% 45% 52%;
         transform: rotate(-6deg);
+      }
+
+      /* Soft radial glows over the blob, behind the phone (z2) and cards. */
+      .hero-glow {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: blur(56px);
+      }
+
+      /* Anchored to the top-right corner of the phone composition; never moves. */
+      .hero-glow-fixed {
+        top: -10%;
+        right: -8%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(124, 58, 237, 0.4), transparent 70%);
+      }
+
+      /* Trails the cursor anywhere over the hero. Position is driven by a rAF
+         lerp in the component writing transform directly — compositor-only,
+         so it stays smooth where a left/top transition would jank and restart
+         on every mousemove. */
+      .hero-glow-follow {
+        left: 0;
+        top: 0;
+        width: 340px;
+        height: 340px;
+        /* Resting spot before the first mousemove: roughly mid-composition. */
+        transform: translate3d(160px, 320px, 0) translate(-50%, -50%);
+        background: radial-gradient(circle, rgba(79, 70, 229, 0.32), transparent 70%);
+        will-change: transform;
       }
 
       /* ------------------------- iPhone frame --------------------------- */
@@ -1349,6 +1383,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   protected readonly testimonials = TESTIMONIALS;
 
   private readonly statsSection = viewChild.required<ElementRef<HTMLElement>>('statsSection');
+  private readonly heroVisual = viewChild<ElementRef<HTMLElement>>('heroVisual');
   private readonly host = inject(ElementRef);
 
   private wordIndex = signal(0);
@@ -1396,7 +1431,56 @@ export class LandingComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.timers.forEach(clearInterval);
     this.statsObserver?.disconnect();
+    if (this.glowRaf !== null) {
+      cancelAnimationFrame(this.glowRaf);
+    }
   }
+
+  /**
+   * Records where the follow-glow should head; a rAF loop eases it there.
+   * Everything happens outside change detection — mousemove only stores the
+   * target, and the loop writes a compositor-only transform.
+   */
+  protected onHeroMove(event: MouseEvent): void {
+    if (this.reducedMotion) {
+      return; // Both glows stay put for reduced-motion users.
+    }
+    const visual = this.heroVisual()?.nativeElement;
+    if (!visual) {
+      return;
+    }
+    const rect = visual.getBoundingClientRect();
+    this.glowTarget = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    if (this.glowCurrent === null) {
+      // First movement: start at the cursor instead of flying in from afar.
+      this.glowCurrent = { ...this.glowTarget };
+    }
+    if (this.glowRaf === null) {
+      this.glowRaf = requestAnimationFrame(this.glowTick);
+    }
+  }
+
+  private glowTarget = { x: 0, y: 0 };
+  private glowCurrent: { x: number; y: number } | null = null;
+  private glowRaf: number | null = null;
+
+  private readonly glowTick = (): void => {
+    const glow = this.heroVisual()?.nativeElement.querySelector<HTMLElement>('.hero-glow-follow');
+    const current = this.glowCurrent;
+    if (!glow || !current) {
+      this.glowRaf = null;
+      return;
+    }
+    // Exponential ease toward the cursor: fast when far, settling gently.
+    current.x += (this.glowTarget.x - current.x) * 0.12;
+    current.y += (this.glowTarget.y - current.y) * 0.12;
+    glow.style.transform =
+      `translate3d(${current.x.toFixed(1)}px, ${current.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+
+    const settled =
+      Math.abs(this.glowTarget.x - current.x) < 0.5 && Math.abs(this.glowTarget.y - current.y) < 0.5;
+    this.glowRaf = settled ? null : requestAnimationFrame(this.glowTick);
+  };
 
   protected setQuote(index: number): void {
     this.quoteIndex.set(index);
