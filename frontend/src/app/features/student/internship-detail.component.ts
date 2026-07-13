@@ -180,6 +180,13 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
                 {{ submitting() ? 'Submitting…' : 'Submit application' }}
               </app-link-button>
             }
+
+            @if (auth.isStudent()) {
+              <p class="chat-cta">
+                Questions about this role?
+                <a [routerLink]="['/community']" [queryParams]="{ internship: job.id }">Chat about this internship</a>
+              </p>
+            }
           </div>
 
           @if (company(); as about) {
@@ -405,6 +412,13 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
       .apply-panel p { color: var(--color-text-soft); font-size: 0.9375rem; }
 
       .hint { font-size: 0.8125rem; margin: var(--space-sm) 0 0; text-align: center; }
+
+      .chat-cta {
+        font-size: 0.8125rem;
+        margin: var(--space-md) 0 0;
+        text-align: center;
+        color: var(--color-text-soft);
+      }
       .hint-inline { font-weight: 400; color: var(--color-text-soft); }
 
       .apply-error {

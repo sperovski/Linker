@@ -34,13 +34,16 @@ import { NotificationBellComponent } from './notification-bell.component';
             <a routerLink="/saved" routerLinkActive="active">Saved</a>
             <a routerLink="/applications" routerLinkActive="active">My Applications</a>
             <a routerLink="/cv-review" routerLinkActive="active">Rate my CV</a>
+            <a routerLink="/community" routerLinkActive="active">Community</a>
             <a routerLink="/profile" routerLinkActive="active">Profile</a>
           } @else if (auth.isCompany()) {
             <a routerLink="/company/dashboard" routerLinkActive="active">Dashboard</a>
             <a routerLink="/company/listings" routerLinkActive="active">My Listings</a>
+            <a routerLink="/community" routerLinkActive="active">Community</a>
             <a routerLink="/company/profile" routerLinkActive="active">Profile</a>
           } @else if (auth.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="active">Admin</a>
+            <a routerLink="/community" routerLinkActive="active">Community</a>
           } @else {
             <a routerLink="/internships" routerLinkActive="active">Browse internships</a>
           }

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { guestGuard, roleGuard } from './core/guards';
+import { authGuard, guestGuard, roleGuard } from './core/guards';
 
 export const routes: Routes = [
   {
@@ -81,6 +81,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/student/student-profile.component').then((m) => m.StudentProfileComponent),
     title: 'My profile — Linker',
+  },
+  {
+    path: 'community',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/chat/chat-page.component').then((m) => m.ChatPageComponent),
+    title: 'Community — Linker',
   },
   {
     path: 'company/dashboard',

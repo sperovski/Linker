@@ -33,7 +33,10 @@ export type IconName =
   | 'upload'
   | 'link'
   | 'lock'
-  | 'paperclip';
+  | 'paperclip'
+  | 'message-circle'
+  | 'send'
+  | 'flag';
 
 /** Inline SVG icons (Lucide outlines) — the design system forbids emoji icons. */
 @Component({
@@ -55,6 +58,15 @@ export type IconName =
       @switch (name()) {
         @case ('search') {
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        }
+        @case ('message-circle') {
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+        }
+        @case ('send') {
+          <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z" /><path d="m21.854 2.147-10.94 10.939" />
+        }
+        @case ('flag') {
+          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><line x1="4" x2="4" y1="22" y2="15" />
         }
         @case ('map-pin') {
           <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" />

@@ -331,3 +331,22 @@ export interface CvFileReviewResponse {
   fileName: string;
   review: CvReviewResponse;
 }
+
+export type ChatRoomType = 'General' | 'Company' | 'Internship';
+
+export interface ChatRoomResponse {
+  id: number;
+  type: ChatRoomType;
+  title: string;
+  companyId: number | null;
+  internshipId: number | null;
+}
+
+export interface ChatMessageResponse {
+  id: number;
+  roomId: number;
+  senderId: number;
+  senderName: string;
+  body: string;
+  createdAt: string;
+}
