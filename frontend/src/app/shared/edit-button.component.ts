@@ -37,18 +37,19 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } f
         display: inline-flex;
         align-items: center;
         justify-content: flex-start;
-        min-width: 100px;
-        height: 40px;
+        /* Sized to sit alongside the app's small (sm) buttons. */
+        min-width: 74px;
+        height: 34px;
         border: none;
-        padding: 0 20px;
+        padding: 0 14px;
         background-color: var(--brand);
         color: var(--color-on-primary);
         font-family: var(--font-sans);
         font-weight: 600;
-        font-size: 0.9375rem;
+        font-size: 0.82rem;
         cursor: pointer;
-        border-radius: 10px;
-        box-shadow: 5px 5px 0 var(--brand-deep);
+        border-radius: 8px;
+        box-shadow: 3px 3px 0 var(--brand-deep);
         transition: color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease,
           background-color 0.3s ease;
       }
@@ -58,10 +59,10 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } f
       }
 
       .edit-icon {
-        width: 14px;
-        height: 14px;
+        width: 13px;
+        height: 13px;
         position: absolute;
-        right: 20px;
+        right: 14px;
         transition: right 0.3s ease, transform 0.3s ease;
       }
 
@@ -77,8 +78,8 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } f
 
       /* Press: settle down-right, shadow shrinks to match. */
       .edit-btn:active:not(:disabled) {
-        transform: translate(3px, 3px);
-        box-shadow: 2px 2px 0 var(--brand-deep);
+        transform: translate(2px, 2px);
+        box-shadow: 1px 1px 0 var(--brand-deep);
       }
 
       .edit-btn:disabled {
