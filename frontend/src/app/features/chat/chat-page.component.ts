@@ -359,9 +359,13 @@ export class ChatPageComponent implements OnInit {
     if (message.roomId !== this.activeRoom()?.id) {
       return;
     }
-    this.messages.update((current) =>
-      current.some((m) => m.id === message.id) ? current : [...current, message],
-    );
+    if (this.messages().some((m) => m.id === message.id)) {
+      // Already have it (a reconnect refetch can race the live push). Counting it
+      // again would inflate `total`, and hasMore (length < total) would then stay
+      // true forever — leaving a "Load earlier messages" button that fetches nothing.
+      return;
+    }
+    this.messages.update((current) => [...current, message]);
     this.total.update((t) => t + 1);
   }
 
