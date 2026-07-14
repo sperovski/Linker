@@ -99,7 +99,7 @@ export class VerifyBannerComponent {
     this.account.resendVerification(email).subscribe({
       next: () => {
         this.sending.set(false);
-        this.toast.success('Verification email sent — check your inbox.');
+        this.toast.success('Verification email sent. Check your inbox.');
       },
       error: () => {
         this.sending.set(false);

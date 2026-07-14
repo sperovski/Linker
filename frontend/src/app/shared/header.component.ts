@@ -65,7 +65,7 @@ import { NotificationBellComponent } from './notification-bell.component';
                 routerLink="/profile"
                 routerLinkActive="active"
                 class="profile-link"
-                [attr.aria-label]="'Profile — ' + auth.email()"
+                [attr.aria-label]="'Profile: ' + auth.email()"
                 [title]="auth.email()"
               >
                 <img src="/student.png" alt="" class="profile-link-icon" />

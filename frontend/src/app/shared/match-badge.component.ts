@@ -65,7 +65,7 @@ export class MatchBadgeComponent {
     const label = band ? MATCH_BAND_LABELS[band] : '';
     const matched = this.matchedSkillCount();
     const required = this.requiredSkillCount();
-    const head = `${label} — ${this.score()}% skill match`;
+    const head = `${label}, ${this.score()}% skill match`;
     return matched !== null && required !== null
       ? `${head}, you have ${matched} of ${required} required skills`
       : head;

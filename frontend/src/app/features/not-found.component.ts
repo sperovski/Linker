@@ -12,7 +12,7 @@ import { LinkButtonComponent } from '../shared/link-button.component';
     <div class="container page nf">
       <p class="nf-code" aria-hidden="true">404</p>
       <h1>This page took a different internship.</h1>
-      <p class="nf-sub">The link is broken or the page has moved — but the roles are still here.</p>
+      <p class="nf-sub">The link is broken or the page has moved, but the roles are still here.</p>
       <div class="nf-actions">
         <app-link-button routerLink="/internships">
           Browse internships

@@ -66,7 +66,7 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
             @if (filter() === 'All') {
               <app-empty-state
                 variant="rocket"
-                title="Nothing here yet — your move"
+                title="Nothing here yet. Your move"
                 message="Every application you send will show up here so you always know where you stand. Find a role you like and go for it."
                 ctaLink="/internships"
                 ctaLabel="Browse internships"
@@ -75,7 +75,7 @@ const STATUS_FILTERS: (ApplicationStatus | 'All')[] = [
               <app-empty-state
                 variant="inbox"
                 title="No {{ filter().toLowerCase() }} applications"
-                message="Nothing with this status right now — switch to another filter to see the rest of your pipeline."
+                message="Nothing with this status right now. Switch to another filter to see the rest of your pipeline."
               />
             }
           } @else {

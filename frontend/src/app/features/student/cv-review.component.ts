@@ -21,7 +21,7 @@ import { LoaderComponent } from '../../shared/loader.component';
         <div>
           <span class="eyebrow">AI CV review</span>
           <h1>Rate my CV</h1>
-          <p class="page-sub">Upload your CV — we scan it and give an instant score with specific, honest feedback.</p>
+          <p class="page-sub">Upload your CV and get an instant score with specific, honest feedback.</p>
         </div>
       </div>
 
@@ -44,10 +44,10 @@ import { LoaderComponent } from '../../shared/loader.component';
             <span class="dz-icon"><app-mask-icon name="cv" [size]="26" /></span>
             @if (fileName()) {
               <span class="dz-title">{{ fileName() }}</span>
-              <span class="dz-sub">Scanned — click or drop another to replace</span>
+              <span class="dz-sub">Scanned. Click or drop another to replace</span>
             } @else {
               <span class="dz-title">Import your CV</span>
-              <span class="dz-sub">Drag &amp; drop or click — PDF, DOCX or TXT, up to 5&nbsp;MB</span>
+              <span class="dz-sub">Drag &amp; drop or click. PDF, DOCX or TXT, up to 5&nbsp;MB</span>
             }
           </label>
 
@@ -59,7 +59,7 @@ import { LoaderComponent } from '../../shared/loader.component';
             class="textarea cv-text"
             [ngModel]="cvText()"
             (ngModelChange)="cvText.set($event)"
-            placeholder="Paste the full text of your CV here — experience, education, projects, skills…"
+            placeholder="Paste the full text of your CV here: experience, education, projects, skills…"
           ></textarea>
           <div class="wc" [class.warn]="wordCount() > 0 && wordCount() < 50">{{ wordCount() }} words</div>
 
@@ -86,7 +86,7 @@ import { LoaderComponent } from '../../shared/loader.component';
             }
           </app-link-button>
           @if (wordCount() > 0 && wordCount() < 50) {
-            <p class="hint">Add a bit more — at least 50 words — for a meaningful review.</p>
+            <p class="hint">Add a bit more, at least 50 words, for a meaningful review.</p>
           }
         </div>
 
@@ -400,7 +400,7 @@ export class CvReviewComponent implements OnInit {
       next: (result) =>
         this.targetOptions.set([
           { value: '', label: 'General review (no specific role)' },
-          ...result.items.map((i) => ({ value: String(i.id), label: `${i.title} — ${i.companyName}` })),
+          ...result.items.map((i) => ({ value: String(i.id), label: `${i.title} at ${i.companyName}` })),
         ]),
       error: () => {},
     });

@@ -325,7 +325,7 @@ type SectionKind = 'experience' | 'education' | 'project';
             <form class="entry-form" [formGroup]="eduForm" (ngSubmit)="saveEducation()" novalidate @fadeSlideIn>
               <div class="field">
                 <label class="label" for="eduInst">Institution</label>
-                <input id="eduInst" class="field-input" formControlName="institution" placeholder="e.g. UKIM — FINKI" />
+                <input id="eduInst" class="field-input" formControlName="institution" placeholder="e.g. UKIM, FINKI" />
               </div>
               <div class="form-row">
                 <div class="field">
@@ -496,7 +496,7 @@ type SectionKind = 'experience' | 'education' | 'project';
               <h2>Resume</h2>
               @if (profile()?.cvUrl) {
                 <p class="section-sub">
-                  Your CV is linked —
+                  Your CV is linked.
                   @if (isUploadedCv(profile()!.cvUrl)) {
                     <button type="button" class="resume-link resume-link-btn" (click)="openCv()" [disabled]="cvOpening()">
                       {{ cvOpening() ? 'Opening…' : 'open it' }} <app-icon name="external-link" [size]="12" />
@@ -529,7 +529,7 @@ type SectionKind = 'experience' | 'education' | 'project';
               <app-mask-icon name="cv" [size]="15" />
               {{ cvUploading() ? 'Uploading…' : 'Import CV' }}
             </app-link-button>
-            <span class="resume-hint">PDF, DOC or DOCX — up to 5&nbsp;MB</span>
+            <span class="resume-hint">PDF, DOC or DOCX, up to 5&nbsp;MB</span>
           </div>
         </div>
       }
@@ -922,15 +922,15 @@ export class StudentProfileComponent implements OnInit {
   protected readonly nudge = computed(() => {
     const p = this.profile();
     if (!p) return '';
-    if (!(p.headline && p.headline.trim())) return 'Add a headline — a one-liner that sticks.';
+    if (!(p.headline && p.headline.trim())) return 'Add a headline, a one-liner that sticks.';
     if (!p.university) return 'Add your faculty so companies know where you study.';
-    if (!(p.bio && p.bio.trim())) return 'Write a short bio — it’s your chance to stand out.';
+    if (!(p.bio && p.bio.trim())) return 'Write a short bio. It’s your chance to stand out.';
     if ((p.skills?.length ?? 0) === 0) return 'Add a few skills so companies can spot the match.';
-    if ((p.experiences?.length ?? 0) === 0) return 'Add an experience entry — even volunteering counts.';
+    if ((p.experiences?.length ?? 0) === 0) return 'Add an experience entry. Even volunteering counts.';
     if ((p.educations?.length ?? 0) === 0) return 'Add your education so the timeline is complete.';
-    if ((p.projects?.length ?? 0) === 0) return 'Show off a project — code speaks louder than grades.';
+    if ((p.projects?.length ?? 0) === 0) return 'Show off a project. Code speaks louder than grades.';
     if (!p.cvUrl) return 'Link your CV to finish your profile.';
-    return 'Almost there — a fuller profile gets more replies.';
+    return 'Almost there. A fuller profile gets more replies.';
   });
 
   protected readonly form = this.fb.nonNullable.group({
@@ -1127,7 +1127,7 @@ export class StudentProfileComponent implements OnInit {
       return;
     }
     if (file.size > StudentProfileComponent.MaxCvUploadBytes) {
-      this.toast.error('That file is too large — the limit is 5 MB.');
+      this.toast.error('That file is too large. The limit is 5 MB.');
       return;
     }
 
@@ -1347,7 +1347,7 @@ export class StudentProfileComponent implements OnInit {
   }
 
   protected formatRange(start: string, end: string | null): string {
-    return `${this.formatMonth(start)} — ${end ? this.formatMonth(end) : 'Present'}`;
+    return `${this.formatMonth(start)} to ${end ? this.formatMonth(end) : 'Present'}`;
   }
 
   private formatMonth(isoDate: string): string {

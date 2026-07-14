@@ -35,7 +35,7 @@ interface SkillGroup {
           </button>
         </span>
       } @empty {
-        <span class="soft">No skills added yet — search below to add some.</span>
+        <span class="soft">No skills added yet. Search below to add some.</span>
       }
     </div>
 
@@ -47,7 +47,7 @@ interface SkillGroup {
           role="combobox"
           [attr.aria-expanded]="open()"
           aria-label="Search skills"
-          placeholder="Search skills — e.g. Angular, Excel, German…"
+          placeholder="Search skills, e.g. Angular, Excel, German…"
           [value]="query()"
           (input)="onQuery($event)"
           (focus)="open.set(true)"

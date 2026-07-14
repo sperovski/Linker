@@ -99,7 +99,7 @@ const PILLARS: Pillar[] = [
     pill: 'Discover',
     icon: 'search',
     headline: 'Smart internship matches',
-    description: 'Listings that fit your skills and city — not a wall of noise.',
+    description: 'Listings that fit your skills and city, not a wall of noise.',
     tint: 'navy',
     tilt: -1,
     radius: '20px',
@@ -157,7 +157,7 @@ const FACULTIES = [
   'Faculty of Mechanical Engineering',
   'Faculty of Civil Engineering',
   'Faculty of Architecture',
-  'Faculty of Economics – Skopje',
+  'Faculty of Economics, Skopje',
   'Faculty of Law “Iustinianus Primus”',
   'Faculty of Medicine',
   'Faculty of Pharmacy',
@@ -229,7 +229,7 @@ const TESTIMONIALS = [
             <span class="rotator" [@wordSwap]="word()">{{ word() }}</span>
           </h1>
           <p class="hero-sub">
-            Internships in Skopje from companies you already know — real roles,
+            Internships in Skopje from companies you already know. Real roles,
             honest applications, no noise in between.
           </p>
           <div class="hero-ctas hero-ctas-stack">

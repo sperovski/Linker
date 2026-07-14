@@ -13,7 +13,7 @@ export const UKIM_FACULTIES: string[] = [
   'Faculty of Dentistry',
   'Faculty of Design and Technologies of Furniture and Interior',
   'Faculty of Dramatic Arts',
-  'Faculty of Economics – Skopje',
+  'Faculty of Economics, Skopje',
   'Faculty of Electrical Engineering and Information Technologies (FEIT)',
   'Faculty of Fine Arts',
   'Faculty of Law “Iustinianus Primus”',

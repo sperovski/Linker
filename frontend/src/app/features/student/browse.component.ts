@@ -55,7 +55,7 @@ const PAGE_SIZE = 12;
               <span class="result-count">{{ total() }} open role{{ total() === 1 ? '' : 's' }}</span>
             }
           </h1>
-          <p class="page-sub">Real roles from Netcetera to Alkaloid — companies you already know.</p>
+          <p class="page-sub">Real roles from Netcetera to Alkaloid, companies you already know.</p>
         </div>
       </div>
 
@@ -141,7 +141,7 @@ const PAGE_SIZE = 12;
             <app-empty-state
               variant="search"
               title="No internships found"
-              message="Try clearing a filter or searching for something broader — new roles are posted all the time."
+              message="Try clearing a filter or searching for something broader. New roles are posted all the time."
             />
           } @else {
             <div class="grid-cards">

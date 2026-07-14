@@ -37,7 +37,7 @@ import { relativeTime } from '../../shared/dates';
         <app-empty-state
           variant="inbox"
           title="No messages yet"
-          message="Be the first to say hello — messages appear here in real time."
+          message="Be the first to say hello. Messages appear here in real time."
         />
       }
 

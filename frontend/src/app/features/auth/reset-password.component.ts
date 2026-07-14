@@ -107,7 +107,7 @@ export class ResetPasswordComponent implements OnInit {
     this.submitting.set(true);
     this.account.resetPassword(token, this.form.getRawValue().password).subscribe({
       next: () => {
-        this.toast.success('Password reset — please log in.');
+        this.toast.success('Password reset. Please log in.');
         this.router.navigate(['/login']);
       },
       error: (err) => {

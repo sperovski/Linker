@@ -52,7 +52,7 @@ const PAGE_SIZE = 10;
           <h1>Applicants</h1>
           @if (internship(); as job) {
             <p class="page-sub">
-              {{ job.title }} —
+              {{ job.title }}:
               {{ total() }} application{{ total() === 1 ? '' : 's' }}
             </p>
           }

@@ -51,7 +51,7 @@ import { TYPE_LABELS, deadlineCountdown, daysUntil } from '../../shared/dates';
             <app-empty-state
               variant="inbox"
               title="No saved roles yet"
-              message="Tap the bookmark on any internship to keep it here — a quiet shortlist you can act on when you're ready."
+              message="Tap the bookmark on any internship to keep it here, a quiet shortlist you can act on when you're ready."
               ctaLink="/internships"
               ctaLabel="Browse internships"
             />

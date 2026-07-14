@@ -150,7 +150,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <div>
                 <h2>Required skills</h2>
                 <p class="step-sub">
-                  Pick at least one — students see how well they match, and a role with no
+                  Pick at least one. Students see how well they match, and a role with no
                   skills never reaches their recommendations.
                 </p>
               </div>
