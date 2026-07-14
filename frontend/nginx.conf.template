@@ -1,8 +1,27 @@
+# WebSockets can't send an Authorization header, so SignalR puts the JWT in the
+# query string (?access_token=...). nginx's default log format writes the full
+# request line, which means every chat connection would print a valid bearer
+# token into the access log — and access logs get shipped, archived and read by
+# people who should never hold a user's token. Redact it before logging.
+#
+# This file is rendered into conf.d, which is inside the http context, so map and
+# log_format are legal here.
+map $request_uri $safe_request_uri {
+    ~^(?<before>[^?]*\?.*access_token=)[^&]*(?<after>.*)$  "${before}[REDACTED]${after}";
+    default                                                $request_uri;
+}
+
+log_format redacted '$remote_addr - $remote_user [$time_local] '
+                    '"$request_method $safe_request_uri $server_protocol" '
+                    '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+
 server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    access_log /var/log/nginx/access.log redacted;
 
     # Same-origin API: the prod frontend calls /api and nginx forwards to the
     # API service, so no CORS is involved. API_ORIGIN is substituted by the
