@@ -228,9 +228,12 @@ public class InternshipService : IInternshipService
 
     private async Task<IReadOnlyList<int>> ValidatedSkillIdsAsync(IReadOnlyList<int>? skillIds, CancellationToken cancellationToken)
     {
+        // A role with no required skills can never be scored, matched or
+        // recommended — it is invisible to every student who filters by fit.
+        // Both create and update funnel through here, so the rule holds for both.
         if (skillIds is null || skillIds.Count == 0)
         {
-            return [];
+            throw new BadRequestException("List at least one required skill so students can see how well they match.");
         }
 
         var distinct = skillIds.Distinct().ToList();

@@ -149,7 +149,10 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               <span class="step-num">4</span>
               <div>
                 <h2>Required skills</h2>
-                <p class="step-sub">Pick the skills that matter — students see how well they match.</p>
+                <p class="step-sub">
+                  Pick at least one — students see how well they match, and a role with no
+                  skills never reaches their recommendations.
+                </p>
               </div>
             </div>
             <div class="step-body">
@@ -172,7 +175,11 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
                     </button>
                   }
                 </div>
-                <p class="field-hint">{{ selectedSkillIds().size }} selected</p>
+                @if (skillsMissing()) {
+                  <div class="field-error" @fadeSlideIn>Pick at least one required skill.</div>
+                } @else {
+                  <p class="field-hint">{{ selectedSkillIds().size }} selected</p>
+                }
               }
             </div>
           </div>
@@ -323,6 +330,11 @@ export class InternshipFormComponent implements OnInit {
 
   protected readonly allSkills = signal<SkillResponse[]>([]);
   protected readonly selectedSkillIds = signal<Set<number>>(new Set());
+  /** Set on first submit, so the "pick a skill" error only shows after a real attempt. */
+  protected readonly skillsTouched = signal(false);
+  protected readonly skillsMissing = computed(
+    () => this.skillsTouched() && this.selectedSkillIds().size === 0,
+  );
 
   protected readonly typeOptions: SelectOption[] = [
     { value: 'Internship', label: 'Internship' },
@@ -414,7 +426,10 @@ export class InternshipFormComponent implements OnInit {
 
   protected submit(): void {
     this.serverError.set(null);
-    if (this.form.invalid) {
+    this.skillsTouched.set(true);
+    // A role with no skills can't be matched or recommended, so the API rejects
+    // it — catch it here rather than round-tripping to find out.
+    if (this.form.invalid || this.selectedSkillIds().size === 0) {
       this.form.markAllAsTouched();
       return;
     }
