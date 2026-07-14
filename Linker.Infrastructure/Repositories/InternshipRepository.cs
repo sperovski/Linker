@@ -125,6 +125,23 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
     // The single source of truth for "which active listings match this search".
     // Shared by the page query, its count, and the company facet so the three can
     // never drift apart. No Includes: callers that need them opt in via WithDetails.
+    private const string LikeEscape = "\\";
+
+    /// <summary>
+    /// Wraps user input in a contains-pattern, escaping the LIKE wildcards first.
+    /// Without this a search for "%" matches every row (and a string of them makes
+    /// Postgres do a lot of pointless work), while "50_off" silently matches any
+    /// character in the underscore's place.
+    /// </summary>
+    private static string LikePattern(string value)
+    {
+        var escaped = value
+            .Replace("\\", "\\\\")
+            .Replace("%", "\\%")
+            .Replace("_", "\\_");
+        return $"%{escaped}%";
+    }
+
     private IQueryable<Internship> ActiveQuery(InternshipSearchCriteria criteria)
     {
         var query = Context.Internships
@@ -138,14 +155,16 @@ public class InternshipRepository : Repository<Internship>, IInternshipRepositor
 
         if (!string.IsNullOrWhiteSpace(criteria.Location))
         {
-            query = query.Where(i => i.Location != null && EF.Functions.ILike(i.Location, $"%{criteria.Location}%"));
+            var location = LikePattern(criteria.Location);
+            query = query.Where(i => i.Location != null && EF.Functions.ILike(i.Location!, location, LikeEscape));
         }
 
         if (!string.IsNullOrWhiteSpace(criteria.SearchText))
         {
+            var search = LikePattern(criteria.SearchText);
             query = query.Where(i =>
-                EF.Functions.ILike(i.Title, $"%{criteria.SearchText}%") ||
-                EF.Functions.ILike(i.Description, $"%{criteria.SearchText}%"));
+                EF.Functions.ILike(i.Title, search, LikeEscape) ||
+                EF.Functions.ILike(i.Description, search, LikeEscape));
         }
 
         if (!string.IsNullOrWhiteSpace(criteria.Company))
