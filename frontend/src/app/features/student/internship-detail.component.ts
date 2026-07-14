@@ -25,6 +25,7 @@ import { SaveButtonComponent } from '../../shared/save-button.component';
 import { MatchBadgeComponent } from '../../shared/match-badge.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil } from '../../shared/dates';
+import { MATCH_BADGE_MIN_SCORE } from '../../shared/match';
 
 @Component({
   selector: 'app-internship-detail',
@@ -99,7 +100,13 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
               </div>
               @if (auth.isStudent() && job.matchScore !== null) {
                 <p class="skill-note">
-                  You match <strong>{{ job.matchScore }}%</strong> of the skills this role lists.
+                  <!-- The detail view is where the raw figure belongs — but a 0% is
+                       never quoted back at a student, so that case gets words. -->
+                  @if (job.matchScore >= minBadgeScore) {
+                    You match <strong>{{ job.matchScore }}%</strong> of the skills this role lists.
+                  } @else {
+                    You don't match the skills this role lists yet.
+                  }
                   @if (job.matchScore < 100) {
                     Add the greyed-out skills to your <a routerLink="/profile">profile</a> if they fit you.
                   }
@@ -448,6 +455,7 @@ import { TYPE_LABELS, formatDate, startCountdown, deadlineCountdown, daysUntil }
   ],
 })
 export class InternshipDetailComponent implements OnInit {
+  protected readonly minBadgeScore = MATCH_BADGE_MIN_SCORE;
   protected readonly auth = inject(AuthService);
   private readonly internshipService = inject(InternshipService);
   private readonly applicationService = inject(ApplicationService);

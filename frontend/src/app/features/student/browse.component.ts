@@ -19,6 +19,7 @@ import { InternshipStripComponent } from '../../shared/internship-strip.componen
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../../shared/dates';
+import { matchExplanation } from '../../shared/match';
 
 /** Matches the API default; the server clamps anything above 50. */
 const PAGE_SIZE = 12;
@@ -174,8 +175,17 @@ const PAGE_SIZE = 12;
                       </div>
                     }
                     <div class="badges">
-                      @if (internship.matchScore !== null) {
-                        <app-match-badge [score]="internship.matchScore" />
+                      @if (internship.hasApplied) {
+                        <span class="badge badge-applied">
+                          <app-icon name="check" [size]="12" />
+                          Applied
+                        </span>
+                      } @else {
+                        <app-match-badge
+                          [score]="internship.matchScore"
+                          [matchedSkillCount]="internship.matchedSkillCount"
+                          [requiredSkillCount]="internship.requiredSkillCount"
+                        />
                       }
                       <span class="badge badge-type">{{ typeLabel(internship.type) }}</span>
                       @if (internship.location) {
@@ -200,6 +210,9 @@ const PAGE_SIZE = 12;
                         </span>
                       }
                     </div>
+                    @if (explain(internship); as line) {
+                      <p class="match-explain">{{ line }}</p>
+                    }
                     <span class="card-cta">
                       View role
                       <app-icon name="arrow-right" [size]="14" />
@@ -243,6 +256,19 @@ const PAGE_SIZE = 12;
         color: var(--color-text-soft);
         font-size: 0.875rem;
         font-weight: 600;
+      }
+
+      .match-explain {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: var(--color-text-soft);
+        font-weight: 600;
+      }
+
+      .badge-applied {
+        color: var(--color-primary);
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
       }
 
       .pager {
@@ -439,6 +465,13 @@ export class BrowseComponent implements OnInit {
   protected deadlineSoon(internship: InternshipListItem): boolean {
     const days = daysUntil(internship.applicationDeadline);
     return days !== null && days <= 7;
+  }
+
+  protected explain(internship: InternshipListItem): string | null {
+    if (internship.hasApplied) {
+      return null; // The "Applied" badge already says what matters.
+    }
+    return matchExplanation(internship.matchedSkillCount, internship.requiredSkillCount);
   }
 
   private fetch(): void {

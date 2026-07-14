@@ -15,7 +15,9 @@ import { CompanyLogoComponent } from './company-logo.component';
 import { MatchBadgeComponent } from './match-badge.component';
 import { IconComponent } from './icon.component';
 import { MaskIconComponent, MaskIconName } from './mask-icon.component';
-import { TYPE_LABELS } from './dates';
+import { SaveButtonComponent } from './save-button.component';
+import { TYPE_LABELS, deadlineCountdown } from './dates';
+import { matchExplanation } from './match';
 
 /**
  * Horizontal row of compact internship cards. Used for the "Recommended for
@@ -29,7 +31,14 @@ import { TYPE_LABELS } from './dates';
 @Component({
   selector: 'app-internship-strip',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CompanyLogoComponent, MatchBadgeComponent, IconComponent, MaskIconComponent],
+  imports: [
+    RouterLink,
+    CompanyLogoComponent,
+    MatchBadgeComponent,
+    IconComponent,
+    MaskIconComponent,
+    SaveButtonComponent,
+  ],
   template: `
     <section class="strip" [class.is-carousel]="carousel()">
       <div class="strip-head">
@@ -58,52 +67,53 @@ import { TYPE_LABELS } from './dates';
       <div
         class="strip-scroll"
         #scroller
-        (scroll)="onScroll()"
         (mouseenter)="pause()"
         (mouseleave)="resume()"
         (focusin)="pause()"
         (focusout)="resume()"
       >
         @for (item of items(); track item.id; let i = $index) {
-          <a
-            class="mini card"
-            [routerLink]="['/internships', item.id]"
-            [style.animation-delay.ms]="i * 55"
-          >
-            <div class="mini-top">
-              <app-company-logo [name]="item.companyName" [size]="36" />
-              @if (item.matchScore !== null) {
-                <app-match-badge [score]="item.matchScore" />
-              } @else if (rank()) {
-                <span class="rank">#{{ i + 1 }}</span>
-              }
+          <div class="mini-wrap" [style.animation-delay.ms]="i * 55">
+            <div class="mini-save">
+              <app-save-button [internshipId]="item.id" [initialSaved]="item.isSaved" [compact]="true" />
             </div>
-            <h3>{{ item.title }}</h3>
-            <span class="mini-company">{{ item.companyName }}</span>
-            <div class="mini-foot">
-              <span class="badge badge-type">{{ typeLabel(item.type) }}</span>
-              @if (item.location) {
-                <span class="mini-loc"><app-icon name="map-pin" [size]="12" /> {{ item.location }}</span>
+            <a class="mini card" [routerLink]="['/internships', item.id]">
+              <div class="mini-top">
+                <app-company-logo [name]="item.companyName" [size]="36" />
+                @if (item.hasApplied) {
+                  <span class="badge badge-applied">
+                    <app-icon name="check" [size]="12" />
+                    Applied
+                  </span>
+                } @else if (item.matchScore !== null) {
+                  <app-match-badge
+                    [score]="item.matchScore"
+                    [matchedSkillCount]="item.matchedSkillCount"
+                    [requiredSkillCount]="item.requiredSkillCount"
+                  />
+                } @else if (rank()) {
+                  <span class="rank">#{{ i + 1 }}</span>
+                }
+              </div>
+              <h3>{{ item.title }}</h3>
+              <span class="mini-company">{{ item.companyName }}</span>
+              @if (explain(item); as line) {
+                <span class="mini-explain">{{ line }}</span>
               }
-            </div>
-          </a>
+              <!-- Two meta chips only: type, then the deadline if there is one,
+                   otherwise the location. Keeps the card from overfilling. -->
+              <div class="mini-foot">
+                <span class="badge badge-type">{{ typeLabel(item.type) }}</span>
+                @if (deadline(item); as label) {
+                  <span class="mini-loc"><app-icon name="clock" [size]="12" /> {{ label }}</span>
+                } @else if (item.location) {
+                  <span class="mini-loc"><app-icon name="map-pin" [size]="12" /> {{ item.location }}</span>
+                }
+              </div>
+            </a>
+          </div>
         }
       </div>
-
-      @if (carousel() && items().length > 1) {
-        <div class="strip-dots" role="tablist" aria-label="Carousel position">
-          @for (item of items(); track item.id; let i = $index) {
-            <button
-              type="button"
-              class="dot"
-              [class.active]="i === activeIndex()"
-              (click)="goTo(i)"
-              [attr.aria-label]="'Go to item ' + (i + 1)"
-              [attr.aria-selected]="i === activeIndex()"
-            ></button>
-          }
-        </div>
-      }
     </section>
   `,
   styles: [
@@ -200,13 +210,30 @@ import { TYPE_LABELS } from './dates';
 
       .is-carousel .strip-scroll::-webkit-scrollbar { display: none; }
 
+      /* The wrapper is the grid child so the save button can sit outside the
+         card's <a> (a button inside an anchor is invalid and unclickable). */
+      .mini-wrap {
+        position: relative;
+        display: flex;
+        scroll-snap-align: start;
+        animation: mini-in 400ms ease backwards;
+      }
+
+      /* Bottom-right, out of the badge's way in mini-top; .mini-foot reserves
+         the gutter so the meta chips never run under it. */
+      .mini-save {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        z-index: 2;
+      }
+
       .mini {
         display: flex;
         flex-direction: column;
         gap: 6px;
+        width: 100%;
         color: inherit;
-        scroll-snap-align: start;
-        animation: mini-in 400ms ease backwards;
         cursor: pointer;
         transform-style: preserve-3d;
         transition:
@@ -251,7 +278,31 @@ import { TYPE_LABELS } from './dates';
 
       .mini-company { color: var(--color-text-soft); font-size: 0.8125rem; font-weight: 600; }
 
-      .mini-foot { display: flex; align-items: center; gap: var(--space-sm); margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+      /* padding-right keeps the chips clear of the absolutely-placed save button. */
+      .mini-foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-top: auto;
+        padding-top: 6px;
+        padding-right: 34px;
+        flex-wrap: wrap;
+      }
+
+      .mini-explain {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-text-soft);
+      }
+
+      .badge-applied {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--color-primary);
+        background: var(--color-muted);
+        border: 1px solid var(--color-border);
+      }
 
       .mini-loc {
         display: inline-flex;
@@ -271,35 +322,9 @@ import { TYPE_LABELS } from './dates';
         padding: 2px 9px;
       }
 
-      /* ---- Dots ---- */
-      .strip-dots {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        margin-top: 4px;
-      }
-
-      .dot {
-        width: 7px;
-        height: 7px;
-        padding: 0;
-        border: none;
-        border-radius: 999px;
-        background: var(--color-border);
-        cursor: pointer;
-        transition: width 280ms cubic-bezier(0.66, 0, 0.2, 1), background-color 200ms ease;
-      }
-
-      .dot:hover { background: #cbccee; }
-
-      .dot.active {
-        width: 22px;
-        background: linear-gradient(90deg, #f59e0b, #b45309);
-      }
-
       @media (prefers-reduced-motion: reduce) {
-        .mini { animation: none; transition: box-shadow 0.2s ease; }
+        .mini-wrap { animation: none; }
+        .mini { transition: box-shadow 0.2s ease; }
         .mini:hover,
         .mini:focus-visible {
           transform: none;
@@ -328,8 +353,6 @@ export class InternshipStripComponent implements OnInit, OnDestroy {
 
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
-  protected readonly activeIndex = signal(0);
-
   private timer: ReturnType<typeof setInterval> | null = null;
   private paused = false;
   private reducedMotion = false;
@@ -351,19 +374,24 @@ export class InternshipStripComponent implements OnInit, OnDestroy {
     return TYPE_LABELS[type] ?? type;
   }
 
+  protected deadline(item: InternshipListItem): string | null {
+    return deadlineCountdown(item.applicationDeadline);
+  }
+
+  protected explain(item: InternshipListItem): string | null {
+    if (item.hasApplied) {
+      return null; // The "Applied" badge already carries the message.
+    }
+    return matchExplanation(item.matchedSkillCount, item.requiredSkillCount);
+  }
+
   // ---- Carousel plumbing (native smooth scroll) ----
   private step(): number {
     const el = this.scroller()?.nativeElement;
-    const first = el?.querySelector<HTMLElement>('.mini');
+    const first = el?.querySelector<HTMLElement>('.mini-wrap');
     if (!el || !first) return 246;
     const gap = parseFloat(getComputedStyle(el).columnGap || '16') || 16;
     return first.getBoundingClientRect().width + gap;
-  }
-
-  protected onScroll(): void {
-    const el = this.scroller()?.nativeElement;
-    if (!el) return;
-    this.activeIndex.set(Math.round(el.scrollLeft / this.step()));
   }
 
   private advance(): void {
@@ -391,13 +419,6 @@ export class InternshipStripComponent implements OnInit, OnDestroy {
     if (!el) return;
     if (el.scrollLeft <= 4) el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
     else el.scrollBy({ left: -this.step(), behavior: 'smooth' });
-    this.restart();
-  }
-
-  protected goTo(index: number): void {
-    const el = this.scroller()?.nativeElement;
-    if (!el) return;
-    el.scrollTo({ left: index * this.step(), behavior: 'smooth' });
     this.restart();
   }
 
