@@ -24,6 +24,7 @@ public class InternshipServiceTests : IDisposable
             new StudentRepository(context),
             new SkillRepository(context),
             new SavedInternshipRepository(context),
+            new ApplicationRepository(context),
             context);
     }
 

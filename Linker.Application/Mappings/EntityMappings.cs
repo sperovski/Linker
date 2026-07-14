@@ -88,7 +88,8 @@ public static class EntityMappings
     public static InternshipListItemResponse ToListItemResponse(
         this Internship internship,
         IReadOnlySet<int>? studentSkillIds = null,
-        IReadOnlySet<int>? savedInternshipIds = null) =>
+        IReadOnlySet<int>? savedInternshipIds = null,
+        IReadOnlySet<int>? appliedInternshipIds = null) =>
         new(
             internship.Id,
             internship.Title,
@@ -101,7 +102,10 @@ public static class EntityMappings
             internship.ApplicationDeadline,
             internship.RequiredSkillResponses(),
             internship.MatchScore(studentSkillIds),
-            savedInternshipIds?.Contains(internship.Id) ?? false);
+            savedInternshipIds?.Contains(internship.Id) ?? false,
+            internship.MatchedSkillCount(studentSkillIds),
+            internship.RequiredSkillCount(studentSkillIds),
+            appliedInternshipIds?.Contains(internship.Id) ?? false);
 
     public static InternshipDetailResponse ToDetailResponse(
         this Internship internship,
@@ -150,6 +154,18 @@ public static class EntityMappings
         var matched = required.Count(studentSkillIds.Contains);
         return (int)Math.Round(matched * 100.0 / required.Count);
     }
+
+    // The numerator and denominator behind MatchScore. Null in exactly the cases
+    // MatchScore is null, so the card can trust "have X of Y" whenever it has a score.
+    private static int? MatchedSkillCount(this Internship internship, IReadOnlySet<int>? studentSkillIds) =>
+        studentSkillIds is null || internship.RequiredSkills.Count == 0
+            ? null
+            : internship.RequiredSkills.Count(rs => studentSkillIds.Contains(rs.SkillId));
+
+    private static int? RequiredSkillCount(this Internship internship, IReadOnlySet<int>? studentSkillIds) =>
+        studentSkillIds is null || internship.RequiredSkills.Count == 0
+            ? null
+            : internship.RequiredSkills.Count;
 
     public static ApplicationResponse ToResponse(this ApplicationEntity application) =>
         new(

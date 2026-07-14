@@ -63,7 +63,16 @@ public record InternshipListItemResponse(
     DateOnly? ApplicationDeadline,
     IReadOnlyList<SkillResponse> RequiredSkills,
     int? MatchScore,
-    bool IsSaved);
+    bool IsSaved,
+    // Explainability behind MatchScore, so the card can say "You have 2 of 3
+    // required skills" without recomputing the match client-side. Both null
+    // when there is no student context.
+    int? MatchedSkillCount,
+    int? RequiredSkillCount,
+    // True when the caller has already applied. Suppresses the match badge on
+    // rails that don't exclude applied roles (Trending), which otherwise show a
+    // high score for a role Recommended has deliberately dropped.
+    bool HasApplied);
 
 public record InternshipDetailResponse(
     int Id,

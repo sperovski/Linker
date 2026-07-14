@@ -14,6 +14,7 @@ public class InternshipService : IInternshipService
     private readonly IStudentRepository _studentRepository;
     private readonly ISkillRepository _skillRepository;
     private readonly ISavedInternshipRepository _savedInternshipRepository;
+    private readonly IApplicationRepository _applicationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public InternshipService(
@@ -22,6 +23,7 @@ public class InternshipService : IInternshipService
         IStudentRepository studentRepository,
         ISkillRepository skillRepository,
         ISavedInternshipRepository savedInternshipRepository,
+        IApplicationRepository applicationRepository,
         IUnitOfWork unitOfWork)
     {
         _internshipRepository = internshipRepository;
@@ -29,6 +31,7 @@ public class InternshipService : IInternshipService
         _studentRepository = studentRepository;
         _skillRepository = skillRepository;
         _savedInternshipRepository = savedInternshipRepository;
+        _applicationRepository = applicationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -113,7 +116,7 @@ public class InternshipService : IInternshipService
         var type = string.IsNullOrWhiteSpace(request.Type) ? (InternshipType?)null : ParseType(request.Type);
         var criteria = new InternshipSearchCriteria(request.Location, request.SearchText, type, NullIfBlank(request.Company));
 
-        var (skillIds, savedIds) = await LoadStudentContextAsync(userId, cancellationToken);
+        var (skillIds, savedIds, appliedIds) = await LoadStudentContextAsync(userId, cancellationToken);
 
         // Ordering by match score happens in SQL (see InternshipRepository.OrderForStudent);
         // sorting here would only ever sort the current page against itself.
@@ -125,7 +128,7 @@ public class InternshipService : IInternshipService
         var facets = await _internshipRepository.GetCompanyFacetsAsync(criteria with { Company = null }, cancellationToken);
 
         return new InternshipSearchResponse(
-            internships.Select(i => i.ToListItemResponse(skillIds, savedIds)).ToList(),
+            internships.Select(i => i.ToListItemResponse(skillIds, savedIds, appliedIds)).ToList(),
             total,
             request.Page,
             request.PageSize,
@@ -159,16 +162,19 @@ public class InternshipService : IInternshipService
         var matches = await _internshipRepository.GetRecommendedForStudentAsync(
             student.Id, skillIds.ToArray(), take, cancellationToken);
 
+        // Recommended already excludes applied roles, so the applied set is empty here by construction.
         return matches.Select(i => i.ToListItemResponse(skillIds, savedIds)).ToList();
     }
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetPopularAsync(int take, int? userId = null, CancellationToken cancellationToken = default)
     {
-        var (skillIds, savedIds) = await LoadStudentContextAsync(userId, cancellationToken);
+        var (skillIds, savedIds, appliedIds) = await LoadStudentContextAsync(userId, cancellationToken);
         var popular = await _internshipRepository.GetPopularActiveAsync(take, cancellationToken);
 
         // Repository already ordered by application count; preserve that order.
-        return popular.Select(i => i.ToListItemResponse(skillIds, savedIds)).ToList();
+        // Unlike Recommended, this rail keeps roles the student applied to — HasApplied
+        // lets the card show "Applied" instead of a match badge, so the two rails agree.
+        return popular.Select(i => i.ToListItemResponse(skillIds, savedIds, appliedIds)).ToList();
     }
 
     public async Task<IReadOnlyList<InternshipListItemResponse>> GetOwnListingsAsync(int userId, CancellationToken cancellationToken = default)
@@ -190,7 +196,7 @@ public class InternshipService : IInternshipService
         var internship = await _internshipRepository.GetWithDetailsAsync(internshipId, cancellationToken)
             ?? throw new NotFoundException("Internship", internshipId);
 
-        var (skillIds, savedIds) = await LoadStudentContextAsync(userId, cancellationToken);
+        var (skillIds, savedIds, _) = await LoadStudentContextAsync(userId, cancellationToken);
 
         return internship.ToDetailResponse(skillIds, savedIds);
     }
@@ -199,24 +205,25 @@ public class InternshipService : IInternshipService
     // mappers need: the student's own skill ids (for match scoring) and the ids
     // of internships they have saved (for the bookmark flag). Both are null for
     // anonymous callers and for companies, which suppresses those fields.
-    private async Task<(IReadOnlySet<int>? SkillIds, IReadOnlySet<int>? SavedIds)> LoadStudentContextAsync(int? userId, CancellationToken cancellationToken)
+    private async Task<(IReadOnlySet<int>? SkillIds, IReadOnlySet<int>? SavedIds, IReadOnlySet<int>? AppliedIds)> LoadStudentContextAsync(int? userId, CancellationToken cancellationToken)
     {
         if (userId is null)
         {
-            return (null, null);
+            return (null, null, null);
         }
 
         var student = await _studentRepository.GetByUserIdAsync(userId.Value, cancellationToken);
         if (student is null)
         {
-            return (null, null);
+            return (null, null, null);
         }
 
         var withSkills = await _studentRepository.GetWithSkillsAsync(student.Id, cancellationToken);
         var skillIds = withSkills!.Skills.Select(ss => ss.SkillId).ToHashSet();
         var savedIds = (await _savedInternshipRepository.GetSavedInternshipIdsAsync(student.Id, cancellationToken)).ToHashSet();
+        var appliedIds = (await _applicationRepository.GetAppliedInternshipIdsAsync(student.Id, cancellationToken)).ToHashSet();
 
-        return (skillIds, savedIds);
+        return (skillIds, savedIds, appliedIds);
     }
 
     private async Task<IReadOnlyList<int>> ValidatedSkillIdsAsync(IReadOnlyList<int>? skillIds, CancellationToken cancellationToken)

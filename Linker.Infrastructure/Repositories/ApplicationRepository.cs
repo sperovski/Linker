@@ -74,6 +74,16 @@ public class ApplicationRepository : Repository<ApplicationEntity>, IApplication
             .AnyAsync(a => a.StudentId == studentId && a.Internship.CompanyId == companyId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<int>> GetAppliedInternshipIdsAsync(int studentId, CancellationToken cancellationToken = default)
+    {
+        return await Context.Applications
+            .AsNoTracking()
+            .Where(a => a.StudentId == studentId)
+            .Select(a => a.InternshipId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<ApplicationEntity?> GetWithDetailsAsync(int id, CancellationToken cancellationToken = default)
     {
         return await Context.Applications
