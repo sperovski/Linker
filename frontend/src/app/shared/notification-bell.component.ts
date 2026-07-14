@@ -157,7 +157,7 @@ import { relativeTime } from './dates';
 
       .item:last-child { border-bottom: none; }
       .item:hover { background: var(--color-muted); }
-      .item.unread { background: rgba(79, 70, 229, 0.05); }
+      .item.unread { background: rgba(29, 77, 36, 0.05); }
 
       .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); margin-top: 6px; flex-shrink: 0; }
       .item:not(.unread) .body { padding-left: 15px; }

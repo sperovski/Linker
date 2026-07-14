@@ -156,7 +156,7 @@ import { statusLabel } from '../../shared/application-status';
         width: 40px;
         height: 40px;
         border-radius: var(--radius-md);
-        background: rgba(79, 70, 229, 0.1);
+        background: rgba(29, 77, 36, 0.1);
         color: var(--color-primary);
         margin-bottom: var(--space-sm);
       }

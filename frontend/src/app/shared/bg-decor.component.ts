@@ -57,13 +57,13 @@ import { MaskIconComponent } from './mask-icon.component';
       .bg-block.tl {
         top: -120px;
         left: -120px;
-        background: radial-gradient(circle, #818cf8, transparent 70%);
+        background: radial-gradient(circle, #6FB37E, transparent 70%);
       }
 
       .bg-block.br {
         bottom: -120px;
         right: -120px;
-        background: radial-gradient(circle, #a5b4fc, transparent 70%);
+        background: radial-gradient(circle, #B7DCC0, transparent 70%);
       }
 
       /* app-icon renders an <svg stroke="currentColor" fill="none">, and app-mask-icon
@@ -71,7 +71,7 @@ import { MaskIconComponent } from './mask-icon.component';
          from a stroke/fill/background set directly on them. */
       .bg-icon {
         display: inline-flex;
-        color: #4f46e5;
+        color: #1D4D24;
         opacity: 0.13;
       }
 

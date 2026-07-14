@@ -44,12 +44,12 @@ export function companyLogoCover(name: string | null | undefined): boolean {
 // Deterministic, pleasant gradient for companies without a bundled logo, so the
 // fallback initials still feel branded rather than uniformly navy.
 const FALLBACK_GRADIENTS = [
-  'linear-gradient(135deg, #4F46E5, #7C3AED)',
-  'linear-gradient(135deg, #7C3AED, #A855F7)',
+  'linear-gradient(135deg, #1D4D24, #3E7B4F)',
+  'linear-gradient(135deg, #6FB37E, #3E7B4F)',
   'linear-gradient(135deg, #059669, #10B981)',
   'linear-gradient(135deg, #DB2777, #F472B6)',
   'linear-gradient(135deg, #D97706, #F59E0B)',
-  'linear-gradient(135deg, #4F46E5, #6366F1)',
+  'linear-gradient(135deg, #1D4D24, #2E6B3A)',
   'linear-gradient(135deg, #0D9488, #14B8A6)',
   'linear-gradient(135deg, #DC2626, #F87171)',
 ];

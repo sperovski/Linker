@@ -127,7 +127,7 @@ import { matchExplanation } from './match';
         border-radius: var(--radius-xl);
         background:
           radial-gradient(120% 140% at 100% 0%, rgba(245, 158, 11, 0.06), transparent 55%),
-          radial-gradient(120% 140% at 0% 100%, rgba(79, 70, 229, 0.05), transparent 55%),
+          radial-gradient(120% 140% at 0% 100%, rgba(29, 77, 36, 0.05), transparent 55%),
           var(--color-surface);
       }
 
@@ -147,7 +147,7 @@ import { matchExplanation } from './match';
         width: 36px;
         height: 36px;
         border-radius: var(--radius-md);
-        background: rgba(79, 70, 229, 0.1);
+        background: rgba(29, 77, 36, 0.1);
         color: var(--color-primary);
         flex-shrink: 0;
       }
@@ -180,7 +180,7 @@ import { matchExplanation } from './match';
         transform: translateY(-1px);
         background: var(--color-primary);
         color: #fff;
-        box-shadow: 0 8px 18px -8px rgba(79, 70, 229, 0.6);
+        box-shadow: 0 8px 18px -8px rgba(29, 77, 36, 0.6);
       }
 
       .nav-btn:active { transform: translateY(0); }
@@ -246,7 +246,7 @@ import { matchExplanation } from './match';
         transform: rotate3d(1, -0.35, 0, 6deg) translateY(-4px);
         box-shadow:
           0 18px 32px -18px rgba(23, 26, 43, 0.35),
-          0 8px 14px -12px rgba(79, 70, 229, 0.25);
+          0 8px 14px -12px rgba(29, 77, 36, 0.25);
       }
 
       .mini:focus-visible {

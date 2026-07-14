@@ -321,7 +321,7 @@ const PAGE_SIZE = 12;
 
       .filter-bar:focus-within {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12), var(--shadow-md);
+        box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.12), var(--shadow-md);
       }
 
       .filter-cell {

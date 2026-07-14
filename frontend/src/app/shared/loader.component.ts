@@ -91,7 +91,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       }
 
       .loader-hand {
-        --skin-color: #818cf8;
+        --skin-color: #6FB37E;
         --tap-speed: 0.6s;
         --tap-stagger: 0.1s;
         position: relative;

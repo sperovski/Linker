@@ -221,15 +221,15 @@ import { LoaderComponent } from '../../shared/loader.component';
         transition: border-color 160ms ease, background-color 160ms ease, transform 120ms ease;
       }
 
-      .dropzone:hover { border-color: var(--color-primary); background: rgba(79, 70, 229, 0.03); }
-      .dropzone.dragging { border-color: var(--color-primary); background: rgba(79, 70, 229, 0.07); transform: scale(1.01); }
+      .dropzone:hover { border-color: var(--color-primary); background: rgba(29, 77, 36, 0.03); }
+      .dropzone.dragging { border-color: var(--color-primary); background: rgba(29, 77, 36, 0.07); transform: scale(1.01); }
 
       .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
       .dz-icon {
         display: inline-flex; align-items: center; justify-content: center;
         width: 48px; height: 48px; border-radius: var(--radius-md);
-        background: rgba(79, 70, 229, 0.1); color: var(--color-primary); margin-bottom: 4px;
+        background: rgba(29, 77, 36, 0.1); color: var(--color-primary); margin-bottom: 4px;
       }
       .dz-title { font-weight: 700; color: var(--color-foreground); word-break: break-word; }
       .dz-sub { font-size: 0.8125rem; color: var(--color-text-soft); }
@@ -257,7 +257,7 @@ import { LoaderComponent } from '../../shared/loader.component';
         padding: 0 12px;
         margin-bottom: var(--space-md);
       }
-      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
+      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.12); }
 
       .hint { font-size: 0.8125rem; color: var(--color-text-soft); margin: var(--space-sm) 0 0; text-align: center; }
 
@@ -309,7 +309,7 @@ import { LoaderComponent } from '../../shared/loader.component';
         font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
         background: var(--color-muted); color: var(--color-text-soft);
       }
-      .source.ai { background: rgba(124, 58, 237, 0.12); color: #6d28d9; }
+      .source.ai { background: rgba(62, 123, 79, 0.12); color: #6d28d9; }
       .target-chip { font-size: 0.8rem; color: var(--color-text-soft); font-weight: 600; }
 
       .rolefit { margin: 0 auto var(--space-md); max-width: 380px; }

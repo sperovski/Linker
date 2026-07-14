@@ -575,7 +575,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         font-weight: 800;
         letter-spacing: -0.02em;
         border: 4px solid var(--color-surface);
-        box-shadow: 0 10px 24px -10px rgba(79, 70, 229, 0.6);
+        box-shadow: 0 10px 24px -10px rgba(29, 77, 36, 0.6);
       }
 
       .hero-avatar.photo { object-fit: cover; }
@@ -611,7 +611,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         height: 32px;
         border-radius: 9px;
         color: var(--color-primary);
-        background: rgba(79, 70, 229, 0.1);
+        background: rgba(29, 77, 36, 0.1);
         transition: background 150ms ease, color 150ms ease;
         cursor: pointer;
       }
@@ -669,7 +669,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         width: 38px;
         height: 38px;
         border-radius: var(--radius-md);
-        background: rgba(79, 70, 229, 0.1);
+        background: rgba(29, 77, 36, 0.1);
         color: var(--color-primary);
         flex-shrink: 0;
       }
@@ -788,7 +788,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         width: 52px;
         height: 52px;
         border-radius: 14px;
-        background: rgba(79, 70, 229, 0.1);
+        background: rgba(29, 77, 36, 0.1);
         color: var(--color-primary);
         flex-shrink: 0;
       }
@@ -843,7 +843,7 @@ type SectionKind = 'experience' | 'education' | 'project';
 
       .field-select:focus-within {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
+        box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.13);
       }
 
       .opt-hint { font-weight: 400; color: var(--color-text-soft); }

@@ -118,7 +118,7 @@ interface SkillGroup {
 
       .search-box:focus-within {
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.13);
+        box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.13);
       }
 
       .search-ic { color: var(--color-text-soft); flex-shrink: 0; }

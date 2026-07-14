@@ -99,7 +99,7 @@ const MAX_REASON_LENGTH = 300;
       textarea:focus {
         outline: none;
         border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.12);
       }
 
       .actions {

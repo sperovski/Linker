@@ -52,7 +52,7 @@ import { IconComponent } from './icon.component';
 
       .save-btn:hover { color: var(--color-primary); border-color: var(--color-primary); }
       .save-btn:active { transform: scale(0.96); }
-      .save-btn.saved { color: var(--color-primary); border-color: var(--color-primary); background: rgba(79, 70, 229, 0.06); }
+      .save-btn.saved { color: var(--color-primary); border-color: var(--color-primary); background: rgba(29, 77, 36, 0.06); }
       .save-btn:disabled { opacity: 0.6; cursor: default; }
 
       .save-btn.compact {

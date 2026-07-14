@@ -504,7 +504,7 @@ const TESTIMONIALS = [
                     <path d="M12 26c0-9 5-15 12-15s12 6 12 15v8H12v-8Z" fill="#1E1B4B" />
                     <circle cx="24" cy="21" r="7.5" fill="#F3C6A5" />
                     <path d="M16.5 19c1-5 4-7.5 7.5-7.5S30.5 14 31.5 19c-2.5-1.6-5-2.4-7.5-2.4s-5 .8-7.5 2.4Z" fill="#1E1B4B" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#7C3AED" />
+                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#3E7B4F" />
                   }
                   @case (1) {
                     <!-- short hair + glasses -->
@@ -513,7 +513,7 @@ const TESTIMONIALS = [
                     <circle cx="20.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
                     <circle cx="27.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
                     <path d="M23.1 21.5h1.8" stroke="#1E1B4B" stroke-width="1.1" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#4F46E5" />
+                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#1D4D24" />
                   }
                   @case (2) {
                     <!-- bun -->
@@ -653,7 +653,7 @@ const TESTIMONIALS = [
         left: 6%;
         width: 92%;
         height: 90%;
-        background: #e3e1f9; /* soft indigo tint of --color-primary */
+        background: var(--brand-tint); /* soft green tint of the brand */
         border-radius: 58% 42% 55% 45% / 48% 55% 45% 52%;
         transform: rotate(-6deg);
       }
@@ -672,7 +672,7 @@ const TESTIMONIALS = [
         right: -8%;
         width: 300px;
         height: 300px;
-        background: radial-gradient(circle, rgba(124, 58, 237, 0.4), transparent 70%);
+        background: radial-gradient(circle, rgba(62, 123, 79, 0.34), transparent 70%);
       }
 
       /* Trails the cursor anywhere over the hero. Position is driven by a rAF
@@ -686,7 +686,7 @@ const TESTIMONIALS = [
         height: 340px;
         /* Resting spot before the first mousemove: roughly mid-composition. */
         transform: translate3d(160px, 320px, 0) translate(-50%, -50%);
-        background: radial-gradient(circle, rgba(79, 70, 229, 0.32), transparent 70%);
+        background: radial-gradient(circle, rgba(29, 77, 36, 0.28), transparent 70%);
         will-change: transform;
       }
 
@@ -954,7 +954,7 @@ const TESTIMONIALS = [
         left: 12%;
         width: 55%;
         height: 160%;
-        background: radial-gradient(ellipse at center, rgba(124, 58, 237, 0.07), transparent 65%);
+        background: radial-gradient(ellipse at center, rgba(46, 107, 58, 0.08), transparent 65%);
         pointer-events: none;
       }
 

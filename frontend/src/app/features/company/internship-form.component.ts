@@ -273,7 +273,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
         padding: 0 12px;
       }
 
-      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
+      .field-select:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.12); }
 
       .opt { font-weight: 400; color: var(--color-text-soft); }
 

@@ -60,8 +60,8 @@ const ICON_SRCS = [
   '/gear_17279605.png',
 ];
 
-const INDIGO = '79, 70, 229'; // #4f46e5
-const INDIGO_LIGHT = '129, 140, 248'; // #818cf8
+const INDIGO = '79, 70, 229'; // #1D4D24
+const INDIGO_LIGHT = '129, 140, 248'; // #6FB37E
 
 // Pre-rendered tint size. Icon nodes draw ~16-20px, so 44 downscales crisply
 // without a large offscreen.
