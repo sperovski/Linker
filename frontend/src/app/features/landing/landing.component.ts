@@ -838,8 +838,8 @@ const TESTIMONIALS = [
       .ps-chip {
         font-size: 0.5625rem;
         font-weight: 700;
-        background: #E0F2FE;
-        color: #075985;
+        background: var(--brand-tint);
+        color: var(--brand-sage);
         border-radius: 999px;
         padding: 3px 8px;
         flex-shrink: 0;

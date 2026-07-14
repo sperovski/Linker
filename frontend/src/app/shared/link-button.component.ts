@@ -7,7 +7,7 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
 
 /**
  * Single, app-wide button. A pressable 3D "press" effect (adapted from a
- * Uiverse.io design by Madflows, recoloured to Linker's indigo/violet) sits on
+ * Uiverse.io design by Madflows, recoloured to Linker's forest green) sits on
  * a `::before` that fakes the extruded side of the key.
  *
  * Renders a real <button> normally, or an <a> when [routerLink] is supplied, so
@@ -64,13 +64,13 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
 
       .learn-more {
         /* Per-variant palette, referenced by the shared rules below.
-           Values derive from the MASTER.md indigo palette. */
+           Values derive from the forest-green MASTER.md palette. */
         --lm-face: var(--color-foreground);
-        --lm-face-hover: #2b2760;
+        --lm-face-hover: #123018;
         --lm-side: var(--color-secondary);
         --lm-border: var(--color-primary);
-        --lm-edge: #3730a3;
-        --lm-text: #eef2ff;
+        --lm-edge: #123018;
+        --lm-text: #F4FAF5;
 
         position: relative;
         display: inline-flex;
@@ -144,10 +144,10 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
       /* ---- Secondary: light / outline using design tokens ---- */
       .learn-more.secondary {
         --lm-face: var(--color-muted);
-        --lm-face-hover: #e2e3f4;
+        --lm-face-hover: #EAF6EC;
         --lm-side: var(--color-border);
         --lm-border: var(--color-border);
-        --lm-edge: #c3c4e6;
+        --lm-edge: #B7DCC0;
         --lm-text: var(--color-foreground);
       }
 
@@ -177,7 +177,7 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
         background: var(--color-primary);
         color: var(--color-on-primary);
         border: none;
-        border-bottom: 4px solid #3730a3; /* darker indigo */
+        border-bottom: 4px solid var(--brand-deep);
         border-radius: 0.5rem;
         padding: 0.55rem 1.5rem;
         font-size: 0.95rem;
@@ -255,7 +255,7 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
       }
 
       .learn-more.standard-secondary:hover {
-        background: #dfe0f4;
+        background: #EAF6EC;
         filter: brightness(1.02);
         transform: translateY(-1px);
         border-bottom-width: 6px;
