@@ -16,6 +16,7 @@ import { fadeSlideIn } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { facultyOptions, gradYearOptions } from '../../shared/faculties';
 import { IconComponent } from '../../shared/icon.component';
+import { EditButtonComponent } from '../../shared/edit-button.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { SelectComponent } from '../../shared/select.component';
@@ -35,6 +36,7 @@ type SectionKind = 'experience' | 'education' | 'project';
     MaskIconComponent,
     SelectComponent,
     SkillPickerComponent,
+    EditButtonComponent,
   ],
   animations: [fadeSlideIn],
   template: `
@@ -290,9 +292,7 @@ type SectionKind = 'experience' | 'education' | 'project';
                   @if (exp.description) { <p class="entry-desc">{{ exp.description }}</p> }
                 </div>
                 <div class="entry-tools">
-                  <button type="button" (click)="startEditExperience(exp)" [attr.aria-label]="'Edit ' + exp.title">
-                    <app-icon name="pencil" [size]="15" />
-                  </button>
+                  <app-edit-button [ariaLabel]="'Edit ' + exp.title" (edit)="startEditExperience(exp)" />
                   <button type="button" class="danger" (click)="deleteEntry('experience', exp.id)" [attr.aria-label]="'Delete ' + exp.title">
                     <app-icon name="trash" [size]="15" />
                   </button>
@@ -376,9 +376,7 @@ type SectionKind = 'experience' | 'education' | 'project';
                   <p class="entry-dates">{{ formatRange(edu.startDate, edu.endDate) }}</p>
                 </div>
                 <div class="entry-tools">
-                  <button type="button" (click)="startEditEducation(edu)" [attr.aria-label]="'Edit ' + edu.institution">
-                    <app-icon name="pencil" [size]="15" />
-                  </button>
+                  <app-edit-button [ariaLabel]="'Edit ' + edu.institution" (edit)="startEditEducation(edu)" />
                   <button type="button" class="danger" (click)="deleteEntry('education', edu.id)" [attr.aria-label]="'Delete ' + edu.institution">
                     <app-icon name="trash" [size]="15" />
                   </button>
@@ -459,9 +457,7 @@ type SectionKind = 'experience' | 'education' | 'project';
                   }
                 </div>
                 <div class="entry-tools">
-                  <button type="button" (click)="startEditProject(proj)" [attr.aria-label]="'Edit ' + proj.title">
-                    <app-icon name="pencil" [size]="15" />
-                  </button>
+                  <app-edit-button [ariaLabel]="'Edit ' + proj.title" (edit)="startEditProject(proj)" />
                   <button type="button" class="danger" (click)="deleteEntry('project', proj.id)" [attr.aria-label]="'Delete ' + proj.title">
                     <app-icon name="trash" [size]="15" />
                   </button>

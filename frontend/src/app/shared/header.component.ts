@@ -4,12 +4,20 @@ import { AuthService } from '../core/auth.service';
 import { NotificationService } from '../core/api/notification.service';
 import { IconComponent } from './icon.component';
 import { LinkButtonComponent } from './link-button.component';
+import { LogoutButtonComponent } from './logout-button.component';
 import { NotificationBellComponent } from './notification-bell.component';
 
 @Component({
   selector: 'app-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, IconComponent, LinkButtonComponent, NotificationBellComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    IconComponent,
+    LinkButtonComponent,
+    LogoutButtonComponent,
+    NotificationBellComponent,
+  ],
   host: { '(window:scroll)': 'onScroll()' },
   template: `
     <header class="header" [class.elevated]="scrolled()">
@@ -68,10 +76,7 @@ import { NotificationBellComponent } from './notification-bell.component';
                 {{ auth.email() }}
               </span>
             }
-            <app-link-button size="sm" (pressed)="logout()">
-              <app-icon name="log-out" [size]="15" />
-              Log out
-            </app-link-button>
+            <app-logout-button (loggedOut)="logout()" />
           } @else {
             <app-link-button routerLink="/login" size="sm">Log in</app-link-button>
             <app-link-button routerLink="/register" size="sm">Sign up</app-link-button>

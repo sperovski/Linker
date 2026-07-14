@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { InternshipService } from '../../core/api/internship.service';
 import { InternshipListItem } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
@@ -8,13 +8,21 @@ import { listStagger } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { EditButtonComponent } from '../../shared/edit-button.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
 import { TYPE_LABELS } from '../../shared/dates';
 
 @Component({
   selector: 'app-my-listings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IconComponent, SkeletonCardsComponent, EmptyStateComponent, LinkButtonComponent],
+  imports: [
+    RouterLink,
+    IconComponent,
+    SkeletonCardsComponent,
+    EmptyStateComponent,
+    LinkButtonComponent,
+    EditButtonComponent,
+  ],
   animations: [listStagger],
   template: `
     <div class="container page">
@@ -85,13 +93,10 @@ import { TYPE_LABELS } from '../../shared/dates';
                       <app-icon name="file-text" [size]="15" />
                       Applicants
                     </app-link-button>
-                    <app-link-button
-                      size="sm"
-                      [routerLink]="['/company/internships', listing.id, 'edit']"
-                    >
-                      <app-icon name="pencil" [size]="15" />
-                      Edit
-                    </app-link-button>
+                    <app-edit-button
+                      [ariaLabel]="'Edit ' + listing.title"
+                      (edit)="editListing(listing.id)"
+                    />
                     @if (listing.isActive) {
                       <app-link-button
                         size="sm"
@@ -160,6 +165,12 @@ import { TYPE_LABELS } from '../../shared/dates';
 export class MyListingsComponent implements OnInit {
   private readonly internshipService = inject(InternshipService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+
+  // The edit button emits instead of navigating, so the route lives here.
+  protected editListing(id: number): void {
+    this.router.navigate(['/company/internships', id, 'edit']);
+  }
 
   protected readonly listings = signal<InternshipListItem[]>([]);
   protected readonly loading = signal(true);
