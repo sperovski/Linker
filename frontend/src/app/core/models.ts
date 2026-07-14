@@ -186,6 +186,10 @@ export interface InternshipListItem {
   requiredSkills: SkillResponse[];
   matchScore: number | null;
   isSaved: boolean;
+  /** Numerator/denominator behind matchScore; null whenever matchScore is null. */
+  matchedSkillCount: number | null;
+  requiredSkillCount: number | null;
+  hasApplied: boolean;
 }
 
 export interface InternshipDetail {
