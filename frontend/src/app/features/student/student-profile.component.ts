@@ -726,7 +726,11 @@ type SectionKind = 'experience' | 'education' | 'project';
       }
 
       .entry-tools button:hover { background: var(--color-muted); color: var(--color-primary); }
-      .entry-tools button.danger:hover { background: #fee2e2; color: var(--color-destructive); }
+      /* Resting state is the neutral tool colour above; red only appears on hover. */
+      .entry-tools button.danger:hover {
+        background: var(--color-destructive-bg);
+        color: var(--color-destructive);
+      }
 
       .proj-link { display: inline-flex; color: var(--color-primary); }
       .proj-link:hover { color: var(--color-secondary); }
