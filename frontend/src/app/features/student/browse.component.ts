@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth.service';
@@ -43,17 +43,20 @@ const PAGE_SIZE = 12;
   ],
   animations: [listStagger],
   template: `
-    <div class="container page">
+    <div class="container browse-container page">
       <app-bg-decor variant="subtle" />
       <div class="page-header">
         <div>
           <span class="eyebrow">Open roles</span>
-          <h1>Browse internships</h1>
+          <!-- The count belongs to the heading, not floating off on the far right. -->
+          <h1>
+            Browse internships
+            @if (!loading()) {
+              <span class="result-count">{{ total() }} open role{{ total() === 1 ? '' : 's' }}</span>
+            }
+          </h1>
           <p class="page-sub">Real roles from Netcetera to Alkaloid — companies you already know.</p>
         </div>
-        @if (!loading()) {
-          <span class="result-count">{{ total() }} open role{{ total() === 1 ? '' : 's' }}</span>
-        }
       </div>
 
       @if (showStrips()) {
@@ -252,10 +255,19 @@ const PAGE_SIZE = 12;
   `,
   styles: [
     `
+      /* Wider than the global 1120px container: the grid needs the room, but it
+         still stops well short of stretching three cards across a huge display. */
+      .browse-container {
+        max-width: 1280px;
+      }
+
+      /* Sits with the heading as a quiet counter, not a competing headline. */
       .result-count {
+        margin-left: var(--space-sm);
         color: var(--color-text-soft);
-        font-size: 0.875rem;
+        font-size: 0.9375rem;
         font-weight: 600;
+        vertical-align: middle;
       }
 
       .match-explain {
@@ -354,6 +366,8 @@ const PAGE_SIZE = 12;
 export class BrowseComponent implements OnInit {
   private readonly internshipService = inject(InternshipService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly search$ = new Subject<void>();
 
   protected readonly typeOptions: SelectOption[] = [
@@ -398,8 +412,39 @@ export class BrowseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Hydrate filters from the URL so a refresh or a shared link lands on the
+    // same result set. Read once: every later change is written by syncUrl().
+    const params = this.route.snapshot.queryParamMap;
+    this.searchText.set(params.get('q') ?? '');
+    this.location.set(params.get('location') ?? '');
+    this.company.set(params.get('company') ?? '');
+    const type = params.get('type');
+    if (type && this.typeOptions.some((o) => o.value === type)) {
+      this.type.set(type as InternshipType);
+    }
+    const page = Number(params.get('page'));
+    this.page.set(Number.isInteger(page) && page > 0 ? page : 1);
+
     this.fetch();
     this.loadStrips();
+  }
+
+  /**
+   * Mirrors the filter state into the query string. replaceUrl keeps the back
+   * button meaning "the page before Browse", not a walk back through keystrokes.
+   */
+  private syncUrl(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        q: this.searchText() || null,
+        location: this.location() || null,
+        company: this.company() || null,
+        type: this.type() || null,
+        page: this.page() > 1 ? this.page() : null,
+      },
+      replaceUrl: true,
+    });
   }
 
   private loadStrips(): void {
@@ -420,24 +465,28 @@ export class BrowseComponent implements OnInit {
   protected onSearchChange(value: string): void {
     this.searchText.set(value);
     this.page.set(1);
+    this.syncUrl();
     this.search$.next();
   }
 
   protected onLocationChange(value: string): void {
     this.location.set(value);
     this.page.set(1);
+    this.syncUrl();
     this.search$.next();
   }
 
   protected onTypeChange(value: InternshipType | ''): void {
     this.type.set(value);
     this.page.set(1);
+    this.syncUrl();
     this.fetch();
   }
 
   protected onCompanyChange(value: string): void {
     this.company.set(value);
     this.page.set(1);
+    this.syncUrl();
     this.fetch();
   }
 
@@ -446,6 +495,7 @@ export class BrowseComponent implements OnInit {
       return;
     }
     this.page.set(page);
+    this.syncUrl();
     this.fetch();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -502,6 +552,7 @@ export class BrowseComponent implements OnInit {
           if (this.company() && !result.companies.some((c) => c.name === this.company())) {
             this.company.set('');
             this.page.set(1);
+            this.syncUrl();
             this.fetch();
           }
         },
