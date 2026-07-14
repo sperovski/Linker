@@ -793,18 +793,53 @@ a.btn:hover { text-decoration: none; }
   transition: background-color 300ms ease, color 300ms ease;
 }
 
-.badge-type { background: #E0F2FE; color: #075985; }
+/* Info chips: neutral tints that don't compete with the green brand. */
+.badge-type { background: var(--brand-tint); color: var(--brand-sage); }
 .badge-location { background: var(--color-muted); color: var(--color-text-soft); }
-.badge-pending { background: #FEF3C7; color: #92400E; }
-.badge-submitted { background: #FEF3C7; color: #92400E; }
-.badge-underreview { background: var(--brand-tint); color: var(--brand-sage); }
-.badge-accepted { background: #DCFCE7; color: #166534; }
-.badge-rejected { background: #FEE2E2; color: #991B1B; }
-.badge-withdrawn { background: var(--color-muted); color: #475569; }
-.badge-open { background: #DCFCE7; color: #166534; }
-.badge-closed { background: var(--color-muted); color: #475569; }
-.badge-deadline { background: #E0F2FE; color: #075985; }
-.badge-deadline-soon { background: #FEF3C7; color: #92400E; }
+.badge-deadline { background: var(--color-muted); color: var(--color-text-soft); }
+.badge-deadline-soon { background: var(--color-destructive-bg); color: var(--color-destructive); }
+
+/* Application/listing STATUS badges. "Accepted" and "Open" used to be green,
+   which now collides with the brand hue and stops reading as a signal. Same fix
+   as the match badges: a neutral pill with a traffic-light dot carrying the
+   state, applied directly to the existing classes so no template markup changes. */
+.badge-pending,
+.badge-submitted,
+.badge-underreview,
+.badge-accepted,
+.badge-rejected,
+.badge-withdrawn,
+.badge-open,
+.badge-closed {
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+}
+
+.badge-pending::before,
+.badge-submitted::before,
+.badge-underreview::before,
+.badge-accepted::before,
+.badge-rejected::before,
+.badge-withdrawn::before,
+.badge-open::before,
+.badge-closed::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--status-dot, var(--color-text-muted));
+  flex-shrink: 0;
+}
+
+.badge-accepted,
+.badge-open { --status-dot: var(--match-strong); }
+.badge-pending,
+.badge-submitted,
+.badge-underreview { --status-dot: var(--match-good); }
+.badge-rejected { --status-dot: var(--color-destructive); }
+.badge-withdrawn,
+.badge-closed { --status-dot: var(--color-text-muted); }
 
 /* ---------------------------------------------------------------------------
    Skeleton loading
