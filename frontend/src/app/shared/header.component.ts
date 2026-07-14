@@ -35,7 +35,6 @@ import { NotificationBellComponent } from './notification-bell.component';
             <a routerLink="/applications" routerLinkActive="active">My Applications</a>
             <a routerLink="/cv-review" routerLinkActive="active">Rate my CV</a>
             <a routerLink="/community" routerLinkActive="active">Community</a>
-            <a routerLink="/profile" routerLinkActive="active">Profile</a>
           } @else if (auth.isCompany()) {
             <a routerLink="/company/dashboard" routerLinkActive="active">Dashboard</a>
             <a routerLink="/company/listings" routerLinkActive="active">My Listings</a>
@@ -52,10 +51,23 @@ import { NotificationBellComponent } from './notification-bell.component';
             @if (!auth.isAdmin()) {
               <app-notification-bell />
             }
-            <span class="user-chip" [title]="auth.email()">
-              <app-icon [name]="auth.isCompany() ? 'building' : 'user'" [size]="15" />
-              {{ auth.email() }}
-            </span>
+            @if (auth.isStudent()) {
+              <!-- Students get the profile avatar in place of the email chip. -->
+              <a
+                routerLink="/profile"
+                routerLinkActive="active"
+                class="profile-link"
+                [attr.aria-label]="'Profile — ' + auth.email()"
+                [title]="auth.email()"
+              >
+                <img src="/student.png" alt="" class="profile-link-icon" />
+              </a>
+            } @else {
+              <span class="user-chip" [title]="auth.email()">
+                <app-icon [name]="auth.isCompany() ? 'building' : 'user'" [size]="15" />
+                {{ auth.email() }}
+              </span>
+            }
             <app-link-button size="sm" (pressed)="logout()">
               <app-icon name="log-out" [size]="15" />
               Log out
@@ -129,6 +141,34 @@ import { NotificationBellComponent } from './notification-bell.component';
       .nav a.active {
         color: var(--color-primary);
         border-bottom-color: var(--color-primary);
+      }
+
+      /* Icon-only Profile link: a round hit target instead of the text
+         underline treatment the other nav links get. */
+      .nav a.profile-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        padding: 0;
+        border-bottom: none;
+        transition: background 200ms ease, box-shadow 200ms ease;
+      }
+
+      .nav a.profile-link:hover { background: var(--color-muted); }
+
+      .nav a.profile-link.active {
+        background: var(--color-muted);
+        box-shadow: 0 0 0 2px var(--color-primary);
+      }
+
+      .profile-link-icon {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+        display: block;
       }
 
       .user-chip {
