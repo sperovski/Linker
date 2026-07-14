@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
 
 /* ---------------------------------------------------------------------------
    Linker design tokens, from design-system/linker/MASTER.md
@@ -62,9 +62,9 @@
   --radius-xl: 16px;
 
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  /* Headings only. The serif/sans contrast is what makes the palette feel
-     botanical rather than "the same app, in green". */
-  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  /* Headings only. A warm serif against the sans UI for the botanical feel,
+     with conventional glyphs (Lora, not Fraunces' quirky f/ligatures). */
+  --font-display: 'Lora', 'Iowan Old Style', Georgia, serif;
 
   /* Light-only app: keep native controls and scrollbars light even under OS dark. */
   color-scheme: light;
