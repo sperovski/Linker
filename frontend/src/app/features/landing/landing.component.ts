@@ -15,6 +15,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
+import { HowItStartedComponent } from './how-it-started.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
 
@@ -168,34 +169,10 @@ const FACULTIES = [
   'FON University',
 ];
 
-const TESTIMONIALS = [
-  {
-    quote:
-      'I applied to three internships in one evening and had an offer within a week. My whole CS group uses Linker now.',
-    name: 'Elena T.',
-    role: 'Software Engineering student, FINKI',
-    portrait: 0,
-  },
-  {
-    quote:
-      'The applicants we get through Linker actually match what we post. Reviewing candidates takes minutes, not days.',
-    name: 'Martin K.',
-    role: 'Engineering Manager, Netcetera',
-    portrait: 1,
-  },
-  {
-    quote:
-      'As a design student it was hard to find real internships. Linker was the first place that felt built for us.',
-    name: 'Sara J.',
-    role: 'Product Design student, UKIM',
-    portrait: 2,
-  },
-];
-
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BgDecorComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent],
+  imports: [BgDecorComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -209,12 +186,6 @@ const TESTIMONIALS = [
         animate('450ms ease-out', style({ opacity: 1 })),
       ]),
       transition(':leave', [animate('450ms ease-in', style({ opacity: 0 }))]),
-    ]),
-    trigger('quoteSwap', [
-      transition('* => *', [
-        style({ opacity: 0, transform: 'translateY(8px)' }),
-        animate('300ms ease-out', style({ opacity: 1, transform: 'none' })),
-      ]),
     ]),
   ],
   template: `
@@ -488,64 +459,8 @@ const TESTIMONIALS = [
       </div>
     </section>
 
-    <!-- ======================= TESTIMONIALS ============================= -->
-    <section class="band band-tint">
-      <div class="container testimonial-wrap" appReveal>
-        <span class="eyebrow">What people say</span>
-        <blockquote class="testimonial" [@quoteSwap]="quoteIndex()">
-          <p class="quote-text">“{{ quote().quote }}”</p>
-          <footer class="quote-meta">
-            <span class="portrait" aria-hidden="true">
-              <svg width="48" height="48" viewBox="0 0 48 48">
-                <circle cx="24" cy="24" r="24" fill="#E3E1F9" />
-                @switch (quote().portrait) {
-                  @case (0) {
-                    <!-- long hair -->
-                    <path d="M12 26c0-9 5-15 12-15s12 6 12 15v8H12v-8Z" fill="#1E1B4B" />
-                    <circle cx="24" cy="21" r="7.5" fill="#F3C6A5" />
-                    <path d="M16.5 19c1-5 4-7.5 7.5-7.5S30.5 14 31.5 19c-2.5-1.6-5-2.4-7.5-2.4s-5 .8-7.5 2.4Z" fill="#1E1B4B" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#3E7B4F" />
-                  }
-                  @case (1) {
-                    <!-- short hair + glasses -->
-                    <circle cx="24" cy="21" r="7.5" fill="#E8B48C" />
-                    <path d="M16.5 18.5c.6-4.6 3.6-7 7.5-7s6.9 2.4 7.5 7c-2.4-1.9-5-2.7-7.5-2.7s-5.1.8-7.5 2.7Z" fill="#33526B" />
-                    <circle cx="20.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
-                    <circle cx="27.5" cy="21.5" r="2.6" fill="none" stroke="#1E1B4B" stroke-width="1.1" />
-                    <path d="M23.1 21.5h1.8" stroke="#1E1B4B" stroke-width="1.1" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#1D4D24" />
-                  }
-                  @case (2) {
-                    <!-- bun -->
-                    <circle cx="24" cy="11.5" r="3.4" fill="#4A2E1D" />
-                    <circle cx="24" cy="21" r="7.5" fill="#D9A176" />
-                    <path d="M16.5 19.5c.5-5 3.6-7.6 7.5-7.6s7 2.6 7.5 7.6c-2.4-2-5-2.9-7.5-2.9s-5.1.9-7.5 2.9Z" fill="#4A2E1D" />
-                    <path d="M10 48c1.4-8 7-12.5 14-12.5S36.6 40 38 48H10Z" fill="#16A34A" />
-                  }
-                }
-              </svg>
-            </span>
-            <div>
-              <div class="quote-name">{{ quote().name }}</div>
-              <div class="quote-role">{{ quote().role }}</div>
-            </div>
-          </footer>
-        </blockquote>
-        <div class="quote-dots" role="tablist" aria-label="Testimonials">
-          @for (t of testimonials; track $index) {
-            <button
-              type="button"
-              role="tab"
-              class="quote-dot"
-              [class.active]="quoteIndex() === $index"
-              [attr.aria-selected]="quoteIndex() === $index"
-              [attr.aria-label]="'Testimonial ' + ($index + 1)"
-              (click)="setQuote($index)"
-            ></button>
-          }
-        </div>
-      </div>
-    </section>
+    <!-- ========================= HOW IT STARTED ========================= -->
+    <app-how-it-started />
 
     <!-- ============== SECTION 3: STATS + TRUST WALL + CTA ================ -->
     <section class="band band-navy stats-band" #statsSection>
@@ -1191,53 +1106,6 @@ const TESTIMONIALS = [
         .pillar-desc { min-height: 0; }
       }
 
-      /* --------------------------- testimonials -------------------------- */
-      .testimonial-wrap { text-align: center; max-width: 680px; }
-      .testimonial { margin: 0; }
-
-      .quote-text {
-        font-size: clamp(1.2rem, 2.4vw, 1.6rem);
-        font-weight: 600;
-        line-height: 1.4;
-        letter-spacing: -0.01em;
-        color: var(--color-foreground);
-      }
-
-      .quote-meta {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--space-sm);
-        margin-top: var(--space-lg);
-        text-align: left;
-      }
-
-      .quote-name { font-weight: 700; font-size: 0.95rem; }
-      .quote-role { color: var(--color-text-soft); font-size: 0.8125rem; }
-
-      .portrait {
-        display: inline-flex;
-        border-radius: 50%;
-        overflow: hidden;
-        flex-shrink: 0;
-        box-shadow: var(--shadow-sm);
-      }
-
-      .quote-dots { display: flex; justify-content: center; gap: var(--space-sm); margin-top: var(--space-lg); }
-
-      .quote-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: none;
-        background: var(--color-border);
-        cursor: pointer;
-        padding: 0;
-        transition: background 200ms ease, transform 200ms ease;
-      }
-
-      .quote-dot.active { background: var(--color-primary); transform: scale(1.25); }
-
       /* ============ SECTION 3: stats + trust wall + CTA ================== */
       .stats-band { position: relative; overflow: hidden; }
 
@@ -1380,7 +1248,6 @@ export class LandingComponent implements OnInit, OnDestroy {
   protected readonly pillars = PILLARS;
   protected readonly stats = STATS;
   protected readonly faculties = FACULTIES;
-  protected readonly testimonials = TESTIMONIALS;
 
   private readonly statsSection = viewChild.required<ElementRef<HTMLElement>>('statsSection');
   private readonly heroVisual = viewChild<ElementRef<HTMLElement>>('heroVisual');
@@ -1389,8 +1256,6 @@ export class LandingComponent implements OnInit, OnDestroy {
   private wordIndex = signal(0);
   protected readonly word = signal(ROTATING_WORDS[0]);
   protected readonly scene = signal(0);
-  protected readonly quoteIndex = signal(0);
-  protected readonly quote = signal(TESTIMONIALS[0]);
   protected readonly displayedStats = signal(STATS.map(() => 0));
 
   private timers: ReturnType<typeof setInterval>[] = [];
@@ -1412,7 +1277,6 @@ export class LandingComponent implements OnInit, OnDestroy {
         this.word.set(ROTATING_WORDS[this.wordIndex()]);
       }, 2600),
       setInterval(() => this.scene.update((s) => (s + 1) % 2), 5200),
-      setInterval(() => this.setQuote((this.quoteIndex() + 1) % TESTIMONIALS.length), 6000),
     );
 
     // Count-up when the stats band scrolls into view, once.
@@ -1481,11 +1345,6 @@ export class LandingComponent implements OnInit, OnDestroy {
       Math.abs(this.glowTarget.x - current.x) < 0.5 && Math.abs(this.glowTarget.y - current.y) < 0.5;
     this.glowRaf = settled ? null : requestAnimationFrame(this.glowTick);
   };
-
-  protected setQuote(index: number): void {
-    this.quoteIndex.set(index);
-    this.quote.set(TESTIMONIALS[index]);
-  }
 
   private runCountUp(): void {
     const durationMs = 1000;
