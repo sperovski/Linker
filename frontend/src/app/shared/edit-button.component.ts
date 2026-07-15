@@ -63,6 +63,9 @@ import { ChangeDetectionStrategy, Component, booleanAttribute, input, output } f
         height: 13px;
         position: absolute;
         right: 14px;
+        /* Own colour, so the hover rule that sets the button text transparent
+           (to hide the label) doesn't also blank out this currentColor icon. */
+        color: var(--color-on-primary);
         transition: right 0.3s ease, transform 0.3s ease;
       }
 
