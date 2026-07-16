@@ -33,6 +33,10 @@ services:
       Database__SeedDemoData: "true"
       Seed__AdminEmail: admin@linker.local
       Seed__AdminPassword: AdminLocal123!
+      # Real personal login — value lives in a gitignored .env file next to
+      # this compose file (SEED_STEFAN_PASSWORD=...). Empty means "leave the
+      # account on the shared demo password".
+      Seed__StefanPassword: ${SEED_STEFAN_PASSWORD:-}
       Cors__AllowedOrigins__0: http://localhost:8080
       # nginx (the "web" service) is the only thing that can reach "api" on this
       # network — trust its forwarded headers for real-client-IP rate limiting.

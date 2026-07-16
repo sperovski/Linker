@@ -14,6 +14,12 @@ namespace Linker.Infrastructure.Persistence;
 /// </summary>
 public static class DbSeeder
 {
+    /// <summary>
+    /// The one seeded student that belongs to a real person; its password is
+    /// injected via config rather than committed (see SyncPrimaryStudentPasswordAsync).
+    /// </summary>
+    private const string PrimaryStudentEmail = "stefan.perovski20@gmail.com";
+
     public static async Task SeedAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken = default)
     {
         await SeedAdminAsync(db, configuration, logger, cancellationToken);
@@ -40,6 +46,34 @@ public static class DbSeeder
         {
             await SeedStudentsAndActivityAsync(db, configuration, logger, cancellationToken);
         }
+
+        await SyncPrimaryStudentPasswordAsync(db, configuration, logger, cancellationToken);
+    }
+
+    /// <summary>
+    /// Stefan's demo account is a real person's login, so its password must not
+    /// be committed (see the note in SeedStudentsAndActivityAsync). It comes from
+    /// Seed:StefanPassword instead — e.g. a gitignored .env next to
+    /// docker-compose.yml — and is re-synced on every demo-stack start, so it
+    /// survives volume wipes and re-seeds without manual DB updates.
+    /// </summary>
+    private static async Task SyncPrimaryStudentPasswordAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken)
+    {
+        var password = configuration["Seed:StefanPassword"];
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return;
+        }
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email == PrimaryStudentEmail, cancellationToken);
+        if (user is null || PasswordMatches(password, user.PasswordHash))
+        {
+            return;
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Re-synced seeded password for {Email} from Seed:StefanPassword", PrimaryStudentEmail);
     }
 
     /// <summary>Creates the single General chat room if it isn't there yet.</summary>
@@ -103,22 +137,50 @@ public static class DbSeeder
             return;
         }
 
-        if (await db.Users.AnyAsync(u => u.Email == adminEmail, cancellationToken))
+        var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == adminEmail, cancellationToken);
+        if (existing is null)
         {
+            db.Users.Add(new User
+            {
+                Email = adminEmail,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                Role = UserRole.Admin,
+                CreatedAtUtc = DateTime.UtcNow,
+                EmailVerified = true,
+                IsActive = true
+            });
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Seeded admin account {Email}", adminEmail);
             return;
         }
 
-        db.Users.Add(new User
+        // Rotating Seed:AdminPassword used to be silently ignored once the row
+        // existed. Sync the hash on demo stacks only, so a production admin who
+        // changed their password through the app is never reverted by a restart.
+        if (configuration.GetValue("Database:SeedDemoData", false)
+            && !PasswordMatches(adminPassword, existing.PasswordHash))
         {
-            Email = adminEmail,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
-            Role = UserRole.Admin,
-            CreatedAtUtc = DateTime.UtcNow,
-            EmailVerified = true,
-            IsActive = true
-        });
-        await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Seeded admin account {Email}", adminEmail);
+            existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Re-synced seeded admin password for {Email} from Seed:AdminPassword", adminEmail);
+        }
+    }
+
+    /// <summary>
+    /// A Verify that never throws: a malformed stored hash (hand-edited row,
+    /// unhashed import) counts as "doesn't match", so the sync paths above
+    /// simply re-hash it instead of crashing startup seeding.
+    /// </summary>
+    private static bool PasswordMatches(string password, string storedHash)
+    {
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, storedHash);
+        }
+        catch (Exception e) when (e is BCrypt.Net.SaltParseException or ArgumentException)
+        {
+            return false;
+        }
     }
 
     private static async Task SeedCompaniesAndInternshipsAsync(LinkerDbContext db, IConfiguration configuration, ILogger logger, CancellationToken cancellationToken)
@@ -215,7 +277,7 @@ public static class DbSeeder
         // file is committed and the demo stack is public.
         var students = new (string Email, string? Password, string FirstName, string LastName, string University, int GradYear, string Bio, string[] Skills)[]
         {
-            ("stefan.perovski20@gmail.com", null, "Stefan", "Perovski", "UKIM - FINKI", 2026,
+            (PrimaryStudentEmail, null, "Stefan", "Perovski", "UKIM - FINKI", 2026,
                 "Third-year CS student who loves building clean UIs and learning backend fundamentals. Looking for a frontend or full-stack internship.",
                 ["Angular", "TypeScript", "CSS", "JavaScript", "Git"]),
             ("marko.ilievski@linker.demo", null, "Marko", "Ilievski", "UKIM - FINKI", 2025,
@@ -256,7 +318,7 @@ public static class DbSeeder
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var stefan = studentEntities["stefan.perovski20@gmail.com"];
+        var stefan = studentEntities[PrimaryStudentEmail];
         var marko = studentEntities["marko.ilievski@linker.demo"];
         var elena = studentEntities["elena.stojanova@linker.demo"];
 

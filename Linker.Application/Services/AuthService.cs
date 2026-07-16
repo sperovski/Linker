@@ -95,7 +95,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user is null || !PasswordMatches(request.Password, user.PasswordHash))
         {
             throw new AuthenticationFailedException("Invalid email or password.");
         }
@@ -290,4 +290,22 @@ public class AuthService : IAuthService
 
     private static string Hash(string token) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+    /// <summary>
+    /// BCrypt.Verify throws when the stored hash isn't a valid bcrypt string
+    /// (e.g. a row edited by hand or imported unhashed). Treat that exactly
+    /// like a wrong password so login answers 401, not 500 — and without a
+    /// distinguishable message that could leak account state.
+    /// </summary>
+    private static bool PasswordMatches(string password, string storedHash)
+    {
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, storedHash);
+        }
+        catch (Exception e) when (e is BCrypt.Net.SaltParseException or ArgumentException)
+        {
+            return false;
+        }
+    }
 }

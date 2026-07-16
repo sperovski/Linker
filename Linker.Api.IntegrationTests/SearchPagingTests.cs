@@ -42,6 +42,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", body!.token);
 
+        var skillId = await TestData.AnySkillIdAsync(client);
         for (var i = 0; i < count; i++)
         {
             var created = await client.PostAsJsonAsync("/api/internships", new
@@ -53,7 +54,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
                 startDate = (string?)null,
                 endDate = (string?)null,
                 applicationDeadline = (string?)null,
-                skillIds = Array.Empty<int>(),
+                skillIds = new[] { skillId },
             });
             Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         }

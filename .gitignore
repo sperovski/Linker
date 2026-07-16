@@ -48,3 +48,4 @@ appsettings.Local.json
 appsettings.*.local.json
 *.pfx
 secrets.json
+.env

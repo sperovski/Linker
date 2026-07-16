@@ -108,7 +108,7 @@ public class AuthFlowTests : IClassFixture<LinkerApiFactory>
             description = "A role to exercise the apply flow end to end.",
             location = "Skopje",
             type = "Internship",
-            skillIds = Array.Empty<int>()
+            skillIds = new[] { await TestData.AnySkillIdAsync(client) }
         });
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
         var listing = await create.Content.ReadFromJsonAsync<InternshipDetail>();

@@ -49,7 +49,7 @@ public class VerifiedEmailGateTests : IClassFixture<VerifiedGateApiFactory>
             title = "Gate Intern",
             description = "Exercises the verified-email gate.",
             type = "Internship",
-            skillIds = Array.Empty<int>()
+            skillIds = new[] { await TestData.AnySkillIdAsync(client) }
         })).Content.ReadFromJsonAsync<InternshipDetail>();
 
         // Fresh student: unverified, apply must be forbidden.

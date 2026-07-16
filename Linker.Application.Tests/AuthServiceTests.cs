@@ -98,6 +98,21 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Login_MalformedStoredHash_ThrowsAuthenticationFailed()
+    {
+        // A stored hash that isn't valid bcrypt (hand-edited row, unhashed
+        // import) makes BCrypt.Verify throw; login must still answer 401,
+        // not surface a 500.
+        await _service.RegisterStudentAsync(new RegisterStudentRequest("bad-hash@test.local", "password123", "A", "B", null, null));
+        var user = _db.Context.Users.Single(u => u.Email == "bad-hash@test.local");
+        user.PasswordHash = "not-a-bcrypt-hash";
+        await _db.Context.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<AuthenticationFailedException>(() =>
+            _service.LoginAsync(new LoginRequest("bad-hash@test.local", "password123")));
+    }
+
+    [Fact]
     public async Task Login_CorrectPassword_ReturnsTokens()
     {
         await _service.RegisterStudentAsync(new RegisterStudentRequest("ok@test.local", "password123", "A", "B", null, null));

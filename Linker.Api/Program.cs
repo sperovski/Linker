@@ -126,6 +126,14 @@ if (string.IsNullOrWhiteSpace(jwtKey))
         "JWT signing key 'Jwt:Key' is not configured. Set it via user-secrets or the Jwt__Key environment variable.");
 }
 
+// HS256 is only as strong as this key; fail fast on one that's trivially
+// brute-forceable rather than let a weak deployment limp along.
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+{
+    throw new InvalidOperationException(
+        "JWT signing key 'Jwt:Key' must be at least 32 bytes (256 bits) for HS256. Generate a longer random key.");
+}
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
