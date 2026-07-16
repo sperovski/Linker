@@ -16,6 +16,7 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { CompanyFilterComponent, CompanyOption } from '../../shared/company-filter.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { InternshipStripComponent } from '../../shared/internship-strip.component';
+import { TrendingCarouselComponent } from '../../shared/trending-carousel.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../../shared/dates';
@@ -39,6 +40,7 @@ const PAGE_SIZE = 12;
     CompanyFilterComponent,
     SelectComponent,
     InternshipStripComponent,
+    TrendingCarouselComponent,
     LinkButtonComponent,
   ],
   animations: [listStagger],
@@ -69,14 +71,11 @@ const PAGE_SIZE = 12;
           />
         }
         @if (popular().length) {
-          <app-internship-strip
+          <app-trending-carousel
             heading="Trending now"
             subheading="The roles students are applying to most"
             icon="trending"
-            accent="amber"
             [items]="popular()"
-            [rank]="true"
-            [carousel]="true"
           />
         }
       }
