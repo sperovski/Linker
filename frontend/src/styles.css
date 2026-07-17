@@ -612,6 +612,20 @@ a.btn:hover { text-decoration: none; }
 .internship-card .badges .badge-deadline { background: #f1f1f7; color: #6b7280; }
 .internship-card .badges .badge-deadline-soon { background: #fef3c7; color: #92400e; }
 
+/* The "full" variant's match-explanation line and Applied pill. */
+.internship-card .match-explain {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-soft);
+  font-weight: 600;
+}
+
+.internship-card .badge-applied {
+  color: var(--color-primary);
+  background: var(--color-muted);
+  border: 1px solid var(--color-border);
+}
+
 /* Parallax layers: flat at rest, lifted toward the viewer on hover. */
 .logo-layer,
 .internship-card .card-top-text,

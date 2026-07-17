@@ -15,6 +15,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
+import { DotFieldComponent } from '../../shared/dot-field.component';
 import { HowItStartedComponent } from './how-it-started.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
@@ -172,7 +173,7 @@ const FACULTIES = [
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BgDecorComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
+  imports: [BgDecorComponent, DotFieldComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -192,6 +193,7 @@ const FACULTIES = [
     <!-- ============================== HERO ============================== -->
     <section class="hero band-tint" (mousemove)="onHeroMove($event)">
       <app-bg-decor variant="subtle" />
+      <app-dot-field />
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">The internship platform for students</span>

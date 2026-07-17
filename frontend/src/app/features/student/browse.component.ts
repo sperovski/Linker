@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, debounceTime } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth.service';
@@ -10,17 +10,13 @@ import { listStagger } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { SkeletonCardsComponent } from '../../shared/skeleton-cards.component';
-import { SaveButtonComponent } from '../../shared/save-button.component';
-import { MatchBadgeComponent } from '../../shared/match-badge.component';
-import { CompanyLogoComponent } from '../../shared/company-logo.component';
+import { InternshipCardComponent } from '../../shared/internship-card.component';
 import { CompanyFilterComponent, CompanyOption } from '../../shared/company-filter.component';
 import { SelectComponent, SelectOption } from '../../shared/select.component';
 import { InternshipStripComponent } from '../../shared/internship-strip.component';
 import { TrendingCarouselComponent } from '../../shared/trending-carousel.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
-import { TYPE_LABELS, startCountdown, daysUntil, deadlineCountdown } from '../../shared/dates';
-import { matchExplanation } from '../../shared/match';
 
 /** Matches the API default; the server clamps anything above 50. */
 const PAGE_SIZE = 12;
@@ -28,15 +24,12 @@ const PAGE_SIZE = 12;
 @Component({
   selector: 'app-browse',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BgDecorComponent, 
+  imports: [BgDecorComponent,
     FormsModule,
-    RouterLink,
     IconComponent,
     SkeletonCardsComponent,
     EmptyStateComponent,
-    SaveButtonComponent,
-    MatchBadgeComponent,
-    CompanyLogoComponent,
+    InternshipCardComponent,
     CompanyFilterComponent,
     SelectComponent,
     InternshipStripComponent,
@@ -76,6 +69,7 @@ const PAGE_SIZE = 12;
             subheading="The roles students are applying to most"
             icon="trending"
             [items]="popular()"
+            [autoplayDelay]="1400"
           />
         }
       }
@@ -145,82 +139,12 @@ const PAGE_SIZE = 12;
           } @else {
             <div class="grid-cards">
               @for (internship of internships(); track internship.id) {
-                <div class="card-wrap stagger-item">
-                  <div class="card-overlay">
-                    <app-save-button
-                      [internshipId]="internship.id"
-                      [initialSaved]="internship.isSaved"
-                      [compact]="true"
-                    />
-                  </div>
-                  <a
-                    class="internship-card"
-                    [routerLink]="['/internships', internship.id]"
-                  >
-                    <div class="card-top">
-                      <span class="logo-layer">
-                        <app-company-logo [name]="internship.companyName" [size]="44" />
-                      </span>
-                      <div class="card-top-text">
-                        <span class="company">{{ internship.companyName }}</span>
-                        <h3>{{ internship.title }}</h3>
-                      </div>
-                    </div>
-                    @if (internship.requiredSkills.length) {
-                      <div class="skill-chips">
-                        @for (skill of internship.requiredSkills.slice(0, 4); track skill.id) {
-                          <span class="skill-chip">{{ skill.name }}</span>
-                        }
-                        @if (internship.requiredSkills.length > 4) {
-                          <span class="skill-chip more">+{{ internship.requiredSkills.length - 4 }}</span>
-                        }
-                      </div>
-                    }
-                    <div class="badges">
-                      @if (internship.hasApplied) {
-                        <span class="badge badge-applied">
-                          <app-icon name="check" [size]="12" />
-                          Applied
-                        </span>
-                      } @else {
-                        <app-match-badge
-                          [score]="internship.matchScore"
-                          [matchedSkillCount]="internship.matchedSkillCount"
-                          [requiredSkillCount]="internship.requiredSkillCount"
-                        />
-                      }
-                      <span class="badge badge-type">{{ typeLabel(internship.type) }}</span>
-                      @if (internship.location) {
-                        <span class="badge badge-location">
-                          <app-icon name="map-pin" [size]="12" />
-                          {{ internship.location }}
-                        </span>
-                      }
-                      @if (deadline(internship); as label) {
-                        <span
-                          class="badge"
-                          [class.badge-deadline]="!deadlineSoon(internship)"
-                          [class.badge-deadline-soon]="deadlineSoon(internship)"
-                        >
-                          <app-icon name="clock" [size]="12" />
-                          {{ label }}
-                        </span>
-                      } @else if (countdown(internship); as label) {
-                        <span class="badge badge-deadline">
-                          <app-icon name="calendar" [size]="12" />
-                          {{ label }}
-                        </span>
-                      }
-                    </div>
-                    @if (explain(internship); as line) {
-                      <p class="match-explain">{{ line }}</p>
-                    }
-                    <span class="card-cta">
-                      View role
-                      <app-icon name="arrow-right" [size]="14" />
-                    </span>
-                  </a>
-                </div>
+                <app-internship-card
+                  class="stagger-item"
+                  [internship]="internship"
+                  [initialSaved]="internship.isSaved"
+                  variant="full"
+                />
               }
             </div>
 
@@ -267,19 +191,6 @@ const PAGE_SIZE = 12;
         font-size: 0.9375rem;
         font-weight: 600;
         vertical-align: middle;
-      }
-
-      .match-explain {
-        margin: 0;
-        font-size: 0.8125rem;
-        color: var(--color-text-soft);
-        font-weight: 600;
-      }
-
-      .badge-applied {
-        color: var(--color-primary);
-        background: var(--color-muted);
-        border: 1px solid var(--color-border);
       }
 
       .pager {
@@ -497,30 +408,6 @@ export class BrowseComponent implements OnInit {
     this.syncUrl();
     this.fetch();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  protected typeLabel(type: string): string {
-    return TYPE_LABELS[type] ?? type;
-  }
-
-  protected countdown(internship: InternshipListItem): string | null {
-    return startCountdown(internship.startDate);
-  }
-
-  protected deadline(internship: InternshipListItem): string | null {
-    return deadlineCountdown(internship.applicationDeadline);
-  }
-
-  protected deadlineSoon(internship: InternshipListItem): boolean {
-    const days = daysUntil(internship.applicationDeadline);
-    return days !== null && days <= 7;
-  }
-
-  protected explain(internship: InternshipListItem): string | null {
-    if (internship.hasApplied) {
-      return null; // The "Applied" badge already says what matters.
-    }
-    return matchExplanation(internship.matchedSkillCount, internship.requiredSkillCount);
   }
 
   private fetch(): void {

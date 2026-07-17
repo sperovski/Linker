@@ -1,4 +1,5 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   ElementRef,
@@ -9,59 +10,51 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { InternshipListItem } from '../core/models';
-import { CompanyLogoComponent } from './company-logo.component';
-import { MatchBadgeComponent } from './match-badge.component';
-import { IconComponent } from './icon.component';
+import { InternshipCardComponent } from './internship-card.component';
 import { MaskIconComponent, MaskIconName } from './mask-icon.component';
-import { SaveButtonComponent } from './save-button.component';
-import { TYPE_LABELS, deadlineCountdown } from './dates';
-import { matchExplanation } from './match';
 
-/** One card's place on the 3D stage, indexed by |distance from center|. */
+/** One slide's place on the 3D ring, keyed by |distance from center|. */
 interface Pose {
-  x: number; // translateX, % of the card's own width
-  z: number; // translateZ px (negative = further away)
-  ry: number; // rotateY deg, applied toward the center
+  x: number; // translateX, % of card width
+  z: number; // translateZ px (negative = deeper)
+  ry: number; // rotateY deg, applied toward center
   s: number; // scale
   o: number; // opacity
 }
 
 const POSES: Pose[] = [
   { x: 0, z: 0, ry: 0, s: 1, o: 1 },
-  { x: 62, z: -120, ry: 27, s: 0.92, o: 0.88 },
-  { x: 108, z: -250, ry: 37, s: 0.84, o: 0.5 },
-  { x: 136, z: -360, ry: 42, s: 0.78, o: 0 },
+  { x: 55, z: -150, ry: 25, s: 0.9, o: 0.82 },
+  { x: 96, z: -300, ry: 33, s: 0.82, o: 0.34 },
+  { x: 122, z: -400, ry: 38, s: 0.77, o: 0 },
 ];
 
 /**
- * 3D coverflow carousel for the "Trending now" rail: the spotlit card faces
- * front while its neighbours recede into perspective. Auto-advances on a
- * timer (paused on hover/focus/hidden tab), and supports arrows, dots,
- * arrow keys, and finger-tracking drag — the whole ring follows the pointer
- * in real time and snaps on release. Falls back to instant, motionless slide
- * changes under prefers-reduced-motion.
+ * 3D coverflow carousel for the "Trending now" rail. The centred card faces
+ * front while its neighbours recede and rotate into perspective. It wraps the
+ * shared {@link InternshipCardComponent}, so the slides are the exact same
+ * cards the browse grid shows.
+ *
+ * Interaction (a native rewrite of the React Bits carousel — the behaviour, not
+ * the code): pointer drag rotates the whole ring 1:1; on release it snaps to the
+ * next/previous card via a distance buffer OR a flick-velocity threshold. Also
+ * supports autoplay (paused on hover/focus/drag/hidden tab), an infinite ring,
+ * dot indicators (no arrows), arrow keys, and a `cardSelect` output. Under
+ * prefers-reduced-motion it drops the depth animation and autoplay.
  */
 @Component({
   selector: 'app-trending-carousel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    CompanyLogoComponent,
-    MatchBadgeComponent,
-    IconComponent,
-    MaskIconComponent,
-    SaveButtonComponent,
-  ],
+  imports: [InternshipCardComponent, MaskIconComponent],
   template: `
     <section
       class="tc"
       role="region"
       aria-roledescription="carousel"
       [attr.aria-label]="heading()"
-      (mouseenter)="pause()"
-      (mouseleave)="resume()"
+      (mouseenter)="onHover(true)"
+      (mouseleave)="onHover(false)"
       (focusin)="pause()"
       (focusout)="resume()"
       (keydown.arrowleft)="prev()"
@@ -77,23 +70,12 @@ const POSES: Pose[] = [
             <p>{{ subheading() }}</p>
           }
         </div>
-
-        @if (items().length > 1) {
-          <div class="tc-nav">
-            <button type="button" class="nav-btn prev" (click)="prev()" aria-label="Previous">
-              <app-icon name="arrow-right" [size]="16" />
-            </button>
-            <button type="button" class="nav-btn" (click)="next()" aria-label="Next">
-              <app-icon name="arrow-right" [size]="16" />
-            </button>
-          </div>
-        }
       </div>
 
       <div
         class="tc-stage"
         #stage
-        [class.dragging]="dragging()"
+        [class.grabbing]="dragging()"
         (pointerdown)="dragStart($event)"
         (pointermove)="dragMove($event)"
         (pointerup)="dragEnd($event)"
@@ -103,66 +85,29 @@ const POSES: Pose[] = [
         <div class="tc-floor" aria-hidden="true"></div>
 
         @for (item of items(); track item.id; let i = $index) {
-          @if (slideStyle(i); as pose) {
+          @if (pose(i); as p) {
             <div
               class="tc-slide"
-              role="group"
-              aria-roledescription="slide"
-              [attr.aria-label]="i + 1 + ' of ' + items().length"
-              [attr.inert]="pose.offstage ? '' : null"
-              [class.center]="pose.center"
-              [style.transform]="pose.transform"
-              [style.opacity]="pose.opacity"
-              [style.z-index]="pose.zIndex"
-              [style.animation-delay.ms]="i * 70"
-              (focusin)="centerOn(i)"
-              (click)="guardClick($event)"
+              [class.animate]="animate()"
+              [class.center]="p.center"
+              [style.transform]="p.transform"
+              [style.opacity]="p.opacity"
+              [style.zIndex]="p.zIndex"
+              [attr.aria-hidden]="p.offstage ? 'true' : null"
+              [attr.inert]="p.offstage ? '' : null"
             >
-              <div class="tc-save">
-                <app-save-button
-                  [internshipId]="item.id"
-                  [initialSaved]="item.isSaved"
-                  [compact]="true"
-                />
-              </div>
-              <a class="tc-card card" [routerLink]="['/internships', item.id]" [tabindex]="pose.offstage ? -1 : 0">
-                <span class="tc-rank" aria-hidden="true">#{{ i + 1 }}</span>
-                <div class="tc-top">
-                  <app-company-logo [name]="item.companyName" [size]="36" />
-                  @if (item.hasApplied) {
-                    <span class="badge badge-applied">
-                      <app-icon name="check" [size]="12" />
-                      Applied
-                    </span>
-                  } @else if (item.matchScore !== null) {
-                    <app-match-badge
-                      [score]="item.matchScore"
-                      [matchedSkillCount]="item.matchedSkillCount"
-                      [requiredSkillCount]="item.requiredSkillCount"
-                    />
-                  }
-                </div>
-                <h3>{{ item.title }}</h3>
-                <span class="tc-company">{{ item.companyName }}</span>
-                @if (explain(item); as line) {
-                  <span class="tc-explain">{{ line }}</span>
-                }
-                <div class="tc-foot">
-                  <span class="badge badge-type">{{ typeLabel(item.type) }}</span>
-                  @if (deadline(item); as label) {
-                    <span class="tc-loc"><app-icon name="clock" [size]="12" /> {{ label }}</span>
-                  } @else if (item.location) {
-                    <span class="tc-loc"><app-icon name="map-pin" [size]="12" /> {{ item.location }}</span>
-                  }
-                </div>
-              </a>
+              <app-internship-card
+                [internship]="item"
+                [initialSaved]="item.isSaved"
+                variant="full"
+              />
             </div>
           }
         }
       </div>
 
       @if (items().length > 1) {
-        <div class="tc-dots" role="tablist" aria-label="Trending slides">
+        <div class="tc-dots" role="tablist" [attr.aria-label]="heading() + ' slides'">
           @for (item of items(); track item.id; let i = $index) {
             <button
               type="button"
@@ -175,12 +120,6 @@ const POSES: Pose[] = [
             ></button>
           }
         </div>
-        @if (autoplaying()) {
-          <!-- Re-created per slide (track by active index) so the fill restarts. -->
-          @for (k of [active()]; track k) {
-            <div class="tc-progress" aria-hidden="true"><span></span></div>
-          }
-        }
       }
 
       <span class="tc-live" aria-live="polite">
@@ -225,55 +164,26 @@ const POSES: Pose[] = [
         flex-shrink: 0;
       }
 
-      .tc-nav { display: flex; gap: 8px; flex-shrink: 0; }
-
-      .nav-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 1px solid var(--color-border);
-        background: var(--color-surface);
-        color: var(--color-primary);
-        cursor: pointer;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-        transition: transform 150ms ease, box-shadow 200ms ease, background-color 160ms ease,
-          color 160ms ease;
-      }
-
-      .nav-btn:hover {
-        transform: translateY(-1px);
-        background: var(--color-primary);
-        color: #fff;
-        box-shadow: 0 8px 18px -8px rgba(29, 77, 36, 0.6);
-      }
-
-      .nav-btn:active { transform: translateY(0); }
-      .nav-btn.prev app-icon { display: inline-flex; transform: rotate(180deg); }
-
-      /* ---- The 3D stage ---- */
+      /* ---- 3D stage ---- */
       .tc-stage {
-        --card-w: clamp(230px, 62vw, 290px);
+        --card-w: clamp(250px, 68vw, 320px);
         position: relative;
-        height: 264px;
-        perspective: 1400px;
-        perspective-origin: 50% 38%;
+        height: 340px;
+        perspective: 1500px;
+        perspective-origin: 50% 42%;
         touch-action: pan-y;
         cursor: grab;
         user-select: none;
         -webkit-user-select: none;
       }
 
-      .tc-stage.dragging { cursor: grabbing; }
+      .tc-stage.grabbing { cursor: grabbing; }
 
-      /* Soft elliptical ground shadow that anchors the ring in space. */
       .tc-floor {
         position: absolute;
         left: 50%;
-        bottom: 2px;
-        width: min(70%, 460px);
+        bottom: 8px;
+        width: min(66%, 460px);
         height: 26px;
         transform: translateX(-50%);
         background: radial-gradient(50% 50% at 50% 50%, rgba(23, 26, 43, 0.16), transparent 70%);
@@ -283,146 +193,53 @@ const POSES: Pose[] = [
 
       .tc-slide {
         position: absolute;
-        top: 12px;
+        top: 14px;
         left: 50%;
         width: var(--card-w);
+        height: 300px;
         margin-left: calc(var(--card-w) / -2);
         transform-style: preserve-3d;
-        transition:
-          transform 620ms cubic-bezier(0.32, 1.15, 0.35, 1),
-          opacity 480ms ease;
-        animation: tc-in 600ms ease backwards;
         will-change: transform, opacity;
+        backface-visibility: hidden;
       }
 
-      /* While the finger drives the ring, motion must track it 1:1. */
-      .tc-stage.dragging .tc-slide { transition: none; }
-
-      @keyframes tc-in {
-        from { opacity: 0; }
+      .tc-slide.animate {
+        transition:
+          transform 600ms cubic-bezier(0.32, 1.12, 0.4, 1),
+          opacity 460ms ease;
       }
 
-      .tc-card {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        height: 212px;
-        color: inherit;
-        cursor: pointer;
-        overflow: hidden;
-        position: relative;
+      .tc-slide app-internship-card {
+        display: block;
+        height: 100%;
+        backface-visibility: hidden;
+      }
+
+      /* Elevate the centre card with a rounded box-shadow. This replaced a
+         filter: drop-shadow, which repainted every animation frame and was the
+         source of the stutter. ::ng-deep reaches the card inside the child
+         component; the .tc-slide prefix keeps it scoped to this carousel. */
+      .tc-slide.center ::ng-deep .internship-card {
         box-shadow:
-          0 24px 44px -24px rgba(23, 26, 43, 0.4),
-          0 6px 14px -10px rgba(29, 77, 36, 0.22);
+          0 26px 44px -20px rgba(23, 26, 43, 0.32),
+          0 10px 18px -12px rgba(29, 77, 36, 0.22);
       }
 
-      .tc-card:hover { text-decoration: none; }
-
-      .tc-card:focus-visible {
-        outline: 2px solid var(--color-primary);
-        outline-offset: 3px;
+      /* The slide already supplies the 3D; cancel the card's own hover tilt +
+         parallax inside the carousel so nothing re-composites as cards pass
+         under the cursor during a drag. */
+      .tc-slide ::ng-deep .card-wrap:hover .internship-card,
+      .tc-slide ::ng-deep .card-wrap:focus-within .internship-card,
+      .tc-slide ::ng-deep .card-wrap:hover .logo-layer,
+      .tc-slide ::ng-deep .card-wrap:hover .card-top-text,
+      .tc-slide ::ng-deep .card-wrap:hover .skill-chips,
+      .tc-slide ::ng-deep .card-wrap:hover .badges,
+      .tc-slide ::ng-deep .card-wrap:hover .card-cta,
+      .tc-slide ::ng-deep .card-wrap:hover .card-overlay {
+        transform: none;
       }
 
-      /* A light sweep across the card that takes center stage. */
-      .tc-slide.center .tc-card::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(
-          105deg,
-          transparent 38%,
-          rgba(255, 255, 255, 0.5) 50%,
-          transparent 62%
-        );
-        transform: translateX(-120%);
-        animation: tc-sheen 900ms ease-out 180ms forwards;
-        pointer-events: none;
-      }
-
-      @keyframes tc-sheen {
-        to { transform: translateX(120%); }
-      }
-
-      .tc-rank {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translate(-50%, 0);
-        font-size: 0.78rem;
-        font-weight: 800;
-        color: #b45309;
-        background: #fef3c7;
-        border-radius: 999px;
-        padding: 2px 10px;
-        box-shadow: 0 2px 6px -2px rgba(180, 83, 9, 0.4);
-      }
-
-      .tc-save {
-        position: absolute;
-        bottom: 12px;
-        right: 12px;
-        z-index: 2;
-      }
-
-      .tc-top { display: flex; align-items: center; justify-content: space-between; }
-
-      /* flex-shrink 0: when narrow widths make the text wrap taller than the
-         fixed card, the title must never be the line that gets crushed. */
-      .tc-card h3 {
-        font-size: 1rem;
-        margin: 4px 0 0;
-        line-height: 1.3;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        flex-shrink: 0;
-      }
-
-      .tc-company {
-        color: var(--color-text-soft);
-        font-size: 0.8125rem;
-        font-weight: 600;
-        flex-shrink: 0;
-      }
-
-      /* The explanation is the sacrificial line when space runs out. */
-      .tc-explain {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--color-text-soft);
-        overflow: hidden;
-      }
-
-      .tc-foot {
-        display: flex;
-        align-items: center;
-        gap: var(--space-sm);
-        margin-top: auto;
-        padding-top: 6px;
-        padding-right: 34px;
-        flex-wrap: wrap;
-      }
-
-      .badge-applied {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        color: var(--color-primary);
-        background: var(--color-muted);
-        border: 1px solid var(--color-border);
-      }
-
-      .tc-loc {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        font-size: 0.75rem;
-        color: var(--color-text-soft);
-        font-weight: 500;
-      }
-
-      /* ---- Dots + autoplay progress ---- */
+      /* ---- Dots ---- */
       .tc-dots {
         display: flex;
         justify-content: center;
@@ -444,27 +261,6 @@ const POSES: Pose[] = [
       .dot.on { width: 26px; background: #b45309; }
       .dot:hover:not(.on) { background: var(--color-text-muted); }
 
-      .tc-progress {
-        height: 2px;
-        margin-top: 6px;
-        border-radius: 999px;
-        background: rgba(180, 83, 9, 0.15);
-        overflow: hidden;
-      }
-
-      .tc-progress span {
-        display: block;
-        height: 100%;
-        background: linear-gradient(90deg, #f59e0b, #b45309);
-        transform-origin: left;
-        transform: scaleX(0);
-        animation: tc-fill 4200ms linear forwards;
-      }
-
-      @keyframes tc-fill {
-        to { transform: scaleX(1); }
-      }
-
       .tc-live {
         position: absolute;
         width: 1px;
@@ -475,61 +271,83 @@ const POSES: Pose[] = [
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .tc-slide {
-          transition: none;
-          animation: none;
-        }
-        .tc-slide.center .tc-card::after { animation: none; }
-        .tc-progress { display: none; }
+        .tc-slide.animate { transition: none; }
         .dot { transition: none; }
       }
     `,
   ],
 })
-export class TrendingCarouselComponent implements OnInit, OnDestroy {
+export class TrendingCarouselComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly heading = input.required<string>();
   readonly subheading = input('');
   readonly icon = input.required<MaskIconName>();
   readonly items = input.required<InternshipListItem[]>();
+  readonly autoplay = input(true);
+  readonly autoplayDelay = input(4200);
+  readonly pauseOnHover = input(true);
+  readonly loop = input(true);
 
   private readonly stage = viewChild<ElementRef<HTMLElement>>('stage');
 
   protected readonly active = signal(0);
   protected readonly dragging = signal(false);
-  /** Fraction of one card width the pointer has moved; drives the whole ring. */
+  /** Fraction of one card the finger has moved; drives the whole ring live. */
   private readonly dragProgress = signal(0);
 
+  private reducedMotion = false;
   private timer: ReturnType<typeof setInterval> | null = null;
   private paused = false;
-  private reducedMotion = false;
+  private hovering = false;
   private pointerId: number | null = null;
-  private dragStartX = 0;
-  private cardWidth = 270;
+  private startX = 0;
+  private lastX = 0;
+  private lastT = 0;
+  private velocity = 0;
+  private cardWidth = 300;
   private suppressClick = false;
 
-  protected readonly autoplaying = computed(
-    () => !this.reducedMotion && this.items().length > 1,
-  );
+  protected readonly animate = computed(() => !this.reducedMotion && !this.dragging());
 
   ngOnInit(): void {
     this.reducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (this.autoplaying()) {
-      this.start();
-    }
+    if (this.autoplayable()) this.start();
+  }
+
+  ngAfterViewInit(): void {
+    // Capture phase so this runs before the card's own routerLink click:
+    // a plain click anywhere on the stage advances instead of navigating.
+    this.stage()?.nativeElement.addEventListener('click', this.onStageClick, true);
   }
 
   ngOnDestroy(): void {
     this.stop();
+    this.stage()?.nativeElement.removeEventListener('click', this.onStageClick, true);
   }
 
+  /** Any click on the stage advances one card (except the bookmark button). */
+  private readonly onStageClick = (event: MouseEvent): void => {
+    // A click that closes a drag shouldn't also advance or navigate.
+    if (this.suppressClick) {
+      this.suppressClick = false;
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+    // Let the save/bookmark toggle do its thing.
+    if ((event.target as HTMLElement).closest('app-save-button')) return;
+    event.stopPropagation();
+    event.preventDefault();
+    this.next();
+  };
+
   /**
-   * Where card i sits on the ring right now. Poses are interpolated over the
-   * card's fractional distance from center, so a drag moves every card
-   * continuously instead of snapping between slots.
+   * Where slide i sits on the ring right now. Poses are interpolated over the
+   * card's fractional distance from centre, so a drag moves every card
+   * smoothly instead of snapping between slots.
    */
-  protected slideStyle(i: number): {
+  protected pose(i: number): {
     transform: string;
     opacity: number;
     zIndex: number;
@@ -538,8 +356,10 @@ export class TrendingCarouselComponent implements OnInit, OnDestroy {
   } {
     const n = this.items().length;
     let off = i - (this.active() + this.dragProgress());
-    off = ((off % n) + n) % n;
-    if (off > n / 2) off -= n;
+    if (this.loop() && n > 1) {
+      off = ((off % n) + n) % n;
+      if (off > n / 2) off -= n;
+    }
 
     const t = Math.min(Math.abs(off), POSES.length - 1);
     const lo = Math.floor(t);
@@ -554,29 +374,13 @@ export class TrendingCarouselComponent implements OnInit, OnDestroy {
     const s = lerp(POSES[lo].s, POSES[hi].s);
     const o = lerp(POSES[lo].o, POSES[hi].o);
 
-    const offstage = Math.abs(off) >= POSES.length - 1.05;
     return {
       transform: `translateX(${x}%) translateZ(${z}px) rotateY(${ry}deg) scale(${s})`,
       opacity: o,
-      zIndex: 10 - Math.round(Math.abs(off) * 2),
+      zIndex: 20 - Math.round(Math.abs(off) * 2),
       center: !this.dragging() && Math.abs(off) < 0.5,
-      offstage,
+      offstage: Math.abs(off) >= POSES.length - 1.05,
     };
-  }
-
-  protected typeLabel(type: string): string {
-    return TYPE_LABELS[type] ?? type;
-  }
-
-  protected deadline(item: InternshipListItem): string | null {
-    return deadlineCountdown(item.applicationDeadline);
-  }
-
-  protected explain(item: InternshipListItem): string | null {
-    if (item.hasApplied) {
-      return null;
-    }
-    return matchExplanation(item.matchedSkillCount, item.requiredSkillCount);
   }
 
   // ---- Navigation ----
@@ -593,43 +397,44 @@ export class TrendingCarouselComponent implements OnInit, OnDestroy {
     this.restart();
   }
 
-  protected centerOn(i: number): void {
-    this.pause();
-    if (this.active() !== i) {
-      this.active.set(i);
-    }
-  }
-
   private step(dir: 1 | -1): void {
     const n = this.items().length;
-    if (n === 0) return;
-    this.active.set((((this.active() + dir) % n) + n) % n);
+    if (n < 2) return;
+    if (this.loop()) {
+      this.active.set((((this.active() + dir) % n) + n) % n);
+    } else {
+      this.active.set(Math.min(n - 1, Math.max(0, this.active() + dir)));
+    }
     this.restart();
   }
 
-  // ---- Finger-tracking drag ----
+  // ---- Drag ----
   protected dragStart(event: PointerEvent): void {
     if (this.items().length < 2 || event.button !== 0) return;
     this.pointerId = event.pointerId;
-    this.dragStartX = event.clientX;
+    this.startX = this.lastX = event.clientX;
+    this.lastT = event.timeStamp;
+    this.velocity = 0;
     this.suppressClick = false;
     const el = this.stage()?.nativeElement;
     this.cardWidth =
-      el?.querySelector<HTMLElement>('.tc-slide')?.getBoundingClientRect().width ?? 270;
+      el?.querySelector<HTMLElement>('.tc-slide')?.getBoundingClientRect().width ?? 300;
     el?.setPointerCapture(event.pointerId);
     this.pause();
   }
 
   protected dragMove(event: PointerEvent): void {
     if (this.pointerId !== event.pointerId) return;
-    const dx = event.clientX - this.dragStartX;
-    if (!this.dragging() && Math.abs(dx) < 6) {
-      return; // movement threshold: a shaky tap is still a click
-    }
+    const dx = event.clientX - this.startX;
+    if (!this.dragging() && Math.abs(dx) < 6) return; // threshold: a shaky tap still clicks
     this.dragging.set(true);
     this.suppressClick = true;
-    // Dragging right pulls earlier cards toward center.
+    // Dragging right pulls earlier cards toward centre.
     this.dragProgress.set(-dx / this.cardWidth);
+    const dt = event.timeStamp - this.lastT;
+    if (dt > 0) this.velocity = (event.clientX - this.lastX) / dt;
+    this.lastX = event.clientX;
+    this.lastT = event.timeStamp;
   }
 
   protected dragEnd(event: PointerEvent): void {
@@ -637,49 +442,53 @@ export class TrendingCarouselComponent implements OnInit, OnDestroy {
     this.pointerId = null;
     if (!this.dragging()) return;
 
-    const n = this.items().length;
-    const moved = Math.round(this.dragProgress());
-    const settled = this.active() + (moved !== 0 ? moved : Math.round(this.dragProgress() * 2));
-    this.active.set(((settled % n) + n) % n);
+    const dx = event.clientX - this.startX;
+    const flick = Math.abs(this.velocity) > 0.4;
+    // One card per gesture: a firm drag OR a quick flick advances.
+    let stepBy = 0;
+    if (Math.abs(dx) > this.cardWidth * 0.18 || flick) {
+      stepBy = (dx !== 0 ? dx : -this.velocity) < 0 ? 1 : -1;
+    }
     this.dragProgress.set(0);
     this.dragging.set(false);
-    // Touch has no mouseleave: un-pause here or autoplay dies after the first
-    // swipe. A mouse is still hovering, so its pause holds until it leaves.
+    if (stepBy !== 0) this.step(stepBy as 1 | -1);
+    // Touch has no mouseleave to clear the pause, so lift it here.
     if (event.pointerType !== 'mouse') {
+      this.hovering = false;
       this.paused = false;
     }
     this.restart();
   }
 
-  /** A drag that ends on a card must not follow the link. */
-  protected guardClick(event: MouseEvent): void {
-    if (this.suppressClick) {
-      event.preventDefault();
-      event.stopPropagation();
-      this.suppressClick = false;
-    }
+  // ---- Autoplay ----
+  private autoplayable(): boolean {
+    return this.autoplay() && !this.reducedMotion && this.items().length > 1;
   }
 
-  // ---- Autoplay ----
+  protected onHover(entering: boolean): void {
+    if (!this.pauseOnHover()) return;
+    this.hovering = entering;
+    if (entering) this.pause();
+    else this.resume();
+  }
+
   protected pause(): void {
     this.paused = true;
   }
 
   protected resume(): void {
-    this.paused = false;
+    if (!this.hovering) this.paused = false;
   }
 
   private start(): void {
     this.stop();
     this.timer = setInterval(() => {
-      if (!this.paused && !this.dragging() && !document.hidden) {
-        this.step(1);
-      }
-    }, 4200);
+      if (!this.paused && !this.dragging() && !document.hidden) this.next();
+    }, this.autoplayDelay());
   }
 
   private restart(): void {
-    if (this.autoplaying()) this.start();
+    if (this.autoplayable()) this.start();
   }
 
   private stop(): void {

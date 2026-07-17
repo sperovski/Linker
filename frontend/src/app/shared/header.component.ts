@@ -6,6 +6,7 @@ import { IconComponent } from './icon.component';
 import { LinkButtonComponent } from './link-button.component';
 import { LogoutButtonComponent } from './logout-button.component';
 import { NotificationBellComponent } from './notification-bell.component';
+import { GooeyNavComponent, GooeyNavItem } from './gooey-nav.component';
 
 @Component({
   selector: 'app-header',
@@ -17,6 +18,7 @@ import { NotificationBellComponent } from './notification-bell.component';
     LinkButtonComponent,
     LogoutButtonComponent,
     NotificationBellComponent,
+    GooeyNavComponent,
   ],
   host: { '(window:scroll)': 'onScroll()' },
   template: `
@@ -38,11 +40,7 @@ import { NotificationBellComponent } from './notification-bell.component';
 
         <nav class="nav" [class.open]="menuOpen()" (click)="menuOpen.set(false)">
           @if (auth.isStudent()) {
-            <a routerLink="/internships" routerLinkActive="active">Browse</a>
-            <a routerLink="/saved" routerLinkActive="active">Saved</a>
-            <a routerLink="/applications" routerLinkActive="active">My Applications</a>
-            <a routerLink="/cv-review" routerLinkActive="active">Rate my CV</a>
-            <a routerLink="/community" routerLinkActive="active">Community</a>
+            <app-gooey-nav [items]="studentNav" />
           } @else if (auth.isCompany()) {
             <a routerLink="/company/dashboard" routerLinkActive="active">Dashboard</a>
             <a routerLink="/company/listings" routerLinkActive="active">My Listings</a>
@@ -224,6 +222,14 @@ export class HeaderComponent {
   private readonly notifications = inject(NotificationService);
   protected readonly menuOpen = signal(false);
   protected readonly scrolled = signal(false);
+
+  protected readonly studentNav: GooeyNavItem[] = [
+    { label: 'Browse', link: '/internships' },
+    { label: 'Saved', link: '/saved' },
+    { label: 'My Applications', link: '/applications' },
+    { label: 'Rate my CV', link: '/cv-review' },
+    { label: 'Community', link: '/community' },
+  ];
 
   protected onScroll(): void {
     this.scrolled.set(window.scrollY > 8);
