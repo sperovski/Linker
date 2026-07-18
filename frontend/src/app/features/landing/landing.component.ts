@@ -16,6 +16,7 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { DotFieldComponent } from '../../shared/dot-field.component';
+import { LiquidEtherComponent } from '../../shared/liquid-ether.component';
 import { HowItStartedComponent } from './how-it-started.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
@@ -173,7 +174,7 @@ const FACULTIES = [
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BgDecorComponent, DotFieldComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
+  imports: [BgDecorComponent, DotFieldComponent, LiquidEtherComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -191,9 +192,11 @@ const FACULTIES = [
   ],
   template: `
     <!-- ============================== HERO ============================== -->
-    <section class="hero band-tint" (mousemove)="onHeroMove($event)">
+    <section class="hero band-tint" #heroSection (mousemove)="onHeroMove($event)">
       <app-bg-decor variant="subtle" />
       <app-dot-field />
+      <app-liquid-ether [colors]="['#1D4D24', '#3E7B4F', '#A8D5B5']" />
+      <div class="hero-glow hero-glow-follow"></div>
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">The internship platform for students</span>
@@ -224,7 +227,6 @@ const FACULTIES = [
 
         <div class="hero-visual" #heroVisual aria-hidden="true">
           <div class="hero-blob"></div>
-          <div class="hero-glow hero-glow-follow"></div>
           <div class="hero-glow hero-glow-fixed"></div>
           @if (scene() === 0) {
             <div class="scene" @sceneSwap>
@@ -596,14 +598,21 @@ const FACULTIES = [
          lerp in the component writing transform directly — compositor-only,
          so it stays smooth where a left/top transition would jank and restart
          on every mousemove. */
+      /* Trails the cursor across the whole hero (direct child of .hero). Sits
+         above the background decor but below the copy/visual (both z-index: 1). */
       .hero-glow-follow {
         left: 0;
         top: 0;
-        width: 340px;
-        height: 340px;
-        /* Resting spot before the first mousemove: roughly mid-composition. */
-        transform: translate3d(160px, 320px, 0) translate(-50%, -50%);
-        background: radial-gradient(circle, rgba(29, 77, 36, 0.28), transparent 70%);
+        width: 420px;
+        height: 420px;
+        z-index: 0;
+        /* Centered on its own transform origin via negative margins so the JS
+           transform is free to translate + deform without a trailing offset. */
+        margin-left: -210px;
+        margin-top: -210px;
+        /* Resting spot before the first mousemove; jumps to the cursor on move. */
+        transform: translate3d(400px, 260px, 0);
+        background: radial-gradient(circle, rgba(43, 110, 58, 0.4), transparent 68%);
         will-change: transform;
       }
 
@@ -1252,7 +1261,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   protected readonly faculties = FACULTIES;
 
   private readonly statsSection = viewChild.required<ElementRef<HTMLElement>>('statsSection');
-  private readonly heroVisual = viewChild<ElementRef<HTMLElement>>('heroVisual');
+  private readonly heroSection = viewChild<ElementRef<HTMLElement>>('heroSection');
   private readonly host = inject(ElementRef);
 
   private wordIndex = signal(0);
@@ -1311,11 +1320,11 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (this.reducedMotion) {
       return; // Both glows stay put for reduced-motion users.
     }
-    const visual = this.heroVisual()?.nativeElement;
-    if (!visual) {
+    const hero = this.heroSection()?.nativeElement;
+    if (!hero) {
       return;
     }
-    const rect = visual.getBoundingClientRect();
+    const rect = hero.getBoundingClientRect();
     this.glowTarget = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     if (this.glowCurrent === null) {
       // First movement: start at the cursor instead of flying in from afar.
@@ -1328,23 +1337,41 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private glowTarget = { x: 0, y: 0 };
   private glowCurrent: { x: number; y: number } | null = null;
+  private readonly glowVel = { x: 0, y: 0 };
   private glowRaf: number | null = null;
 
   private readonly glowTick = (): void => {
-    const glow = this.heroVisual()?.nativeElement.querySelector<HTMLElement>('.hero-glow-follow');
+    const glow = this.heroSection()?.nativeElement.querySelector<HTMLElement>('.hero-glow-follow');
     const current = this.glowCurrent;
     if (!glow || !current) {
       this.glowRaf = null;
       return;
     }
-    // Exponential ease toward the cursor: fast when far, settling gently.
-    current.x += (this.glowTarget.x - current.x) * 0.12;
-    current.y += (this.glowTarget.y - current.y) * 0.12;
+
+    // Spring-damper toward the cursor. A little momentum (low stiffness, soft
+    // damping) lets the blob catch up and settle organically rather than
+    // tracking the pointer rigidly — that lag is what reads as "liquid".
+    const stiffness = 0.055;
+    const damping = 0.82;
+    this.glowVel.x = (this.glowVel.x + (this.glowTarget.x - current.x) * stiffness) * damping;
+    this.glowVel.y = (this.glowVel.y + (this.glowTarget.y - current.y) * stiffness) * damping;
+    current.x += this.glowVel.x;
+    current.y += this.glowVel.y;
+
+    // Velocity-driven stretch: elongate along the direction of travel and pinch
+    // across it (volume-preserving), so the droplet deforms as it flows.
+    const speed = Math.hypot(this.glowVel.x, this.glowVel.y);
+    const stretch = Math.min(speed * 0.018, 0.32);
+    const angle = (Math.atan2(this.glowVel.y, this.glowVel.x) * 180) / Math.PI;
     glow.style.transform =
-      `translate3d(${current.x.toFixed(1)}px, ${current.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      `translate3d(${current.x.toFixed(1)}px, ${current.y.toFixed(1)}px, 0) ` +
+      `rotate(${angle.toFixed(1)}deg) scale(${(1 + stretch).toFixed(3)}, ${(1 - stretch * 0.6).toFixed(3)}) ` +
+      `rotate(${(-angle).toFixed(1)}deg)`;
 
     const settled =
-      Math.abs(this.glowTarget.x - current.x) < 0.5 && Math.abs(this.glowTarget.y - current.y) < 0.5;
+      speed < 0.05 &&
+      Math.abs(this.glowTarget.x - current.x) < 0.5 &&
+      Math.abs(this.glowTarget.y - current.y) < 0.5;
     this.glowRaf = settled ? null : requestAnimationFrame(this.glowTick);
   };
 
