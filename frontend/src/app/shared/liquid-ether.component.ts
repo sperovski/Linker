@@ -29,6 +29,7 @@ import * as THREE from 'three';
 @Component({
   selector: 'app-liquid-ether',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style.opacity]': 'opacity()' },
   template: ``,
   styles: [
     `
@@ -56,6 +57,8 @@ export class LiquidEtherComponent implements AfterViewInit, OnDestroy {
   readonly resolution = input(0.5);
   readonly isBounce = input(false);
   readonly colors = input<string[]>(['#5227FF', '#FF9FFC', '#B497CF']);
+  /** Overall opacity of the effect, for blending it into a background. */
+  readonly opacity = input(1);
   readonly autoDemo = input(true);
   readonly autoSpeed = input(0.5);
   readonly autoIntensity = input(2.2);

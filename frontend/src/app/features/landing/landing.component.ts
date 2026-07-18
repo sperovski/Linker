@@ -195,7 +195,14 @@ const FACULTIES = [
     <section class="hero band-tint" #heroSection (mousemove)="onHeroMove($event)">
       <app-bg-decor variant="subtle" />
       <app-dot-field />
-      <app-liquid-ether [colors]="['#1D4D24', '#3E7B4F', '#A8D5B5']" />
+      <app-liquid-ether
+        [colors]="['#2C5E3A', '#3E7B4F', '#6FA07E']"
+        [opacity]="0.4"
+        [mouseForce]="10"
+        [cursorSize]="80"
+        [autoIntensity]="1.3"
+        [autoSpeed]="0.32"
+      />
       <div class="hero-glow hero-glow-follow"></div>
       <div class="container hero-grid">
         <div class="hero-copy">
