@@ -65,13 +65,21 @@ services:
     volumes:
       - api_uploads:/app/uploads
       - api_dpkeys:/app/dpkeys
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   web:
     build:
       context: ./frontend
     restart: unless-stopped
+    # Don't front a dead API: wait until /health reports healthy.
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "8080:80"
 
