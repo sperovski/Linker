@@ -152,7 +152,7 @@ type SectionKind = 'experience' | 'education' | 'project';
 
           <div class="form-row">
             <div class="field">
-              <label class="label">Faculty <span class="opt-hint">(Ss. Cyril and Methodius University)</span></label>
+              <span class="label">Faculty <span class="opt-hint">(Ss. Cyril and Methodius University)</span></span>
               <div class="field-select">
                 <app-select
                   [options]="facultyOpts()"
@@ -165,7 +165,7 @@ type SectionKind = 'experience' | 'education' | 'project';
               </div>
             </div>
             <div class="field">
-              <label class="label">Graduation year</label>
+              <span class="label">Graduation year</span>
               <div class="field-select">
                 <app-select
                   [options]="gradYearOpts()"

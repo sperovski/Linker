@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
@@ -88,7 +88,7 @@ type RegisterRole = 'student' | 'company';
             <div class="form-section">
               <div class="form-section-title">Your studies</div>
               <div class="field">
-                <label class="label">Faculty <span class="optional">(Ss. Cyril and Methodius University, optional)</span></label>
+                <span class="label">Faculty <span class="optional">(Ss. Cyril and Methodius University, optional)</span></span>
                 <div class="field-select">
                   <app-select
                     [options]="facultyOptions"
@@ -101,7 +101,7 @@ type RegisterRole = 'student' | 'company';
                 </div>
               </div>
               <div class="field">
-                <label class="label">Graduation year <span class="optional">(optional)</span></label>
+                <span class="label">Graduation year <span class="optional">(optional)</span></span>
                 <div class="field-select">
                   <app-select
                     [options]="gradYearOptions"
@@ -219,7 +219,7 @@ type RegisterRole = 'student' | 'company';
   `,
   styles: ['.optional { font-weight: 400; color: var(--color-text-soft); }'],
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);

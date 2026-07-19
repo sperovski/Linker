@@ -51,7 +51,13 @@ import { relativeTime } from './dates';
           } @else {
             <ul class="list">
               @for (n of notifications.items(); track n.id) {
-                <li class="item" [class.unread]="!n.isRead" (click)="go(n.id, n.link)">
+                <li
+                  class="item"
+                  [class.unread]="!n.isRead"
+                  tabindex="0"
+                  (click)="go(n.id, n.link)"
+                  (keydown.enter)="go(n.id, n.link)"
+                >
                   @if (!n.isRead) {
                     <span class="dot" aria-hidden="true"></span>
                   }

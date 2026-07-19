@@ -97,7 +97,7 @@ interface NavLink {
               </button>
 
               @if (bellOpen()) {
-                <div class="menu notif-menu" role="menu" @fadeSlideIn (keydown)="onMenuKeydown($event)">
+                <div class="menu notif-menu" role="menu" tabindex="-1" @fadeSlideIn (keydown)="onMenuKeydown($event)">
                   <div class="notif-head">
                     <span>Notifications</span>
                     @if (unread() > 0) {
@@ -143,7 +143,7 @@ interface NavLink {
             </button>
 
             @if (userMenuOpen()) {
-              <div class="menu" role="menu" @fadeSlideIn (keydown)="onMenuKeydown($event)">
+              <div class="menu" role="menu" tabindex="-1" @fadeSlideIn (keydown)="onMenuKeydown($event)">
                 <a role="menuitem" class="menu-item" [routerLink]="profilePath">
                   <app-icon name="user" [size]="15" /> Profile
                 </a>
@@ -174,7 +174,7 @@ interface NavLink {
 
     <!-- =========================== MOBILE panel ========================== -->
     @if (mobileOpen()) {
-      <nav class="mobile-panel" @fadeSlideIn (keydown)="onMobileKeydown($event)" aria-label="Main navigation">
+      <nav class="mobile-panel" tabindex="-1" @fadeSlideIn (keydown)="onMobileKeydown($event)" aria-label="Main navigation">
         @for (item of navLinks(); track item.link) {
           <a
             class="mobile-link"
@@ -838,7 +838,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     const items = Array.from(menu.querySelectorAll<HTMLElement>('[role="menuitem"]'));
     if (items.length === 0) return;
     const current = items.indexOf(document.activeElement as HTMLElement);
-    let next = -1;
+    let next: number;
     switch (event.key) {
       case 'ArrowDown':
         next = current < 0 ? 0 : (current + 1) % items.length;

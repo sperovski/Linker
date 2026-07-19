@@ -27,7 +27,7 @@ export type LinkButtonSize = 'sm' | 'md' | 'lg';
          gets lost (two separate <ng-content> would only fill one). -->
     <ng-template #label><span class="lm-content"><ng-content></ng-content></span></ng-template>
 
-    @if (routerLink() != null) {
+    @if (routerLink() !== null) {
       <a
         class="learn-more"
         [class]="classes()"

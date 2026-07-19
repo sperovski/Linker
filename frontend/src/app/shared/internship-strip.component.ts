@@ -4,9 +4,7 @@ import {
   ElementRef,
   OnDestroy,
   OnInit,
-  computed,
   input,
-  signal,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';

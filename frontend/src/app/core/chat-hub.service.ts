@@ -136,7 +136,7 @@ export class ChatHubService {
     try {
       await this.connection.invoke('SendMessage', roomId, body);
     } catch (error) {
-      throw new Error(hubErrorMessage(error));
+      throw new Error(hubErrorMessage(error), { cause: error });
     }
   }
 
