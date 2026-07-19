@@ -23,7 +23,10 @@ public static class DependencyInjection
                 "Connection string 'DefaultConnection' is not configured.");
 
         services.AddDbContext<LinkerDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(connectionString, npgsql =>
+                // Transient connection drops (db restart, host resume) retry
+                // instead of surfacing as 500s.
+                npgsql.EnableRetryOnFailure()));
 
         // All repositories share the scoped DbContext, so committing through
         // the unit of work flushes every staged change atomically.

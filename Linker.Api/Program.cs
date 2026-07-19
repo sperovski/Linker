@@ -6,6 +6,7 @@ using Linker.Api.RateLimiting;
 using Linker.Application;
 using Linker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +26,18 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Persist DataProtection keys when a path is configured (containers/cloud set
+// DataProtection__KeysPath to a mounted volume). Without this every container
+// recreation mints a new keyring and invalidates anything it protected.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("Linker");
+}
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<Linker.Infrastructure.Persistence.LinkerDbContext>("database");
@@ -190,9 +203,26 @@ var app = builder.Build();
 if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
 {
     using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider
-        .GetRequiredService<Linker.Infrastructure.Persistence.LinkerDbContext>()
-        .Database.MigrateAsync();
+    var db = scope.ServiceProvider
+        .GetRequiredService<Linker.Infrastructure.Persistence.LinkerDbContext>();
+    // After a daemon restart or host resume the API can boot before Postgres
+    // is even resolvable; wait for it instead of crashing on first contact.
+    const int maxAttempts = 20;
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            await db.Database.MigrateAsync();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            app.Logger.LogWarning(
+                "Database unavailable (attempt {Attempt}/{MaxAttempts}): {Message} — retrying in 3s.",
+                attempt, maxAttempts, ex.Message);
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+    }
 }
 
 // Idempotent: admin seeds when Seed:AdminEmail/Password are set; demo data

@@ -16,6 +16,7 @@ import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { DotFieldComponent } from '../../shared/dot-field.component';
+import { LiquidEtherComponent } from '../../shared/liquid-ether.component';
 import { HowItStartedComponent } from './how-it-started.component';
 
 const ROTATING_WORDS = ['skills.', 'schedule.', 'ambition.', 'city.'];
@@ -173,7 +174,7 @@ const FACULTIES = [
 @Component({
   selector: 'app-landing',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BgDecorComponent, DotFieldComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
+  imports: [BgDecorComponent, DotFieldComponent, LiquidEtherComponent, RouterLink, IconComponent, RevealDirective, CompanyLogoComponent, LinkButtonComponent, HowItStartedComponent],
   animations: [
     trigger('wordSwap', [
       transition('* => *', [
@@ -191,9 +192,18 @@ const FACULTIES = [
   ],
   template: `
     <!-- ============================== HERO ============================== -->
-    <section class="hero band-tint" (mousemove)="onHeroMove($event)">
+    <section class="hero band-tint" #heroSection (mousemove)="onHeroMove($event)">
       <app-bg-decor variant="subtle" />
       <app-dot-field />
+      <app-liquid-ether
+        [colors]="['#2C5E3A', '#3E7B4F', '#6FA07E']"
+        [opacity]="0.4"
+        [mouseForce]="10"
+        [cursorSize]="80"
+        [autoIntensity]="1.3"
+        [autoSpeed]="0.32"
+      />
+      <div class="hero-glow hero-glow-follow"></div>
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="eyebrow">The internship platform for students</span>
@@ -224,7 +234,6 @@ const FACULTIES = [
 
         <div class="hero-visual" #heroVisual aria-hidden="true">
           <div class="hero-blob"></div>
-          <div class="hero-glow hero-glow-follow"></div>
           <div class="hero-glow hero-glow-fixed"></div>
           @if (scene() === 0) {
             <div class="scene" @sceneSwap>
@@ -465,7 +474,7 @@ const FACULTIES = [
     <app-how-it-started />
 
     <!-- ============== SECTION 3: STATS + TRUST WALL + CTA ================ -->
-    <section class="band band-navy stats-band" #statsSection>
+    <section class="band band-brand stats-band" #statsSection>
       <div class="container">
         <div class="stats-grid" appReveal>
           @for (stat of stats; track stat.label; let i = $index) {
@@ -506,10 +515,7 @@ const FACULTIES = [
 
     <footer class="footer band-surface">
       <div class="container footer-inner">
-        <span class="footer-brand">
-          <span class="brand-mark-sm" aria-hidden="true"><app-icon name="briefcase" [size]="13" /></span>
-          Linker
-        </span>
+        <span class="footer-brand">Linker</span>
         <span class="footer-note">Built for students and the companies that hire them.</span>
       </div>
     </footer>
@@ -517,8 +523,17 @@ const FACULTIES = [
   styles: [
     `
       /* ------------------------------- hero ------------------------------ */
-      /* position: relative anchors app-bg-decor; the grid sits above it. */
-      .hero { position: relative; padding: var(--space-3xl) 0; overflow: hidden; }
+      /* position: relative anchors app-bg-decor; the grid sits above it.
+         The app shell reserves --nav-clearance at the top for the floating nav;
+         the hero cancels it with a negative margin so its decorated background
+         bleeds up under the (translucent) bar, then adds it back as padding so
+         the copy still clears the nav. No plain strip above the hero. */
+      .hero {
+        position: relative;
+        margin-top: calc(-1 * var(--nav-clearance));
+        padding: calc(var(--nav-clearance) + var(--space-3xl)) 0 var(--space-3xl);
+        overflow: hidden;
+      }
       .hero > .container, .hero .hero-grid { position: relative; z-index: 1; }
 
       .hero-grid {
@@ -596,14 +611,21 @@ const FACULTIES = [
          lerp in the component writing transform directly — compositor-only,
          so it stays smooth where a left/top transition would jank and restart
          on every mousemove. */
+      /* Trails the cursor across the whole hero (direct child of .hero). Sits
+         above the background decor but below the copy/visual (both z-index: 1). */
       .hero-glow-follow {
         left: 0;
         top: 0;
-        width: 340px;
-        height: 340px;
-        /* Resting spot before the first mousemove: roughly mid-composition. */
-        transform: translate3d(160px, 320px, 0) translate(-50%, -50%);
-        background: radial-gradient(circle, rgba(29, 77, 36, 0.28), transparent 70%);
+        width: 420px;
+        height: 420px;
+        z-index: 0;
+        /* Centered on its own transform origin via negative margins so the JS
+           transform is free to translate + deform without a trailing offset. */
+        margin-left: -210px;
+        margin-top: -210px;
+        /* Resting spot before the first mousemove; jumps to the cursor on move. */
+        transform: translate3d(400px, 260px, 0);
+        background: radial-gradient(circle, rgba(43, 110, 58, 0.4), transparent 68%);
         will-change: transform;
       }
 
@@ -1147,14 +1169,14 @@ const FACULTIES = [
       .stat-label {
         display: block;
         margin-top: var(--space-xs);
-        color: #b4b1ee; /* light indigo tint, ~7:1 on the navy band */
+        color: var(--brand-border); /* light sage, ~8:1 on the deep green band */
         font-size: 0.9rem;
         font-weight: 600;
       }
 
       .wall-title {
         text-align: center;
-        color: #a5a1e8;
+        color: rgba(183, 220, 192, 0.8);
         font-size: 0.8125rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -1209,17 +1231,6 @@ const FACULTIES = [
 
       .footer-brand { display: inline-flex; align-items: center; gap: var(--space-sm); font-weight: 700; }
 
-      .brand-mark-sm {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        background: var(--color-primary);
-        color: #fff;
-      }
-
       .footer-note { color: var(--color-text-soft); font-size: 0.875rem; }
 
       /* ----------------------------- responsive -------------------------- */
@@ -1229,7 +1240,7 @@ const FACULTIES = [
       }
 
       @media (max-width: 767px) {
-        .hero { padding: var(--space-2xl) 0; }
+        .hero { padding: calc(var(--nav-clearance) + var(--space-2xl)) 0 var(--space-2xl); }
         .band { padding: var(--space-2xl) 0; }
         .wall { padding: var(--space-xl) 0; gap: var(--space-md); }
         .wall-logo img { height: 30px; }
@@ -1252,7 +1263,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   protected readonly faculties = FACULTIES;
 
   private readonly statsSection = viewChild.required<ElementRef<HTMLElement>>('statsSection');
-  private readonly heroVisual = viewChild<ElementRef<HTMLElement>>('heroVisual');
+  private readonly heroSection = viewChild<ElementRef<HTMLElement>>('heroSection');
   private readonly host = inject(ElementRef);
 
   private wordIndex = signal(0);
@@ -1311,11 +1322,11 @@ export class LandingComponent implements OnInit, OnDestroy {
     if (this.reducedMotion) {
       return; // Both glows stay put for reduced-motion users.
     }
-    const visual = this.heroVisual()?.nativeElement;
-    if (!visual) {
+    const hero = this.heroSection()?.nativeElement;
+    if (!hero) {
       return;
     }
-    const rect = visual.getBoundingClientRect();
+    const rect = hero.getBoundingClientRect();
     this.glowTarget = { x: event.clientX - rect.left, y: event.clientY - rect.top };
     if (this.glowCurrent === null) {
       // First movement: start at the cursor instead of flying in from afar.
@@ -1328,23 +1339,41 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   private glowTarget = { x: 0, y: 0 };
   private glowCurrent: { x: number; y: number } | null = null;
+  private readonly glowVel = { x: 0, y: 0 };
   private glowRaf: number | null = null;
 
   private readonly glowTick = (): void => {
-    const glow = this.heroVisual()?.nativeElement.querySelector<HTMLElement>('.hero-glow-follow');
+    const glow = this.heroSection()?.nativeElement.querySelector<HTMLElement>('.hero-glow-follow');
     const current = this.glowCurrent;
     if (!glow || !current) {
       this.glowRaf = null;
       return;
     }
-    // Exponential ease toward the cursor: fast when far, settling gently.
-    current.x += (this.glowTarget.x - current.x) * 0.12;
-    current.y += (this.glowTarget.y - current.y) * 0.12;
+
+    // Spring-damper toward the cursor. A little momentum (low stiffness, soft
+    // damping) lets the blob catch up and settle organically rather than
+    // tracking the pointer rigidly — that lag is what reads as "liquid".
+    const stiffness = 0.055;
+    const damping = 0.82;
+    this.glowVel.x = (this.glowVel.x + (this.glowTarget.x - current.x) * stiffness) * damping;
+    this.glowVel.y = (this.glowVel.y + (this.glowTarget.y - current.y) * stiffness) * damping;
+    current.x += this.glowVel.x;
+    current.y += this.glowVel.y;
+
+    // Velocity-driven stretch: elongate along the direction of travel and pinch
+    // across it (volume-preserving), so the droplet deforms as it flows.
+    const speed = Math.hypot(this.glowVel.x, this.glowVel.y);
+    const stretch = Math.min(speed * 0.018, 0.32);
+    const angle = (Math.atan2(this.glowVel.y, this.glowVel.x) * 180) / Math.PI;
     glow.style.transform =
-      `translate3d(${current.x.toFixed(1)}px, ${current.y.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      `translate3d(${current.x.toFixed(1)}px, ${current.y.toFixed(1)}px, 0) ` +
+      `rotate(${angle.toFixed(1)}deg) scale(${(1 + stretch).toFixed(3)}, ${(1 - stretch * 0.6).toFixed(3)}) ` +
+      `rotate(${(-angle).toFixed(1)}deg)`;
 
     const settled =
-      Math.abs(this.glowTarget.x - current.x) < 0.5 && Math.abs(this.glowTarget.y - current.y) < 0.5;
+      speed < 0.05 &&
+      Math.abs(this.glowTarget.x - current.x) < 0.5 &&
+      Math.abs(this.glowTarget.y - current.y) < 0.5;
     this.glowRaf = settled ? null : requestAnimationFrame(this.glowTick);
   };
 

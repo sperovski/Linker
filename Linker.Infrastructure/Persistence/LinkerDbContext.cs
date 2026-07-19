@@ -36,16 +36,7 @@ public class LinkerDbContext : DbContext, IUnitOfWork
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LinkerDbContext).Assembly);
     }
 
-    /// <summary>
-    /// Every new company and internship gets its own chat room, created here — the
-    /// single choke point every creation path flows through (registration,
-    /// internship posting, the seeder), so the rule can't be forgotten or
-    /// duplicated. A parent's identity Id isn't assigned until it's saved, so this
-    /// is a two-phase write: save the parents, then create their rooms. A
-    /// transaction keeps the two phases atomic so a parent can never be committed
-    /// without its room. (GetOrCreateRoom* in the chat service is the lazy fallback
-    /// if a room is ever missing for any other reason.)
-    /// </summary>
+    
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var newCompanies = ChangeTracker.Entries<Company>()
@@ -62,28 +53,40 @@ public class LinkerDbContext : DbContext, IUnitOfWork
             return await base.SaveChangesAsync(cancellationToken);
         }
 
-        var ownsTransaction = Database.CurrentTransaction is null;
-        await using var transaction = ownsTransaction
-            ? await Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
-        var result = await base.SaveChangesAsync(cancellationToken);
-
-        foreach (var company in newCompanies)
+        async Task<int> SaveWithRoomsAsync()
         {
-            ChatRooms.Add(ChatRoom.ForCompany(company.Id, company.Name, DateTime.UtcNow));
+            var result = await base.SaveChangesAsync(cancellationToken);
+
+            foreach (var company in newCompanies)
+            {
+                ChatRooms.Add(ChatRoom.ForCompany(company.Id, company.Name, DateTime.UtcNow));
+            }
+            foreach (var internship in newInternships)
+            {
+                ChatRooms.Add(ChatRoom.ForInternship(internship.Id, internship.Title, DateTime.UtcNow));
+            }
+            await base.SaveChangesAsync(cancellationToken);
+
+            return result;
         }
-        foreach (var internship in newInternships)
-        {
-            ChatRooms.Add(ChatRoom.ForInternship(internship.Id, internship.Title, DateTime.UtcNow));
-        }
-        await base.SaveChangesAsync(cancellationToken);
 
-        if (transaction is not null)
+        if (Database.CurrentTransaction is not null)
         {
+            // An upstream owner already holds the transaction (and, with a
+            // retrying strategy, already runs inside it) — just do the writes.
+            return await SaveWithRoomsAsync();
+        }
+
+        // BeginTransaction must run through the execution strategy: with
+        // EnableRetryOnFailure, user-initiated transactions outside
+        // ExecuteAsync throw InvalidOperationException.
+        var strategy = Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+            var result = await SaveWithRoomsAsync();
             await transaction.CommitAsync(cancellationToken);
-        }
-
-        return result;
+            return result;
+        });
     }
 }
