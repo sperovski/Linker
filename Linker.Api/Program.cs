@@ -6,6 +6,7 @@ using Linker.Api.RateLimiting;
 using Linker.Application;
 using Linker.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +26,18 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Persist DataProtection keys when a path is configured (containers/cloud set
+// DataProtection__KeysPath to a mounted volume). Without this every container
+// recreation mints a new keyring and invalidates anything it protected.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("Linker");
+}
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<Linker.Infrastructure.Persistence.LinkerDbContext>("database");

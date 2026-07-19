@@ -49,3 +49,4 @@ appsettings.*.local.json
 *.pfx
 secrets.json
 .env
+backups/

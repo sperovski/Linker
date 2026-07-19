@@ -3,10 +3,12 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: linker
       POSTGRES_USER: linker
-      POSTGRES_PASSWORD: linker_local_pw
+      # All secrets live in the gitignored .env next to this file.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,24 +21,42 @@ services:
     build:
       context: .
       dockerfile: Linker.Api/Dockerfile
+    # depends_on only orders the initial `up`; on a Docker daemon restart or a
+    # host sleep/resume the containers come back together, so the API can race
+    # ahead of Postgres. restart:unless-stopped lets it retry until the db is up
+    # instead of dying permanently on the first refused connection.
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=linker;Username=linker;Password=linker_local_pw
-      # Local/demo only — override all of these for any real deployment.
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=linker;Username=linker;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       Jwt__Issuer: Linker.Api
       Jwt__Audience: Linker.Client
-      Jwt__Key: local-compose-demo-signing-key-change-me-0123456789abcdef
+      Jwt__Key: ${JWT_KEY:?set JWT_KEY in .env (openssl rand -base64 48)}
+      # Persist the DataProtection keyring so recreating the container doesn't
+      # invalidate everything it protected.
+      DataProtection__KeysPath: /app/dpkeys
       Database__MigrateOnStartup: "true"
       Database__SeedDemoData: "true"
       Seed__AdminEmail: admin@linker.local
-      Seed__AdminPassword: AdminLocal123!
+      Seed__AdminPassword: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
       # Real personal login — value lives in a gitignored .env file next to
       # this compose file (SEED_STEFAN_PASSWORD=...). Empty means "leave the
       # account on the shared demo password".
       Seed__StefanPassword: ${SEED_STEFAN_PASSWORD:-}
+      # Email: defaults to the bundled Mailpit catcher (inbox at
+      # http://localhost:8025). Point the SMTP_* vars in .env at a real relay
+      # (Gmail app password, SendGrid, …) to send actual mail — no rebuild needed.
+      App__BaseUrl: ${APP_BASE_URL:-http://localhost:8080}
+      Smtp__Host: ${SMTP_HOST:-mailpit}
+      Smtp__Port: ${SMTP_PORT:-1025}
+      Smtp__UseSsl: ${SMTP_USE_SSL:-false}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__FromAddress: ${SMTP_FROM:-no-reply@linker.local}
+      Smtp__FromName: Linker
       Cors__AllowedOrigins__0: http://localhost:8080
       # nginx (the "web" service) is the only thing that can reach "api" on this
       # network — trust its forwarded headers for real-client-IP rate limiting.
@@ -44,15 +64,50 @@ services:
       RateLimiting__TrustedProxies__0: 172.16.0.0/12
     volumes:
       - api_uploads:/app/uploads
+      - api_dpkeys:/app/dpkeys
 
   web:
     build:
       context: ./frontend
+    restart: unless-stopped
     depends_on:
       - api
     ports:
       - "8080:80"
 
+  # Local mail catcher: receives all SMTP from the API and shows it in a web
+  # inbox at http://localhost:8025 — verification and reset links land there.
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+
+  # Daily pg_dump into ./backups (bind mount: survives docker volume wipes).
+  # Keeps the newest 14 dumps. Restore with:
+  #   docker exec -i linker-db-1 pg_restore -U linker -d linker --clean < backups/<file>.dump
+  db-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - ./backups:/backups
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          pg_dump -h db -U linker -d linker -Fc -f "/backups/linker-$$(date +%F-%H%M).dump" \
+            && echo "backup written: linker-$$(date +%F-%H%M).dump"
+          ls -1t /backups/linker-*.dump 2>/dev/null | tail -n +15 | xargs -r rm --
+          sleep 86400
+        done
+
 volumes:
   pgdata:
   api_uploads:
+  api_dpkeys:
