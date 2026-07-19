@@ -526,8 +526,17 @@ const FACULTIES = [
   styles: [
     `
       /* ------------------------------- hero ------------------------------ */
-      /* position: relative anchors app-bg-decor; the grid sits above it. */
-      .hero { position: relative; padding: var(--space-3xl) 0; overflow: hidden; }
+      /* position: relative anchors app-bg-decor; the grid sits above it.
+         The app shell reserves --nav-clearance at the top for the floating nav;
+         the hero cancels it with a negative margin so its decorated background
+         bleeds up under the (translucent) bar, then adds it back as padding so
+         the copy still clears the nav. No plain strip above the hero. */
+      .hero {
+        position: relative;
+        margin-top: calc(-1 * var(--nav-clearance));
+        padding: calc(var(--nav-clearance) + var(--space-3xl)) 0 var(--space-3xl);
+        overflow: hidden;
+      }
       .hero > .container, .hero .hero-grid { position: relative; z-index: 1; }
 
       .hero-grid {
@@ -1245,7 +1254,7 @@ const FACULTIES = [
       }
 
       @media (max-width: 767px) {
-        .hero { padding: var(--space-2xl) 0; }
+        .hero { padding: calc(var(--nav-clearance) + var(--space-2xl)) 0 var(--space-2xl); }
         .band { padding: var(--space-2xl) 0; }
         .wall { padding: var(--space-xl) 0; gap: var(--space-md); }
         .wall-logo img { height: 30px; }

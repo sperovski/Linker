@@ -9,6 +9,16 @@ import { routeFade } from './shared/animations';
   selector: 'app-root',
   imports: [RouterOutlet, HeaderComponent, ToastContainerComponent, VerifyBannerComponent],
   animations: [routeFade],
+  // The header is a fixed floating island (out of flow), so the shell reserves
+  // matching space at the top instead of a spacer element.
+  styles: [
+    `
+      :host {
+        display: block;
+        padding-top: var(--nav-clearance);
+      }
+    `,
+  ],
   template: `
     <app-header />
     <app-verify-banner />

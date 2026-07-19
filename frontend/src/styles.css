@@ -37,6 +37,26 @@
   --color-destructive-bg: #FCEBEB;
   --color-destructive-border: #F0C4C4;
 
+  /* Floating island navigation — a light, frosted bar that blends with the
+     landing page (same surface + brand-green accents the rest of the app uses).
+     --nav-bg stays a solid surface for the dropdowns / mobile panel / dot ring;
+     the bar itself is translucent (set in the component). */
+  --nav-bg: var(--color-surface);
+  --nav-wordmark: var(--color-foreground);
+  --nav-icon: var(--color-text-soft);
+  --nav-link: var(--color-text-soft);
+  --nav-active-bg: var(--color-primary);
+  --nav-active-text: #ffffff;
+  --nav-avatar-bg: var(--color-primary);
+  --nav-badge: #e24b4a;
+  --nav-divider: var(--color-border);
+  --nav-icon-border: var(--color-border);
+  --nav-scrolled-border: var(--color-border);
+  --nav-hover: rgba(29, 77, 36, 0.06);
+  /* Vertical space the fixed bar reserves at the top of the app shell:
+     top offset (16px) + bar height + a breathing gap. */
+  --nav-clearance: 92px;
+
   /* Match quality lives OFF the brand hue: the brand is green now, so a green
      badge would stop reading as a signal. These are traffic-light dots only. */
   --match-strong: #2E9E4F;
