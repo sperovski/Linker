@@ -858,16 +858,16 @@ a.btn:hover { text-decoration: none; }
 .band-surface { background: var(--color-surface); }
 .band-tint { background: var(--color-background); }
 
-.band-navy {
-  background: var(--color-foreground);
-  color: #e7e6fb;
+.band-brand {
+  background: linear-gradient(180deg, var(--brand-deep), var(--brand) 130%);
+  color: #e9f4ec;
 }
 
-.band-navy h1,
-.band-navy h2,
-.band-navy h3 { color: #fff; }
+.band-brand h1,
+.band-brand h2,
+.band-brand h3 { color: #fff; }
 
-.band-navy .eyebrow { color: #a5b4fc; }
+.band-brand .eyebrow { color: var(--brand-border); }
 
 /* ---------------------------------------------------------------------------
    Scroll reveal — elements fade+slide in as they enter the viewport.

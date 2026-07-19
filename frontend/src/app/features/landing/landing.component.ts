@@ -474,7 +474,7 @@ const FACULTIES = [
     <app-how-it-started />
 
     <!-- ============== SECTION 3: STATS + TRUST WALL + CTA ================ -->
-    <section class="band band-navy stats-band" #statsSection>
+    <section class="band band-brand stats-band" #statsSection>
       <div class="container">
         <div class="stats-grid" appReveal>
           @for (stat of stats; track stat.label; let i = $index) {
@@ -515,10 +515,7 @@ const FACULTIES = [
 
     <footer class="footer band-surface">
       <div class="container footer-inner">
-        <span class="footer-brand">
-          <span class="brand-mark-sm" aria-hidden="true"><app-icon name="briefcase" [size]="13" /></span>
-          Linker
-        </span>
+        <span class="footer-brand">Linker</span>
         <span class="footer-note">Built for students and the companies that hire them.</span>
       </div>
     </footer>
@@ -1172,14 +1169,14 @@ const FACULTIES = [
       .stat-label {
         display: block;
         margin-top: var(--space-xs);
-        color: #b4b1ee; /* light indigo tint, ~7:1 on the navy band */
+        color: var(--brand-border); /* light sage, ~8:1 on the deep green band */
         font-size: 0.9rem;
         font-weight: 600;
       }
 
       .wall-title {
         text-align: center;
-        color: #a5a1e8;
+        color: rgba(183, 220, 192, 0.8);
         font-size: 0.8125rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -1233,17 +1230,6 @@ const FACULTIES = [
       }
 
       .footer-brand { display: inline-flex; align-items: center; gap: var(--space-sm); font-weight: 700; }
-
-      .brand-mark-sm {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        background: var(--color-primary);
-        color: #fff;
-      }
 
       .footer-note { color: var(--color-text-soft); font-size: 0.875rem; }
 
