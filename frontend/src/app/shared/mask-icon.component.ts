@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 
-/** Named PNG icons (in /public) rendered as CSS masks so they take currentColor. */
+/** Named icons (in /public) rendered as CSS masks so they take currentColor. */
 const ICON_SRC: Record<string, string> = {
   gear: '/gear_17279605.png',
   trending: '/trending-content_16705905.png',
   cv: '/cv_3846805.png',
   'generate-review': '/generate_review.png',
-  projects: '/projects.png',
+  experience: '/experience.svg',
+  projects: '/projects.svg',
   skills: '/skills_11253617.png',
   'bg-briefcase': '/briefcase_5782884.png',
   'bg-graduation-cap': '/graduation-cap_417180.png',
