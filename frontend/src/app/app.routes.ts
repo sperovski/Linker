@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/guards';
+import { authGuard, guestGuard, roleGuard, unsavedChangesGuard } from './core/guards';
 
 export const routes: Routes = [
   {
@@ -78,6 +78,7 @@ export const routes: Routes = [
   {
     path: 'profile',
     canActivate: [roleGuard('Student')],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./features/student/student-profile.component').then((m) => m.StudentProfileComponent),
     title: 'My profile | Linker',
@@ -105,6 +106,7 @@ export const routes: Routes = [
   {
     path: 'company/internships/new',
     canActivate: [roleGuard('Company')],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./features/company/internship-form.component').then((m) => m.InternshipFormComponent),
     title: 'Post an internship | Linker',
@@ -112,6 +114,7 @@ export const routes: Routes = [
   {
     path: 'company/internships/:id/edit',
     canActivate: [roleGuard('Company')],
+    canDeactivate: [unsavedChangesGuard],
     loadComponent: () =>
       import('./features/company/internship-form.component').then((m) => m.InternshipFormComponent),
     title: 'Edit internship | Linker',

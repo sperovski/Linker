@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, CanDeactivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { UserRole } from './models';
 
@@ -26,3 +26,17 @@ export const guestGuard: CanActivateFn = () => {
   const router = inject(Router);
   return auth.isLoggedIn() ? router.createUrlTree([auth.homePath()]) : true;
 };
+
+/** Implemented by form pages that can hold unsaved edits. */
+export interface HasUnsavedChanges {
+  hasUnsavedChanges(): boolean;
+}
+
+/**
+ * Confirms before leaving a page with unsaved edits. Only in-app navigation
+ * goes through the router — a tab close or reload needs the component's own
+ * beforeunload listener.
+ */
+export const unsavedChangesGuard: CanDeactivateFn<HasUnsavedChanges> = (component) =>
+  !component.hasUnsavedChanges() ||
+  confirm('You have unsaved changes. Leave this page and lose them?');
