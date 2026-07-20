@@ -37,6 +37,15 @@ public class LinkerDbContext : DbContext, IUnitOfWork
     }
 
     
+    /// <summary>
+    /// Blocked on purpose: the chat-room invariant below is enforced in
+    /// SaveChangesAsync only, so a sync save would quietly commit a company or
+    /// internship with no room. Nothing in the app saves synchronously; this
+    /// keeps it that way instead of failing silently later.
+    /// </summary>
+    public override int SaveChanges() =>
+        throw new NotSupportedException("Use SaveChangesAsync — see LinkerDbContext.SaveChangesAsync.");
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var newCompanies = ChangeTracker.Entries<Company>()
