@@ -6,11 +6,12 @@ const ICON_SRC: Record<string, string> = {
   gear: '/gear_17279605.png',
   trending: '/trending-content_16705905.png',
   cv: '/cv.svg',
-  'generate-review': '/generate_review.png',
+  'generate-review': '/generate.svg',
   experience: '/experience.svg',
   projects: '/projects.svg',
   university: '/university.svg',
   skills: '/skills.svg',
+  recommended: '/recommended.svg',
   'bg-briefcase': '/briefcase_5782884.png',
   'bg-graduation-cap': '/graduation-cap_417180.png',
 };

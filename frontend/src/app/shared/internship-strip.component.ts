@@ -40,7 +40,7 @@ import { matchExplanation } from './match';
   template: `
     <section class="strip" [class.is-carousel]="carousel()">
       <div class="strip-head">
-        <span class="strip-icon" [class]="accent()">
+        <span class="strip-icon" [class]="accent()" [class.flare]="flare()">
           <app-mask-icon [name]="icon()" [size]="17" />
         </span>
         <div class="strip-titles">
@@ -151,6 +151,29 @@ import { matchExplanation } from './match';
       }
 
       .strip-icon.amber { background: #fef3c7; color: #b45309; }
+
+      /* A quiet badge most of the time, with a brief "pop" every few seconds
+         to draw the eye — used only on rails worth calling out (Recommended). */
+      .strip-icon.flare { animation: strip-icon-flare 6s ease-in-out infinite; }
+
+      @keyframes strip-icon-flare {
+        0%, 82%, 100% {
+          transform: scale(1) rotate(0deg);
+          box-shadow: 0 0 0 0 rgba(29, 77, 36, 0);
+        }
+        87% {
+          transform: scale(1.22) rotate(-6deg);
+          box-shadow: 0 0 0 7px rgba(29, 77, 36, 0.16);
+        }
+        91% {
+          transform: scale(0.94) rotate(3deg);
+          box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.1);
+        }
+        95% {
+          transform: scale(1.06) rotate(0deg);
+          box-shadow: 0 0 0 5px rgba(29, 77, 36, 0.13);
+        }
+      }
 
       .strip-head h2 { font-size: 1.2rem; margin: 0; letter-spacing: -0.01em; }
       .strip-head p { margin: 2px 0 0; font-size: 0.85rem; color: var(--color-text-soft); }
@@ -321,6 +344,7 @@ import { matchExplanation } from './match';
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .strip-icon.flare { animation: none; }
         .mini-wrap { animation: none; }
         .mini { transition: box-shadow 0.2s ease; }
         .mini:hover,
@@ -344,6 +368,8 @@ export class InternshipStripComponent implements OnInit, OnDestroy {
   readonly icon = input.required<MaskIconName>();
   readonly items = input.required<InternshipListItem[]>();
   readonly accent = input('');
+  /** Periodic "pop" on the header icon, for a rail worth calling out. */
+  readonly flare = input(false);
   /** Show a #rank chip when an item has no match score (e.g. anonymous popular list). */
   readonly rank = input(false);
   /** Turn the rail into an auto-advancing carousel. */
