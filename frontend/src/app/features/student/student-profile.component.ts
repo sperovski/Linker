@@ -227,7 +227,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 3. Experience ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic"><app-icon name="briefcase" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="experience" [size]="17" /></span>
             <div class="grow">
               <h2>Experience</h2>
               <p class="section-sub">Internships, part-time work, volunteering.</p>
