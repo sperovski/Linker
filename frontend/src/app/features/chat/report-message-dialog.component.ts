@@ -15,8 +15,8 @@ const MAX_REASON_LENGTH = 300;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, LinkButtonComponent],
   template: `
-    <div class="backdrop" (click)="closed.emit()">
-      <div class="panel" role="dialog" aria-modal="true" aria-label="Report message" (click)="$event.stopPropagation()">
+    <div class="backdrop" tabindex="-1" (click)="onBackdropClick($event)" (keydown.escape)="closed.emit()">
+      <div class="panel" role="dialog" aria-modal="true" aria-label="Report message">
         <h3>Report message</h3>
         <blockquote>{{ message().body }}</blockquote>
         <label for="report-reason">Why are you reporting this?</label>
@@ -121,6 +121,13 @@ export class ReportMessageDialogComponent {
   protected readonly maxLength = MAX_REASON_LENGTH;
   protected readonly submitting = signal(false);
   protected reason = '';
+
+  /** Close only on true backdrop clicks, not clicks inside the panel. */
+  protected onBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closed.emit();
+    }
+  }
 
   protected submit(): void {
     const reason = this.reason.trim();

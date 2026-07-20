@@ -49,6 +49,12 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Lint
+        run: npx ng lint
+
+      - name: Unit tests
+        run: npx ng test --watch=false
+
       - name: Production build
         run: npx ng build --configuration production
 

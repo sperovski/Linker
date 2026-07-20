@@ -45,6 +45,7 @@ interface SkillGroup {
         <input
           type="text"
           role="combobox"
+          aria-controls="skill-picker-listbox"
           [attr.aria-expanded]="open()"
           aria-label="Search skills"
           placeholder="Search skills, e.g. Angular, Excel, German…"
@@ -62,7 +63,7 @@ interface SkillGroup {
       </div>
 
       @if (open()) {
-        <div class="dropdown" role="listbox">
+        <div class="dropdown" role="listbox" id="skill-picker-listbox">
           @for (group of filteredGroups(); track group.category) {
             <div class="group">
               <div class="group-head">{{ group.category }}</div>
