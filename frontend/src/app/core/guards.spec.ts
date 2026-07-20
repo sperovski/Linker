@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { AuthService } from './auth.service';
 import { UserRole } from './models';
-import { authGuard, guestGuard, roleGuard } from './guards';
+import { authGuard, guestGuard, roleGuard, unsavedChangesGuard } from './guards';
 
 describe('route guards', () => {
   let loggedIn: boolean;
@@ -74,6 +74,34 @@ describe('route guards', () => {
       loggedIn = true;
       role = 'Student';
       expect(path(run(guestGuard))).toBe('/internships');
+    });
+  });
+
+  describe('unsavedChangesGuard', () => {
+    // The guard takes the component plus route/state args it ignores.
+    function leave(hasUnsavedChanges: boolean) {
+      const component = { hasUnsavedChanges: () => hasUnsavedChanges };
+      return TestBed.runInInjectionContext(() =>
+        unsavedChangesGuard(component, route, state, state),
+      );
+    }
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it('leaves without asking when nothing is pending', () => {
+      const confirmSpy = vi.spyOn(window, 'confirm');
+      expect(leave(false)).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it('leaves when the user confirms', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      expect(leave(true)).toBe(true);
+    });
+
+    it('stays put when the user cancels', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      expect(leave(true)).toBe(false);
     });
   });
 });

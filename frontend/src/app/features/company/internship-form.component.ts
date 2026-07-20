@@ -11,6 +11,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { InternshipService } from '../../core/api/internship.service';
 import { SkillService } from '../../core/api/skill.service';
+import { HasUnsavedChanges } from '../../core/guards';
 import { InternshipType, SkillResponse } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
@@ -321,7 +322,7 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
     `,
   ],
 })
-export class InternshipFormComponent implements OnInit {
+export class InternshipFormComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly internshipService = inject(InternshipService);
   private readonly skillService = inject(SkillService);
@@ -403,6 +404,11 @@ export class InternshipFormComponent implements OnInit {
     });
   }
 
+  /** Guard hook: a submit in flight is on its way out, so it doesn't count. */
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.submitting();
+  }
+
   protected invalid(control: string): boolean {
     const c = this.form.get(control);
     return !!c && c.invalid && (c.touched || c.dirty);
@@ -422,6 +428,9 @@ export class InternshipFormComponent implements OnInit {
       }
       return next;
     });
+    // Skills live outside the form group; mark it dirty so the unsaved-changes
+    // guard sees skill-only edits too.
+    this.form.markAsDirty();
   }
 
   protected submit(): void {

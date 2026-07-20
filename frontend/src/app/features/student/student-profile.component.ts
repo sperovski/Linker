@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { HasUnsavedChanges } from '../../core/guards';
 import { SkillService } from '../../core/api/skill.service';
 import { StudentService } from '../../core/api/student.service';
 import {
@@ -886,7 +887,7 @@ type SectionKind = 'experience' | 'education' | 'project';
     `,
   ],
 })
-export class StudentProfileComponent implements OnInit {
+export class StudentProfileComponent implements OnInit, HasUnsavedChanges {
   private readonly fb = inject(FormBuilder);
   private readonly studentService = inject(StudentService);
   private readonly skillService = inject(SkillService);
@@ -1026,14 +1027,18 @@ export class StudentProfileComponent implements OnInit {
   /** Current year onward, plus the stored year if it predates the rule. */
   protected readonly gradYearOpts = computed(() => gradYearOptions(8, this.gradYearSignal()));
 
+  // setValue() alone never marks the control dirty (only DOM interaction does),
+  // and these come from a custom select — so mark it here.
   protected setUniversity(value: string): void {
     this.form.controls.university.setValue(value);
+    this.form.controls.university.markAsDirty();
     this.universitySignal.set(value);
   }
 
   protected setYear(value: string): void {
     const year = value ? Number(value) : null;
     this.form.controls.graduationYear.setValue(year);
+    this.form.controls.graduationYear.markAsDirty();
     this.gradYearSignal.set(year);
   }
 
@@ -1068,6 +1073,13 @@ export class StudentProfileComponent implements OnInit {
     this.universitySignal.set(profile.university ?? '');
     this.gradYearSignal.set(profile.graduationYear);
     this.cvUrlDraft.set(profile.cvUrl ?? '');
+    // The form now mirrors the server, so nothing is pending.
+    this.form.markAsPristine();
+  }
+
+  /** Guard hook: a save in flight is on its way out, so it doesn't count. */
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.saving();
   }
 
   protected invalid(control: string): boolean {

@@ -21,6 +21,23 @@ interface StoredSession {
 
 const STORAGE_KEY = 'linker_session';
 
+/*
+ * Why localStorage and not httpOnly cookies:
+ *
+ * localStorage is readable by any script on the page, so a single XSS bug
+ * leaks both tokens. httpOnly cookies would keep them out of JS reach, but
+ * they need same-site (or CORS-credentialed) delivery plus CSRF protection on
+ * every mutating call — and the SPA and API are served from different origins
+ * in dev (4200 vs 5256), so cookies are a real change, not a config flip.
+ *
+ * The mitigations that make this acceptable for now: Angular escapes
+ * interpolated values by default (no innerHTML on user content anywhere in
+ * this app), access tokens are short-lived, and refresh tokens rotate on every
+ * use so a stolen one is single-use and detectable.
+ *
+ * Revisit if the app ever renders user-supplied HTML or handles payments.
+ */
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
