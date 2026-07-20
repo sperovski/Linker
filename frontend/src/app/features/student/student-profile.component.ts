@@ -198,11 +198,6 @@ type SectionKind = 'experience' | 'education' | 'project';
             }
           </div>
 
-          <div class="field">
-            <label class="label" for="profilePhotoUrl">Profile photo URL <span class="opt-hint">(paste a link to a hosted image)</span></label>
-            <input id="profilePhotoUrl" class="field-input" formControlName="profilePhotoUrl" type="url" placeholder="https://…" />
-          </div>
-
           <div class="form-row">
             <div class="field">
               <label class="label" for="linkedInUrl">LinkedIn</label>
@@ -978,7 +973,6 @@ export class StudentProfileComponent implements OnInit {
     graduationYear: [null as number | null, [Validators.min(1950), Validators.max(2100)]],
     bio: [''],
     headline: [''],
-    profilePhotoUrl: [''],
     linkedInUrl: [''],
     githubUrl: [''],
     portfolioUrl: [''],
@@ -1068,7 +1062,6 @@ export class StudentProfileComponent implements OnInit {
       graduationYear: profile.graduationYear,
       bio: profile.bio ?? '',
       headline: profile.headline ?? '',
-      profilePhotoUrl: profile.profilePhotoUrl ?? '',
       linkedInUrl: profile.linkedInUrl ?? '',
       githubUrl: profile.githubUrl ?? '',
       portfolioUrl: profile.portfolioUrl ?? '',
@@ -1101,7 +1094,7 @@ export class StudentProfileComponent implements OnInit {
         graduationYear: value.graduationYear,
         bio: value.bio || null,
         headline: value.headline || null,
-        profilePhotoUrl: value.profilePhotoUrl || null,
+        profilePhotoUrl: this.profile()?.profilePhotoUrl ?? null,
         linkedInUrl: value.linkedInUrl || null,
         githubUrl: value.githubUrl || null,
         portfolioUrl: value.portfolioUrl || null,
@@ -1131,7 +1124,7 @@ export class StudentProfileComponent implements OnInit {
         graduationYear: value.graduationYear,
         bio: value.bio || null,
         headline: value.headline || null,
-        profilePhotoUrl: value.profilePhotoUrl || null,
+        profilePhotoUrl: this.profile()?.profilePhotoUrl ?? null,
         linkedInUrl: value.linkedInUrl || null,
         githubUrl: value.githubUrl || null,
         portfolioUrl: value.portfolioUrl || null,
