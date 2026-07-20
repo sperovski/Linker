@@ -63,7 +63,7 @@ const MARQUEE_ROWS: MarqueeRow[] = [
       { kind: 'logo', src: 'assets/logos/Komercijalna_Banka_AD_Skopje.png', alt: 'Komercijalna Banka' },
       { kind: 'word', text: 'Pharma', tone: 'teal' },
       { kind: 'logo', src: 'assets/logos/alkaloid-skopje-01-logo-svg-vector.svg', alt: 'Alkaloid' },
-      { kind: 'word', text: 'Engineering', tone: 'navy' },
+      { kind: 'word', text: 'Architecture', tone: 'navy' },
       { kind: 'logo', src: 'assets/logos/Replek-Farm-1-scaled.png', alt: 'Replek Farm' },
     ],
   },
@@ -877,7 +877,7 @@ const FACULTIES = [
       .wall {
         position: relative;
         padding: var(--space-2xl) 0;
-        background: #f8f8fd; /* lightest chapter tint of --color-background */
+        background: var(--brand-wash);
         border-top: 1px solid var(--color-border);
         border-bottom: 1px solid var(--color-border);
         overflow: hidden;
@@ -886,7 +886,7 @@ const FACULTIES = [
         gap: var(--space-lg);
       }
 
-      /* soft off-center violet glow — asymmetric on purpose */
+      /* soft off-center green glow — asymmetric on purpose */
       .wall-glow {
         position: absolute;
         top: -30%;
@@ -897,7 +897,15 @@ const FACULTIES = [
         pointer-events: none;
       }
 
-      .wall-row { position: relative; }
+      .wall-row {
+        position: relative;
+        /* items fade in/out at the viewport edges instead of popping */
+        mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+      }
+
+      /* let people actually read a row / spot a company */
+      .wall-row:hover .wall-track { animation-play-state: paused; }
 
       .wall-row-tilt { transform: rotate(-1.5deg); }
 
@@ -923,7 +931,11 @@ const FACULTIES = [
         white-space: nowrap;
       }
 
-      .wall-word-teal { color: var(--color-secondary); }
+      /* every second word is drawn as an outline for rhythm */
+      .wall-word-teal {
+        color: transparent;
+        -webkit-text-stroke: 1.5px var(--color-secondary);
+      }
 
       /* accent row: heavier and larger than its siblings */
       .wall-row-accent .wall-word {
@@ -954,7 +966,8 @@ const FACULTIES = [
         padding: 12px 22px;
       }
 
-      .wall-logo img { height: 40px; width: auto; display: block; }
+      /* multiply blends away white logo boxes (jpg/png) on the white chip */
+      .wall-logo img { height: 40px; width: auto; display: block; mix-blend-mode: multiply; }
 
       .wall-row-accent .wall-logo img { height: 52px; }
 
