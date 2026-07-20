@@ -10,6 +10,7 @@ public class StudentServiceTests : IDisposable
 {
     private readonly TestDb _db = new();
     private readonly FakeCvFileStorage _storage = new();
+    private readonly FakeCvTextExtractor _extractor = new();
     private readonly StudentService _service;
     private readonly ApplicationService _applications;
 
@@ -23,7 +24,9 @@ public class StudentServiceTests : IDisposable
             new ProjectRepository(context),
             new CompanyRepository(context),
             new ApplicationRepository(context),
+            new SkillRepository(context),
             _storage,
+            _extractor,
             context);
 
         _applications = new ApplicationService(
@@ -53,9 +56,9 @@ public class StudentServiceTests : IDisposable
     {
         var student = _db.AddStudent();
 
-        var profile = await _service.UploadCvAsync(student.UserId, fileName, [1, 2, 3]);
+        var result = await _service.UploadCvAsync(student.UserId, fileName, [1, 2, 3]);
 
-        Assert.NotNull(profile.CvUrl);
+        Assert.NotNull(result.Profile.CvUrl);
     }
 
     [Theory]
@@ -78,7 +81,7 @@ public class StudentServiceTests : IDisposable
 
         await _service.UploadCvAsync(student.UserId, "new.pdf", [2]);
 
-        Assert.Equal([first.CvUrl], _storage.Deleted);
+        Assert.Equal([first.Profile.CvUrl], _storage.Deleted);
     }
 
     [Fact]
@@ -92,6 +95,117 @@ public class StudentServiceTests : IDisposable
 
         // An external link isn't ours to delete.
         Assert.Empty(_storage.Deleted);
+    }
+
+    // ---- CV import -------------------------------------------------------
+
+    private const string SampleCv = """
+        Stefan Perovski
+        BSc Computer Science at Faculty of Computer Science and Engineering.
+        Worked at Acme as an intern building things with Angular and C#.
+        """;
+
+    [Fact]
+    public async Task UploadCv_AddsCatalogueSkillsFoundInTheCv()
+    {
+        var student = _db.AddStudent();
+        _db.AddSkill("Angular");
+        _db.AddSkill("C#");
+        _db.AddSkill("Kubernetes");
+        _extractor.Text = SampleCv;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.Equal(["Angular", "C#"], result.AddedSkills.Order());
+        Assert.Equal(2, result.Profile.Skills.Count);
+    }
+
+    [Fact]
+    public async Task UploadCv_DoesNotDuplicateSkillsTheStudentAlreadyHas()
+    {
+        var student = _db.AddStudent();
+        var angular = _db.AddSkill("Angular");
+        _db.AddSkill("C#");
+        _db.GiveStudentSkills(student, angular.Id);
+        _extractor.Text = SampleCv;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.Equal(["C#"], result.AddedSkills);
+        Assert.Equal(2, result.Profile.Skills.Count);
+    }
+
+    [Fact]
+    public async Task UploadCv_WritesABioWhenTheStudentHasNone()
+    {
+        var student = _db.AddStudent();
+        _db.AddSkill("Angular");
+        _extractor.Text = SampleCv;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.True(result.BioApplied);
+        Assert.Null(result.SuggestedBio);
+        Assert.False(string.IsNullOrWhiteSpace(result.Profile.Bio));
+    }
+
+    [Fact]
+    public async Task UploadCv_NeverOverwritesAnExistingBio()
+    {
+        var student = _db.AddStudent();
+        student.Bio = "My own carefully written bio.";
+        _db.Save();
+        _db.AddSkill("Angular");
+        _extractor.Text = SampleCv;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.False(result.BioApplied);
+        Assert.Equal("My own carefully written bio.", result.Profile.Bio);
+        // Offered back instead, for the student to accept or ignore.
+        Assert.False(string.IsNullOrWhiteSpace(result.SuggestedBio));
+    }
+
+    [Fact]
+    public async Task UploadCv_WithUnreadableFile_StillUploadsAndImportsNothing()
+    {
+        var student = _db.AddStudent();
+        _db.AddSkill("Angular");
+        // A scanned, image-only PDF: the extractor throws.
+        _extractor.Text = null;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.False(result.TextExtracted);
+        Assert.NotNull(result.Profile.CvUrl);
+        Assert.Empty(result.AddedSkills);
+        Assert.False(result.BioApplied);
+    }
+
+    [Fact]
+    public async Task UploadCv_WithNoMatchingSkills_ImportsNone()
+    {
+        var student = _db.AddStudent();
+        _db.AddSkill("Kubernetes");
+        _extractor.Text = SampleCv;
+
+        var result = await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        Assert.Empty(result.AddedSkills);
+        Assert.True(result.TextExtracted);
+    }
+
+    [Fact]
+    public async Task UploadCv_ImportedSkillsSurviveAReload()
+    {
+        var student = _db.AddStudent();
+        _db.AddSkill("Angular");
+        _extractor.Text = SampleCv;
+
+        await _service.UploadCvAsync(student.UserId, "cv.pdf", [1]);
+
+        var reloaded = await _service.GetByUserIdAsync(student.UserId);
+        Assert.Equal("Angular", Assert.Single(reloaded.Skills).Name);
     }
 
     // ---- CV access control ----------------------------------------------

@@ -145,6 +145,17 @@ export interface StudentProfile {
   projects: ProjectEntry[];
 }
 
+/** Result of a CV upload: the saved profile plus what reading the file imported. */
+export interface CvImportResponse {
+  profile: StudentProfile;
+  addedSkills: string[];
+  /** Set only when the student already had a bio, so theirs was left alone. */
+  suggestedBio: string | null;
+  bioApplied: boolean;
+  /** False when no text could be read (e.g. a scanned, image-only PDF). */
+  textExtracted: boolean;
+}
+
 export interface UpdateStudentProfileRequest {
   firstName: string;
   lastName: string;

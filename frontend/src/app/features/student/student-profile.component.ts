@@ -4,6 +4,7 @@ import { AuthService } from '../../core/auth.service';
 import { SkillService } from '../../core/api/skill.service';
 import { StudentService } from '../../core/api/student.service';
 import {
+  CvImportResponse,
   EducationEntry,
   ExperienceEntry,
   ProjectEntry,
@@ -183,6 +184,18 @@ type SectionKind = 'experience' | 'education' | 'project';
             <label class="label" for="bio">Bio</label>
             <textarea id="bio" class="textarea" formControlName="bio"
               placeholder="A few sentences about you and your interests…"></textarea>
+            @if (suggestedBio(); as suggestion) {
+              <div class="bio-suggestion" @fadeSlideIn>
+                <p class="bio-suggestion-head">From your CV — you already have a bio, so we left yours alone:</p>
+                <p class="bio-suggestion-text">{{ suggestion }}</p>
+                <div class="bio-suggestion-actions">
+                  <app-link-button size="sm" variant="standard-secondary" (pressed)="applySuggestedBio()">
+                    Use this instead
+                  </app-link-button>
+                  <app-link-button size="sm" (pressed)="suggestedBio.set(null)">Dismiss</app-link-button>
+                </div>
+              </div>
+            }
           </div>
 
           <div class="field">
@@ -675,6 +688,30 @@ type SectionKind = 'experience' | 'education' | 'project';
       }
 
       .section-ic.green { background: #dcfce7; color: #166534; }
+      /* ---- CV-generated bio suggestion ---- */
+      .bio-suggestion {
+        margin-top: var(--space-sm);
+        padding: var(--space-md);
+        border: 1px solid var(--brand-border);
+        border-radius: var(--radius-md);
+        background: var(--brand-wash);
+      }
+
+      .bio-suggestion-head {
+        margin: 0 0 var(--space-xs);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--color-text-soft);
+      }
+
+      .bio-suggestion-text {
+        margin: 0 0 var(--space-sm);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+
+      .bio-suggestion-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+
       .section-head h2 { font-size: 1.15rem; margin: 0; }
       .section-sub { margin: 1px 0 0; font-size: 0.85rem; color: var(--color-text-soft); }
       .card h2 { font-size: 1.125rem; }
@@ -876,6 +913,8 @@ export class StudentProfileComponent implements OnInit {
 
   protected readonly cvUrlDraft = signal('');
   protected readonly cvUploading = signal(false);
+  /** Bio generated from an uploaded CV, offered because the student already had one. */
+  protected readonly suggestedBio = signal<string | null>(null);
   protected readonly cvOpening = signal(false);
 
   private static readonly MaxCvUploadBytes = 5 * 1024 * 1024;
@@ -1133,16 +1172,47 @@ export class StudentProfileComponent implements OnInit {
 
     this.cvUploading.set(true);
     this.studentService.uploadCv(file).subscribe({
-      next: (profile) => {
-        this.applyProfile(profile);
+      next: (result) => {
+        this.applyProfile(result.profile);
         this.cvUploading.set(false);
-        this.toast.success('CV uploaded');
+        // Offered below the bio field; null when nothing was generated or the
+        // bio was empty and got filled in directly.
+        this.suggestedBio.set(result.suggestedBio);
+        this.toast.success(this.importSummary(result));
       },
       error: (err) => {
         this.cvUploading.set(false);
         this.toast.error(apiErrorMessage(err, 'Could not upload your CV.'));
       },
     });
+  }
+
+  /** Says what reading the CV actually changed, rather than just "uploaded". */
+  private importSummary(result: CvImportResponse): string {
+    if (!result.textExtracted) {
+      return "CV uploaded. We couldn't read any text from it, so nothing was imported.";
+    }
+
+    const parts: string[] = [];
+    if (result.addedSkills.length > 0) {
+      const count = result.addedSkills.length;
+      parts.push(`added ${count} skill${count === 1 ? '' : 's'}`);
+    }
+    if (result.bioApplied) {
+      parts.push('wrote your bio');
+    }
+
+    return parts.length > 0 ? `CV uploaded and we ${parts.join(' and ')}.` : 'CV uploaded.';
+  }
+
+  protected applySuggestedBio(): void {
+    const bio = this.suggestedBio();
+    if (!bio) {
+      return;
+    }
+    this.form.controls.bio.setValue(bio);
+    this.form.controls.bio.markAsDirty();
+    this.suggestedBio.set(null);
   }
 
   /** An uploaded CV is stored under /uploads; an externally-pasted link is not. */
