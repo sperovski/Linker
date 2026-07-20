@@ -7,9 +7,9 @@ const ICON_SRC: Record<string, string> = {
   trending: '/trending-content_16705905.png',
   cv: '/cv_3846805.png',
   'generate-review': '/generate_review.png',
-  projects: '/projects.png',
+  projects: '/projects.svg',
   university: '/university.svg',
-  skills: '/skills_11253617.png',
+  skills: '/skills.svg',
   'bg-briefcase': '/briefcase_5782884.png',
   'bg-graduation-cap': '/graduation-cap_417180.png',
 };

@@ -487,7 +487,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 6. Skills ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic green"><app-mask-icon name="skills" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="skills" [size]="17" /></span>
             <div>
               <h2>Your skills</h2>
               <p class="section-sub">Tag your strengths so companies spot the match.</p>
@@ -687,7 +687,6 @@ type SectionKind = 'experience' | 'education' | 'project';
         flex-shrink: 0;
       }
 
-      .section-ic.green { background: #dcfce7; color: #166534; }
       /* ---- CV-generated bio suggestion ---- */
       .bio-suggestion {
         margin-top: var(--space-sm);
