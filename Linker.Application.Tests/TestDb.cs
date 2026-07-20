@@ -58,7 +58,7 @@ public sealed class TestDb : IDisposable
             }
         };
         Context.Students.Add(student);
-        Context.SaveChanges();
+        Save();
         return student;
     }
 
@@ -76,7 +76,7 @@ public sealed class TestDb : IDisposable
             }
         };
         Context.Companies.Add(company);
-        Context.SaveChanges();
+        Save();
         return company;
     }
 
@@ -100,7 +100,7 @@ public sealed class TestDb : IDisposable
             RequiredSkills = requiredSkillIds.Select(id => new InternshipSkill { SkillId = id }).ToList()
         };
         Context.Internships.Add(internship);
-        Context.SaveChanges();
+        Save();
         return internship;
     }
 
@@ -108,7 +108,7 @@ public sealed class TestDb : IDisposable
     {
         var skill = new Skill { Name = name };
         Context.Skills.Add(skill);
-        Context.SaveChanges();
+        Save();
         return skill;
     }
 
@@ -118,8 +118,15 @@ public sealed class TestDb : IDisposable
         {
             Context.Set<StudentSkill>().Add(new StudentSkill { StudentId = student.Id, SkillId = id });
         }
-        Context.SaveChanges();
+        Save();
     }
+
+    /// <summary>
+    /// Seeding goes through SaveChangesAsync like the app does, so entities with
+    /// invariants enforced there (chat rooms for companies and internships) are
+    /// set up exactly as they would be in production.
+    /// </summary>
+    public void Save() => Context.SaveChangesAsync().GetAwaiter().GetResult();
 
     public void Dispose()
     {
