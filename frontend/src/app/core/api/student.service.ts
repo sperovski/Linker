@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  CvImportResponse,
   SaveEducationRequest,
   SaveExperienceRequest,
   SaveProjectRequest,
@@ -23,11 +24,15 @@ export class StudentService {
     return this.http.put<StudentProfile>(`${this.baseUrl}/me`, request);
   }
 
-  /** Uploads a CV file (PDF/DOC/DOCX, 5MB max) and sets it as the profile's CV. */
-  uploadCv(file: File): Observable<StudentProfile> {
+  /**
+   * Uploads a CV file (PDF/DOC/DOCX, 5MB max), sets it as the profile's CV and
+   * imports what can be read from it — matching skills, and a bio when the
+   * student doesn't already have one.
+   */
+  uploadCv(file: File): Observable<CvImportResponse> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<StudentProfile>(`${this.baseUrl}/me/cv-file`, form);
+    return this.http.post<CvImportResponse>(`${this.baseUrl}/me/cv-file`, form);
   }
 
   /**

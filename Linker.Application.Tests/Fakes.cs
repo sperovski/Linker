@@ -1,3 +1,4 @@
+using Linker.Application.Common.Exceptions;
 using Linker.Application.Common.Interfaces;
 using Linker.Application.Services;
 
@@ -46,6 +47,19 @@ public sealed class FakeCvFileStorage : ICvFileStorage
             _files.Remove(url!);
         }
     }
+}
+
+/// <summary>
+/// Returns whatever text the test wants a CV to contain. Set
+/// <see cref="Text"/> to null to simulate a file no text can be read from (a
+/// scanned, image-only PDF), which the real extractor signals by throwing.
+/// </summary>
+public sealed class FakeCvTextExtractor : ICvTextExtractor
+{
+    public string? Text { get; set; }
+
+    public string Extract(byte[] content, string fileName) =>
+        Text ?? throw new BadRequestException("No text could be read from that file.");
 }
 
 /// <summary>No-op notifications for service tests that don't assert on the bell.</summary>

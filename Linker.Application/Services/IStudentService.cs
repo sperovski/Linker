@@ -8,7 +8,7 @@ public interface IStudentService
     Task<StudentProfileResponse> GetByIdAsync(int studentId, CancellationToken cancellationToken = default);
     Task<StudentProfileResponse> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default);
     Task<StudentProfileResponse> UpdateProfileAsync(int userId, UpdateStudentProfileRequest request, CancellationToken cancellationToken = default);
-    Task<StudentProfileResponse> UploadCvAsync(int userId, string fileName, byte[] content, CancellationToken cancellationToken = default);
+    Task<CvImportResponse> UploadCvAsync(int userId, string fileName, byte[] content, CancellationToken cancellationToken = default);
     Task<CvFileContent> GetCvFileAsync(int requesterUserId, int studentId, CancellationToken cancellationToken = default);
 
     // Profile sections. Every mutation returns the refreshed full profile so

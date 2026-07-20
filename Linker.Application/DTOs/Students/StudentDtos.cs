@@ -3,6 +3,24 @@ using Linker.Application.DTOs.Skills;
 
 namespace Linker.Application.DTOs.Students;
 
+/// <summary>
+/// Result of importing a CV: the saved profile plus what reading the file
+/// actually changed, so the UI can tell the student what was picked up instead
+/// of silently mutating their profile.
+///
+/// A bio is only applied when the student had none — an existing bio is never
+/// overwritten, and the generated one comes back as <see cref="SuggestedBio"/>
+/// for them to accept or ignore.
+/// </summary>
+public record CvImportResponse(
+    StudentProfileResponse Profile,
+    IReadOnlyList<string> AddedSkills,
+    string? SuggestedBio,
+    bool BioApplied,
+    // False when the file yielded no readable text (e.g. a scanned, image-only
+    // PDF). The upload still succeeds; there was just nothing to import from.
+    bool TextExtracted);
+
 public record StudentProfileResponse(
     int Id,
     int UserId,

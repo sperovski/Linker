@@ -40,9 +40,9 @@ public class StudentsController : ApiControllerBase
     [HttpPost("me/cv-file")]
     [Authorize(Roles = "Student")]
     [RequestSizeLimit(MaxCvUploadBytes)]
-    [ProducesResponseType(typeof(StudentProfileResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CvImportResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<StudentProfileResponse>> UploadCv(IFormFile file, CancellationToken cancellationToken)
+    public async Task<ActionResult<CvImportResponse>> UploadCv(IFormFile file, CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
         {

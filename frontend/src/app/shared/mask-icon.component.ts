@@ -5,10 +5,11 @@ import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
 const ICON_SRC: Record<string, string> = {
   gear: '/gear_17279605.png',
   trending: '/trending-content_16705905.png',
-  cv: '/cv_3846805.png',
+  cv: '/cv.svg',
   'generate-review': '/generate_review.png',
-  projects: '/projects.png',
-  skills: '/skills_11253617.png',
+  projects: '/projects.svg',
+  university: '/university.svg',
+  skills: '/skills.svg',
   'bg-briefcase': '/briefcase_5782884.png',
   'bg-graduation-cap': '/graduation-cap_417180.png',
 };

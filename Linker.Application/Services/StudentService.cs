@@ -1,3 +1,4 @@
+using Linker.Application.Common;
 using Linker.Application.Common.Exceptions;
 using Linker.Application.Common.Interfaces;
 using Linker.Application.DTOs.Students;
@@ -20,7 +21,9 @@ public class StudentService : IStudentService
     private readonly IProjectRepository _projectRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IApplicationRepository _applicationRepository;
+    private readonly ISkillRepository _skillRepository;
     private readonly ICvFileStorage _cvFileStorage;
+    private readonly ICvTextExtractor _cvTextExtractor;
     private readonly IUnitOfWork _unitOfWork;
 
     public StudentService(
@@ -30,7 +33,9 @@ public class StudentService : IStudentService
         IProjectRepository projectRepository,
         ICompanyRepository companyRepository,
         IApplicationRepository applicationRepository,
+        ISkillRepository skillRepository,
         ICvFileStorage cvFileStorage,
+        ICvTextExtractor cvTextExtractor,
         IUnitOfWork unitOfWork)
     {
         _studentRepository = studentRepository;
@@ -39,7 +44,9 @@ public class StudentService : IStudentService
         _projectRepository = projectRepository;
         _companyRepository = companyRepository;
         _applicationRepository = applicationRepository;
+        _skillRepository = skillRepository;
         _cvFileStorage = cvFileStorage;
+        _cvTextExtractor = cvTextExtractor;
         _unitOfWork = unitOfWork;
     }
 
@@ -80,7 +87,16 @@ public class StudentService : IStudentService
         return await GetByIdAsync(student.Id, cancellationToken);
     }
 
-    public async Task<StudentProfileResponse> UploadCvAsync(int userId, string fileName, byte[] content, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Stores the CV and imports what it can read from it: skills that match the
+    /// catalogue are added to the profile, and a bio is generated when the
+    /// student doesn't have one.
+    ///
+    /// Importing is best-effort. A CV we can't read text from (a scanned,
+    /// image-only PDF) still uploads successfully — losing the enrichment is a
+    /// far better outcome than rejecting a file the student can see is fine.
+    /// </summary>
+    public async Task<CvImportResponse> UploadCvAsync(int userId, string fileName, byte[] content, CancellationToken cancellationToken = default)
     {
         var extension = Path.GetExtension(fileName);
         if (!AllowedCvExtensions.Contains(extension))
@@ -92,14 +108,89 @@ public class StudentService : IStudentService
 
         var previousUrl = student.CvUrl;
         student.CvUrl = await _cvFileStorage.SaveAsync(student.Id, fileName, content, cancellationToken);
-
         _studentRepository.Update(student);
+
+        var text = TryExtractText(content, fileName);
+        var addedSkills = text is null
+            ? []
+            : await AddDetectedSkillsAsync(student.Id, text, cancellationToken);
+
+        string? suggestedBio = null;
+        var bioApplied = false;
+        if (text is not null)
+        {
+            suggestedBio = CvBioGenerator.Generate(text, await DetectedSkillNamesAsync(text, cancellationToken));
+            // Never overwrite a bio the student wrote themselves.
+            if (suggestedBio is not null && string.IsNullOrWhiteSpace(student.Bio))
+            {
+                student.Bio = suggestedBio;
+                bioApplied = true;
+                suggestedBio = null;
+            }
+        }
+
+        // One commit for the file url, the imported skills and the bio.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Only after the new file is committed — if SaveChangesAsync throws, the old file stays valid.
         _cvFileStorage.DeleteIfManaged(previousUrl);
 
-        return await GetByIdAsync(student.Id, cancellationToken);
+        return new CvImportResponse(
+            await GetByIdAsync(student.Id, cancellationToken),
+            addedSkills,
+            suggestedBio,
+            bioApplied,
+            text is not null);
+    }
+
+    /// <summary>
+    /// Text extraction throws for unreadable files. That must not fail the
+    /// upload, so failures degrade to "nothing to import".
+    /// </summary>
+    private string? TryExtractText(byte[] content, string fileName)
+    {
+        try
+        {
+            var text = _cvTextExtractor.Extract(content, fileName);
+            return string.IsNullOrWhiteSpace(text) ? null : text;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private async Task<IReadOnlyList<string>> DetectedSkillNamesAsync(string text, CancellationToken cancellationToken)
+    {
+        var catalogue = await _skillRepository.GetAllAsync(cancellationToken);
+        return CvSkillMatcher.DetectSkills(text, catalogue.Select(s => s.Name));
+    }
+
+    /// <summary>Adds catalogue skills found in the CV that aren't already on the profile.</summary>
+    private async Task<IReadOnlyList<string>> AddDetectedSkillsAsync(int studentId, string text, CancellationToken cancellationToken)
+    {
+        var catalogue = await _skillRepository.GetAllAsync(cancellationToken);
+        var detected = CvSkillMatcher.DetectSkills(text, catalogue.Select(s => s.Name)).ToHashSet();
+        if (detected.Count == 0)
+        {
+            return [];
+        }
+
+        var withSkills = await _studentRepository.GetWithSkillsAsync(studentId, cancellationToken);
+        if (withSkills is null)
+        {
+            return [];
+        }
+
+        var owned = withSkills.Skills.Select(ss => ss.SkillId).ToHashSet();
+        var toAdd = catalogue.Where(s => detected.Contains(s.Name) && !owned.Contains(s.Id)).ToList();
+
+        foreach (var skill in toAdd)
+        {
+            withSkills.Skills.Add(new StudentSkill { StudentId = studentId, SkillId = skill.Id });
+        }
+
+        return toAdd.Select(s => s.Name).ToList();
     }
 
     /// <summary>

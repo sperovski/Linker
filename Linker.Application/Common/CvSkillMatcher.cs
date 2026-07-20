@@ -24,7 +24,16 @@ public static class CvSkillMatcher
             return text.Contains(skillName, StringComparison.OrdinalIgnoreCase);
         }
 
-        var pattern = $@"(?<![A-Za-z0-9]){Regex.Escape(skillName)}(?![A-Za-z0-9])";
+        // The boundary has to exclude the symbols that appear *inside* skill
+        // names, not just letters and digits: with a plain \b-style boundary,
+        // "C" matches the "C" in "C#" and "C++" (# and + aren't word
+        // characters), so every CV mentioning C# also claimed plain C. '&'
+        // covers the same trap for "R" in "R&D".
+        //
+        // '.' is deliberately not in the set — a CV ending a sentence with
+        // "I program in C." should still match.
+        const string Boundary = "A-Za-z0-9+#&";
+        var pattern = $@"(?<![{Boundary}]){Regex.Escape(skillName)}(?![{Boundary}])";
         return Regex.IsMatch(text, pattern, RegexOptions.IgnoreCase);
     }
 
