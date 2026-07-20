@@ -67,7 +67,7 @@ type SectionKind = 'experience' | 'education' | 'project';
               }
               <div class="hero-meta">
                 @if (profile()?.university) {
-                  <span><app-icon name="building" [size]="14" /> {{ profile()!.university }}</span>
+                  <span><app-mask-icon name="university" [size]="14" /> {{ profile()!.university }}</span>
                 }
                 @if (profile()?.graduationYear) {
                   <span><app-icon name="graduation-cap" [size]="14" /> Class of {{ profile()!.graduationYear }}</span>
@@ -158,7 +158,7 @@ type SectionKind = 'experience' | 'education' | 'project';
                 <app-select
                   [options]="facultyOpts()"
                   [value]="universityValue()"
-                  icon="building"
+                  maskIcon="university"
                   ariaLabel="Faculty"
                   placeholder="Choose your faculty… (optional)"
                   (valueChange)="setUniversity($event)"
