@@ -534,7 +534,6 @@ type SectionKind = 'experience' | 'education' | 'project';
               (change)="onCvFileSelected($event)" [disabled]="cvUploading()" />
             <app-link-button size="sm" variant="standard-secondary"
               [disabled]="cvUploading()" (pressed)="cvFileInput.click()">
-              <app-mask-icon name="cv" [size]="15" />
               {{ cvUploading() ? 'Uploading…' : 'Import CV' }}
             </app-link-button>
             <span class="resume-hint">PDF, DOC or DOCX, up to 5&nbsp;MB</span>
