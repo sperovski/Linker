@@ -41,7 +41,7 @@ import { matchExplanation } from './match';
     <section class="strip" [class.is-carousel]="carousel()">
       <div class="strip-head">
         <span class="strip-icon" [class]="accent()" [class.flare]="flare()">
-          <app-mask-icon [name]="icon()" [size]="17" />
+          <app-mask-icon [name]="icon()" [size]="24" />
         </span>
         <div class="strip-titles">
           <h2>{{ heading() }}</h2>
@@ -142,36 +142,33 @@ import { matchExplanation } from './match';
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        background: rgba(29, 77, 36, 0.1);
         color: var(--color-primary);
         flex-shrink: 0;
       }
 
-      .strip-icon.amber { background: #fef3c7; color: #b45309; }
+      .strip-icon.amber { color: #b45309; }
 
-      /* A quiet badge most of the time, with a brief "pop" every few seconds
-         to draw the eye — used only on rails worth calling out (Recommended). */
+      /* Quiet most of the time, with a brief "pop" every few seconds to draw
+         the eye — used only on rails worth calling out (Recommended). No badge
+         behind the icon, so the glow is a drop-shadow rather than a ring. */
       .strip-icon.flare { animation: strip-icon-flare 6s ease-in-out infinite; }
 
       @keyframes strip-icon-flare {
         0%, 82%, 100% {
           transform: scale(1) rotate(0deg);
-          box-shadow: 0 0 0 0 rgba(29, 77, 36, 0);
+          filter: drop-shadow(0 0 0 rgba(29, 77, 36, 0));
         }
         87% {
-          transform: scale(1.22) rotate(-6deg);
-          box-shadow: 0 0 0 7px rgba(29, 77, 36, 0.16);
+          transform: scale(1.28) rotate(-6deg);
+          filter: drop-shadow(0 0 6px rgba(29, 77, 36, 0.5));
         }
         91% {
           transform: scale(0.94) rotate(3deg);
-          box-shadow: 0 0 0 3px rgba(29, 77, 36, 0.1);
+          filter: drop-shadow(0 0 3px rgba(29, 77, 36, 0.3));
         }
         95% {
-          transform: scale(1.06) rotate(0deg);
-          box-shadow: 0 0 0 5px rgba(29, 77, 36, 0.13);
+          transform: scale(1.1) rotate(0deg);
+          filter: drop-shadow(0 0 4px rgba(29, 77, 36, 0.4));
         }
       }
 
