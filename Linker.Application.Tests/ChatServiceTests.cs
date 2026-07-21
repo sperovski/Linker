@@ -3,6 +3,7 @@ using Linker.Application.Services;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
 using Linker.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace Linker.Application.Tests;
 
@@ -155,6 +156,19 @@ public class ChatServiceTests : IDisposable
 
         Assert.Equal(a.Id, b.Id);
         Assert.Single(_db.NewContext().ChatRooms.Where(r => r.Title == KnownFaculty));
+    }
+
+    [Fact]
+    public async Task FacultyRoom_DuplicateTitle_IsRejectedByTheDatabase()
+    {
+        // Lazy get-or-create is only race-safe because the DB refuses a second
+        // faculty room with the same title (partial unique index). Two students
+        // opening the same new channel at once → the loser's insert fails here
+        // rather than silently splitting the conversation across duplicates.
+        _db.Context.ChatRooms.Add(ChatRoom.ForFaculty(KnownFaculty, DateTime.UtcNow));
+        _db.Context.ChatRooms.Add(ChatRoom.ForFaculty(KnownFaculty, DateTime.UtcNow));
+
+        await Assert.ThrowsAnyAsync<DbUpdateException>(() => _db.Context.SaveChangesAsync());
     }
 
     [Fact]

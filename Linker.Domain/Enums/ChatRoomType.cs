@@ -2,7 +2,7 @@ namespace Linker.Domain.Enums;
 
 public enum ChatRoomType
 {
-    /// <summary>The single open "FINKI Students" room, tied to no company or internship.</summary>
+    /// <summary>The single open "All Students" room, tied to no company or internship.</summary>
     General = 0,
     /// <summary>One per company; CompanyId is set, InternshipId is null.</summary>
     Company = 1,

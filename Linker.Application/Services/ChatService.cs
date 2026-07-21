@@ -100,7 +100,7 @@ public class ChatService : IChatService
 
         var user = await LoadActiveUserAsync(userId, cancellationToken);
 
-        var room = await _chatRepository.GetFacultyRoomAsync(facultyName, cancellationToken);
+        var room = await _chatRepository.GetRoomByFacultyAsync(facultyName, cancellationToken);
         if (room is null)
         {
             room = ChatRoom.ForFaculty(facultyName, DateTime.UtcNow);

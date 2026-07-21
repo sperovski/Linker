@@ -1,4 +1,5 @@
 using Linker.Domain.Entities;
+using Linker.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -23,6 +24,16 @@ public class ChatRoomConfiguration : IEntityTypeConfiguration<ChatRoom>
         // these columns null) never collide with each other.
         builder.HasIndex(r => r.CompanyId).IsUnique();
         builder.HasIndex(r => r.InternshipId).IsUnique();
+
+        // Faculty rooms have no FK, so the indexes above don't cover them. Without
+        // this, two students opening the same not-yet-created faculty channel at
+        // once each insert a room and split the conversation across duplicates.
+        // A partial unique index on the title (only for Faculty rooms) makes the
+        // loser of that race fail cleanly instead — the same protection the
+        // company/internship rooms already get from their FK indexes.
+        builder.HasIndex(r => r.Title)
+            .IsUnique()
+            .HasFilter($"\"Type\" = {(int)ChatRoomType.Faculty}");
 
         // Cascade down the ownership chain: a room has no meaning without its
         // parent. Companies/internships are normally soft-closed (IsActive=false),

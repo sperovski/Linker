@@ -28,7 +28,7 @@ public static class DbSeeder
         // unconditionally so every environment offers the full picker.
         await SeedSkillTaxonomyAsync(db, logger, cancellationToken);
 
-        // The General "FINKI Students" room is a singleton the whole app shares,
+        // The General "All Students" room is a singleton the whole app shares,
         // so ensure it exists in every environment (not just demo stacks).
         await EnsureGeneralChatRoomAsync(db, logger, cancellationToken);
 
@@ -76,15 +76,30 @@ public static class DbSeeder
         logger.LogInformation("Re-synced seeded password for {Email} from Seed:StefanPassword", PrimaryStudentEmail);
     }
 
-    /// <summary>Creates the single General chat room if it isn't there yet.</summary>
+    private const string GeneralRoomTitle = "All Students";
+
+    /// <summary>
+    /// Ensures the single General chat room exists and carries the current
+    /// title. It used to be "FINKI Students"; now that each faculty (FINKI
+    /// included) has its own channel, that name is confusing, so an existing
+    /// room is renamed in place. The Title setter is private by design, so the
+    /// correction goes through EF's property API rather than a domain mutator.
+    /// </summary>
     private static async Task EnsureGeneralChatRoomAsync(LinkerDbContext db, ILogger logger, CancellationToken cancellationToken)
     {
-        if (await db.ChatRooms.AnyAsync(r => r.Type == ChatRoomType.General, cancellationToken))
+        var general = await db.ChatRooms.FirstOrDefaultAsync(r => r.Type == ChatRoomType.General, cancellationToken);
+        if (general is not null)
         {
+            if (general.Title != GeneralRoomTitle)
+            {
+                db.Entry(general).Property(r => r.Title).CurrentValue = GeneralRoomTitle;
+                await db.SaveChangesAsync(cancellationToken);
+                logger.LogInformation("Renamed the General chat room to '{Title}'", GeneralRoomTitle);
+            }
             return;
         }
 
-        db.ChatRooms.Add(ChatRoom.CreateGeneral("FINKI Students", DateTime.UtcNow));
+        db.ChatRooms.Add(ChatRoom.CreateGeneral(GeneralRoomTitle, DateTime.UtcNow));
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded the General chat room");
     }
