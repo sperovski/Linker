@@ -16,7 +16,6 @@ import { MATCH_BAND_LABELS, MatchBand, matchBand } from './match';
   template: `
     @if (band(); as tier) {
       <span class="match" [attr.title]="tooltip()">
-        <span class="dot" [class]="tier" aria-hidden="true"></span>
         {{ score() }}%
       </span>
     }
@@ -36,17 +35,6 @@ import { MATCH_BAND_LABELS, MatchBand, matchBand } from './match';
         background: var(--color-surface);
         border: 1px solid var(--color-border);
       }
-
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-      }
-
-      .dot.strong { background: var(--match-strong); }
-      .dot.good { background: var(--match-good); }
-      .dot.possible { background: var(--match-possible); }
     `,
   ],
 })
@@ -58,8 +46,8 @@ export class MatchBadgeComponent {
 
   protected readonly band = computed<MatchBand | null>(() => matchBand(this.score()));
 
-  // The band name and breakdown live in the tooltip, so hovering still explains
-  // what the dot colour means and how the score was reached.
+  // The band name and breakdown live in the tooltip, so hovering explains the
+  // tier and how the score was reached.
   protected readonly tooltip = computed(() => {
     const band = this.band();
     const label = band ? MATCH_BAND_LABELS[band] : '';

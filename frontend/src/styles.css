@@ -748,10 +748,9 @@ a.btn:hover { text-decoration: none; }
 .badge-deadline { background: var(--color-muted); color: var(--color-text-soft); }
 .badge-deadline-soon { background: var(--color-destructive-bg); color: var(--color-destructive); }
 
-/* Application/listing STATUS badges. "Accepted" and "Open" used to be green,
-   which now collides with the brand hue and stops reading as a signal. Same fix
-   as the match badges: a neutral pill with a traffic-light dot carrying the
-   state, applied directly to the existing classes so no template markup changes. */
+/* Application/listing STATUS badges: neutral pills carrying the state in their
+   label. Accepted/Rejected add a masked icon; Submitted is a solid amber pill.
+   All applied to the existing classes, so no template markup changes. */
 .badge-pending,
 .badge-submitted,
 .badge-underreview,
@@ -765,30 +764,43 @@ a.btn:hover { text-decoration: none; }
   border: 1px solid var(--color-border);
 }
 
-.badge-pending::before,
-.badge-submitted::before,
-.badge-underreview::before,
+/* Accepted/Rejected carry a line-art icon, masked so it takes the status
+   colour (green / red). Only these two get a ::before now — every plain dot
+   is gone. */
 .badge-accepted::before,
-.badge-rejected::before,
-.badge-withdrawn::before,
-.badge-open::before,
-.badge-closed::before {
+.badge-rejected::before {
   content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--status-dot, var(--color-text-muted));
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  background: var(--status-dot);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
-.badge-accepted,
-.badge-open { --status-dot: var(--match-strong); }
-.badge-pending,
-.badge-submitted,
-.badge-underreview { --status-dot: var(--match-good); }
-.badge-rejected { --status-dot: var(--color-destructive); }
-.badge-withdrawn,
-.badge-closed { --status-dot: var(--color-text-muted); }
+.badge-accepted::before {
+  --status-dot: var(--match-strong);
+  -webkit-mask-image: url('/accepted.svg');
+  mask-image: url('/accepted.svg');
+}
+
+.badge-rejected::before {
+  --status-dot: var(--color-destructive);
+  -webkit-mask-image: url('/rejected.svg');
+  mask-image: url('/rejected.svg');
+}
+
+/* Submitted reads as a solid amber pill so a fresh application stands out in
+   the pipeline at a glance. */
+.badge-submitted {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
 
 /* ---------------------------------------------------------------------------
    Skeleton loading
