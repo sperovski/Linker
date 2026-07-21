@@ -82,7 +82,7 @@ import { LoaderComponent } from '../../shared/loader.component';
             @if (loading()) {
               <app-loader mode="inline" label="Analysing your CV" /> Analysing…
             } @else {
-              <app-icon name="target" [size]="16" /> Rate my CV
+              Rate my CV
             }
           </app-link-button>
           @if (wordCount() > 0 && wordCount() < 50) {
