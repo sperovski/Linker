@@ -49,6 +49,21 @@ export const fadeSlideIn = trigger('fadeSlideIn', [
   ]),
 ]);
 
+/**
+ * A dropdown/menu expanding from its trigger: a springy scale + slide on open,
+ * a quick settle on close. Pair with `transform-origin` on the panel so it
+ * grows out of the right corner it hangs from.
+ */
+export const dropdownExpand = trigger('dropdownExpand', [
+  transition(':enter', [
+    style({ opacity: 0, transform: 'translateY(-8px) scale(0.96)' }),
+    animate('260ms cubic-bezier(0.22, 1, 0.36, 1)', style({ opacity: 1, transform: 'none' })),
+  ]),
+  transition(':leave', [
+    animate('150ms ease-in', style({ opacity: 0, transform: 'translateY(-6px) scale(0.98)' })),
+  ]),
+]);
+
 /** Toasts sliding up into view and fading away. */
 export const toastAnim = trigger('toastAnim', [
   transition(':enter', [

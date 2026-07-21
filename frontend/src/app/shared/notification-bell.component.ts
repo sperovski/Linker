@@ -10,7 +10,7 @@ import {
 import { Router } from '@angular/router';
 import { NotificationService } from '../core/api/notification.service';
 import { IconComponent } from './icon.component';
-import { fadeSlideIn } from './animations';
+import { dropdownExpand } from './animations';
 import { relativeTime } from './dates';
 
 /**
@@ -21,7 +21,7 @@ import { relativeTime } from './dates';
   selector: 'app-notification-bell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
-  animations: [fadeSlideIn],
+  animations: [dropdownExpand],
   host: { '(document:click)': 'onDocumentClick($event)' },
   template: `
     <div class="bell-wrap">
@@ -39,7 +39,7 @@ import { relativeTime } from './dates';
       </button>
 
       @if (open()) {
-        <div class="panel" @fadeSlideIn role="menu">
+        <div class="panel" @dropdownExpand role="menu">
           <div class="panel-head">
             <span>Notifications</span>
             @if (notifications.hasUnread()) {
@@ -116,6 +116,8 @@ import { relativeTime } from './dates';
         position: absolute;
         top: calc(100% + 8px);
         right: 0;
+        /* Grows out of the bell in the top-right corner it hangs from. */
+        transform-origin: top right;
         width: 320px;
         max-width: 90vw;
         background: var(--color-surface);
@@ -149,21 +151,39 @@ import { relativeTime } from './dates';
 
       .empty { padding: var(--space-lg); text-align: center; color: var(--color-text-soft); font-size: 0.875rem; margin: 0; }
 
-      .list { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+      .list {
+        list-style: none;
+        margin: 0;
+        padding: 6px;
+        max-height: 360px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        /* Thin scrollbar whose thumb only appears while hovering the list. */
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+      }
+
+      .list:hover { scrollbar-color: var(--color-border) transparent; }
+      .list::-webkit-scrollbar { width: 8px; }
+      .list::-webkit-scrollbar-track { background: transparent; }
+      .list::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; }
+      .list:hover::-webkit-scrollbar-thumb { background: var(--color-border); }
 
       .item {
         display: flex;
         align-items: flex-start;
         gap: var(--space-sm);
-        padding: 11px 14px;
+        padding: 10px 12px;
         cursor: pointer;
-        border-bottom: 1px solid var(--color-muted);
-        transition: background-color 140ms ease;
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        transition: background-color 140ms ease, border-color 140ms ease;
       }
 
-      .item:last-child { border-bottom: none; }
       .item:hover { background: var(--color-muted); }
-      .item.unread { background: rgba(29, 77, 36, 0.05); }
+      .item.unread { background: var(--brand-wash); border-color: var(--brand-border); }
 
       .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); margin-top: 6px; flex-shrink: 0; }
       .item:not(.unread) .body { padding-left: 15px; }
