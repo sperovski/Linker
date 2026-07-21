@@ -127,6 +127,84 @@ public class ChatServiceTests : IDisposable
             _service.PostMessageAsync(student.UserId, 9999, "Hi"));
     }
 
+    // ---- Faculty channels ------------------------------------------------
+
+    private const string KnownFaculty = "Faculty of Medicine";
+
+    [Fact]
+    public async Task FacultyRoom_IsCreatedOnFirstOpen()
+    {
+        var student = _db.AddStudent();
+
+        var room = await _service.GetOrCreateRoomForFacultyAsync(student.UserId, KnownFaculty);
+
+        Assert.Equal("Faculty", room.Type);
+        Assert.Equal(KnownFaculty, room.Title);
+        Assert.Null(room.CompanyId);
+        Assert.Null(room.InternshipId);
+    }
+
+    [Fact]
+    public async Task FacultyRoom_IsReusedOnSecondOpen()
+    {
+        var first = _db.AddStudent("a@test.local");
+        var second = _db.AddStudent("b@test.local");
+
+        var a = await _service.GetOrCreateRoomForFacultyAsync(first.UserId, KnownFaculty);
+        var b = await _service.GetOrCreateRoomForFacultyAsync(second.UserId, KnownFaculty);
+
+        Assert.Equal(a.Id, b.Id);
+        Assert.Single(_db.NewContext().ChatRooms.Where(r => r.Title == KnownFaculty));
+    }
+
+    [Fact]
+    public async Task FacultyRoom_TrimsTheName()
+    {
+        var student = _db.AddStudent();
+
+        var room = await _service.GetOrCreateRoomForFacultyAsync(student.UserId, $"  {KnownFaculty}  ");
+
+        Assert.Equal(KnownFaculty, room.Title);
+    }
+
+    [Theory]
+    [InlineData("Hogwarts")]
+    [InlineData("faculty of medicine")] // wrong casing is not a known faculty
+    [InlineData("")]
+    public async Task FacultyRoom_ForAnUnknownName_IsNotFoundAndCreatesNothing(string name)
+    {
+        var student = _db.AddStudent();
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.GetOrCreateRoomForFacultyAsync(student.UserId, name));
+
+        // A made-up name must never spawn a junk room.
+        Assert.Empty(_db.NewContext().ChatRooms.Where(r => r.Type == Linker.Domain.Enums.ChatRoomType.Faculty));
+    }
+
+    [Fact]
+    public async Task FacultyRoom_LetsAnyStudentPost()
+    {
+        var student = _db.AddStudent();
+        var room = await _service.GetOrCreateRoomForFacultyAsync(student.UserId, KnownFaculty);
+
+        var message = await _service.PostMessageAsync(student.UserId, room.Id, "Hello faculty");
+
+        Assert.Equal("Hello faculty", message.Body);
+    }
+
+    [Fact]
+    public async Task FacultyRoom_IsHiddenFromCompanies()
+    {
+        var student = _db.AddStudent();
+        var company = _db.AddCompany();
+        var room = await _service.GetOrCreateRoomForFacultyAsync(student.UserId, KnownFaculty);
+
+        // Faculty channels are a students-and-admins space.
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.EnsureCanViewRoomAsync(company.UserId, room.Id));
+    }
+
     // ---- Room visibility -------------------------------------------------
 
     [Fact]

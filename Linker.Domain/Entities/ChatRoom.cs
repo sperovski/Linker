@@ -34,6 +34,7 @@ public class ChatRoom
             ChatRoomType.Company => companyId is not null && internshipId is null,
             ChatRoomType.Internship => internshipId is not null && companyId is null,
             ChatRoomType.General => companyId is null && internshipId is null,
+            ChatRoomType.Faculty => companyId is null && internshipId is null,
             _ => false,
         };
         if (!consistent)
@@ -67,4 +68,7 @@ public class ChatRoom
 
     public static ChatRoom CreateGeneral(string title, DateTime createdAt) =>
         new(ChatRoomType.General, null, null, title, createdAt);
+
+    public static ChatRoom ForFaculty(string facultyName, DateTime createdAt) =>
+        new(ChatRoomType.Faculty, null, null, facultyName, createdAt);
 }

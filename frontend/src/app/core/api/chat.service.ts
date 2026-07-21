@@ -21,6 +21,13 @@ export class ChatService {
     return this.http.get<ChatRoomResponse>(`${this.baseUrl}/internship/${internshipId}`);
   }
 
+  /** Opens (creating on first use) the chat channel for a UKIM faculty. */
+  getFacultyRoom(facultyName: string): Observable<ChatRoomResponse> {
+    return this.http.get<ChatRoomResponse>(`${this.baseUrl}/faculty`, {
+      params: new HttpParams().set('name', facultyName),
+    });
+  }
+
   getMessages(roomId: number, page = 1, pageSize = 50): Observable<PagedResponse<ChatMessageResponse>> {
     return this.http.get<PagedResponse<ChatMessageResponse>>(`${this.baseUrl}/${roomId}/messages`, {
       params: new HttpParams().set('page', page).set('pageSize', pageSize),

@@ -347,7 +347,7 @@ export interface CvFileReviewResponse {
   review: CvReviewResponse;
 }
 
-export type ChatRoomType = 'General' | 'Company' | 'Internship';
+export type ChatRoomType = 'General' | 'Company' | 'Internship' | 'Faculty';
 
 export interface ChatRoomResponse {
   id: number;

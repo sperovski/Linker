@@ -31,6 +31,10 @@ public class ChatRepository : IChatRepository
     public Task<ChatRoom?> GetGeneralRoomAsync(CancellationToken cancellationToken = default) =>
         _context.ChatRooms.FirstOrDefaultAsync(r => r.Type == ChatRoomType.General, cancellationToken);
 
+    public Task<ChatRoom?> GetFacultyRoomAsync(string facultyName, CancellationToken cancellationToken = default) =>
+        _context.ChatRooms.FirstOrDefaultAsync(
+            r => r.Type == ChatRoomType.Faculty && r.Title == facultyName, cancellationToken);
+
     public void AddRoom(ChatRoom room) => _context.ChatRooms.Add(room);
 
     public async Task<(IReadOnlyList<ChatMessage> Items, int Total)> GetMessagesAsync(

@@ -13,7 +13,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChatService } from '../../core/api/chat.service';
 import { CompanyService } from '../../core/api/company.service';
+import { StudentService } from '../../core/api/student.service';
 import { ChatHubService } from '../../core/chat-hub.service';
+import { UKIM_FACULTIES } from '../../shared/faculties';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/toast.service';
 import { ChatMessageResponse, ChatRoomResponse } from '../../core/models';
@@ -21,6 +23,7 @@ import { ChatMessageListComponent } from './chat-message-list.component';
 import { ChatComposerComponent } from './chat-composer.component';
 import { ReportMessageDialogComponent } from './report-message-dialog.component';
 import { IconComponent } from '../../shared/icon.component';
+import { MaskIconComponent } from '../../shared/mask-icon.component';
 import { LoaderComponent } from '../../shared/loader.component';
 import { apiErrorMessage } from '../../shared/api-error';
 import { firstValueFrom } from 'rxjs';
@@ -43,6 +46,7 @@ const PAGE_SIZE = 50;
     ChatComposerComponent,
     ReportMessageDialogComponent,
     IconComponent,
+    MaskIconComponent,
     LoaderComponent,
   ],
   template: `
@@ -66,6 +70,24 @@ const PAGE_SIZE = 50;
               />
               <span class="room-title">{{ room.title }}</span>
             </button>
+          }
+
+          @if (facultyChannels().length) {
+            <p class="rooms-heading">Faculties</p>
+            @for (faculty of facultyChannels(); track faculty) {
+              <button
+                type="button"
+                class="room"
+                [class.active]="isActiveFaculty(faculty)"
+                (click)="openFaculty(faculty)"
+              >
+                <app-mask-icon name="university" [size]="16" />
+                <span class="room-title">{{ faculty }}</span>
+                @if (faculty === ownFaculty()) {
+                  <span class="room-pin" title="Your faculty">Yours</span>
+                }
+              </button>
+            }
           }
         </aside>
 
@@ -126,6 +148,11 @@ const PAGE_SIZE = 50;
         flex-direction: column;
         gap: var(--space-xs);
         align-content: start;
+        /* Faculties make this list long; keep it in step with the message pane
+           and let it scroll rather than stretch the page. */
+        max-height: min(680px, calc(100vh - 220px));
+        overflow-y: auto;
+        scrollbar-width: thin;
       }
 
       .room {
@@ -157,6 +184,29 @@ const PAGE_SIZE = 50;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        flex: 1;
+      }
+
+      .rooms-heading {
+        margin: var(--space-md) 0 2px;
+        padding: 0 12px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--color-text-muted);
+      }
+
+      .room-pin {
+        flex-shrink: 0;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--color-primary);
+        background: var(--brand-tint);
+        border-radius: 999px;
+        padding: 2px 7px;
       }
 
       .pane {
@@ -227,6 +277,7 @@ export class ChatPageComponent implements OnInit {
   protected readonly hub = inject(ChatHubService);
   private readonly chat = inject(ChatService);
   private readonly company = inject(CompanyService);
+  private readonly student = inject(StudentService);
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -247,6 +298,27 @@ export class ChatPageComponent implements OnInit {
   protected readonly currentUserId = computed(() => this.auth.session()?.userId ?? null);
   protected readonly canPost = computed(() => this.auth.isStudent());
 
+  /** The signed-in student's own faculty, if set — pinned to the top of the list. */
+  protected readonly ownFaculty = signal<string | null>(null);
+
+  /** All faculty channels, the student's own first. Only students see these. */
+  protected readonly facultyChannels = computed(() => {
+    if (!this.auth.isStudent()) {
+      return [];
+    }
+    const own = this.ownFaculty();
+    if (!own || !UKIM_FACULTIES.includes(own)) {
+      return UKIM_FACULTIES;
+    }
+    return [own, ...UKIM_FACULTIES.filter((f) => f !== own)];
+  });
+
+  /** True while a faculty channel is the active room (so the list can highlight it). */
+  protected isActiveFaculty(faculty: string): boolean {
+    const room = this.activeRoom();
+    return room?.type === 'Faculty' && room.title === faculty;
+  }
+
   private page = 1;
 
   ngOnInit(): void {
@@ -262,6 +334,19 @@ export class ChatPageComponent implements OnInit {
 
     void this.hub.connect().catch(() => {});
     void this.initRooms();
+  }
+
+  /** Opens (creating on first use) a faculty channel, then switches to it. */
+  protected async openFaculty(faculty: string): Promise<void> {
+    if (this.isActiveFaculty(faculty)) {
+      return;
+    }
+    try {
+      const room = await firstValueFrom(this.chat.getFacultyRoom(faculty));
+      await this.selectRoom(room);
+    } catch (error) {
+      this.toast.error(apiErrorMessage(error, 'Could not open that faculty channel.'));
+    }
   }
 
   protected async selectRoom(room: ChatRoomResponse): Promise<void> {
@@ -409,6 +494,17 @@ export class ChatPageComponent implements OnInit {
         pushUnique(rooms, own);
       } catch {
         // The company room is a nice-to-have; General (or deep links) still work.
+      }
+    }
+
+    if (this.auth.isStudent()) {
+      try {
+        // Only to pin the student's own faculty first — the channel list itself
+        // is the static UKIM set, so a failure here just means no pinning.
+        const profile = await firstValueFrom(this.student.getMe());
+        this.ownFaculty.set(profile.university);
+      } catch {
+        // No pin; the faculty list still renders.
       }
     }
 

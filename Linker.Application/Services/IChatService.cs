@@ -9,6 +9,9 @@ public interface IChatService
     Task<ChatRoomResponse> GetOrCreateRoomForCompanyAsync(int userId, int companyId, CancellationToken cancellationToken = default);
     Task<ChatRoomResponse> GetOrCreateRoomForInternshipAsync(int userId, int internshipId, CancellationToken cancellationToken = default);
 
+    /// <summary>Opens (creating on first use) the chat channel for a UKIM faculty.</summary>
+    Task<ChatRoomResponse> GetOrCreateRoomForFacultyAsync(int userId, string facultyName, CancellationToken cancellationToken = default);
+
     /// <summary>Authorizes that the user may see the room; throws otherwise. Used by the hub's JoinRoom.</summary>
     Task EnsureCanViewRoomAsync(int userId, int roomId, CancellationToken cancellationToken = default);
 

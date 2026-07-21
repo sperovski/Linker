@@ -8,4 +8,6 @@ public enum ChatRoomType
     Company = 1,
     /// <summary>One per internship posting; InternshipId is set, CompanyId is null.</summary>
     Internship = 2,
+    /// <summary>One per UKIM faculty; no FK, the faculty name is the Title. Open to all students.</summary>
+    Faculty = 3,
 }

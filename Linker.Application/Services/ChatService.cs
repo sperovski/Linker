@@ -1,6 +1,7 @@
 using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Chat;
 using Linker.Application.DTOs.Common;
+using Linker.Domain;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
 using Linker.Domain.Repositories;
@@ -85,6 +86,29 @@ public class ChatService : IChatService
         }
 
         return await ViewableOrNotFoundAsync(user, room!, cancellationToken);
+    }
+
+    public async Task<ChatRoomResponse> GetOrCreateRoomForFacultyAsync(int userId, string facultyName, CancellationToken cancellationToken = default)
+    {
+        facultyName = (facultyName ?? string.Empty).Trim();
+        // A channel may only exist for a real UKIM faculty, so a client can't
+        // spin up arbitrary rooms by posting a made-up name.
+        if (!UkimFaculties.IsKnown(facultyName))
+        {
+            throw new NotFoundException($"'{facultyName}' is not a recognised faculty.");
+        }
+
+        var user = await LoadActiveUserAsync(userId, cancellationToken);
+
+        var room = await _chatRepository.GetFacultyRoomAsync(facultyName, cancellationToken);
+        if (room is null)
+        {
+            room = ChatRoom.ForFaculty(facultyName, DateTime.UtcNow);
+            _chatRepository.AddRoom(room);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return await ViewableOrNotFoundAsync(user, room, cancellationToken);
     }
 
     public async Task EnsureCanViewRoomAsync(int userId, int roomId, CancellationToken cancellationToken = default)

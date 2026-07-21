@@ -1,6 +1,7 @@
 using Linker.Application.DTOs.Chat;
 using Linker.Application.DTOs.Common;
 using Linker.Application.Services;
+using Linker.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -39,6 +40,25 @@ public class ChatRoomsController : ApiControllerBase
     public async Task<ActionResult<ChatRoomResponse>> ForInternship(int internshipId, CancellationToken cancellationToken)
     {
         return Ok(await _chatService.GetOrCreateRoomForInternshipAsync(CurrentUserId, internshipId, cancellationToken));
+    }
+
+    /// <summary>The list of faculty channels the sidebar offers (authoritative names).</summary>
+    [HttpGet("faculties")]
+    [ProducesResponseType(typeof(IReadOnlyList<string>), StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyList<string>> Faculties()
+    {
+        return Ok(UkimFaculties.All);
+    }
+
+    // Opens (creating on first use) a faculty channel. The name is validated
+    // against the known UKIM faculties server-side, so an arbitrary name 404s
+    // rather than creating a junk room.
+    [HttpGet("faculty")]
+    [ProducesResponseType(typeof(ChatRoomResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ChatRoomResponse>> ForFaculty([FromQuery] string name, CancellationToken cancellationToken)
+    {
+        return Ok(await _chatService.GetOrCreateRoomForFacultyAsync(CurrentUserId, name, cancellationToken));
     }
 
     // Initial history load. Enforces the same room-visibility rule as the hub's

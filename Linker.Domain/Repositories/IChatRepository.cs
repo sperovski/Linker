@@ -15,6 +15,7 @@ public interface IChatRepository
     Task<ChatRoom?> GetRoomByCompanyAsync(int companyId, CancellationToken cancellationToken = default);
     Task<ChatRoom?> GetRoomByInternshipAsync(int internshipId, CancellationToken cancellationToken = default);
     Task<ChatRoom?> GetGeneralRoomAsync(CancellationToken cancellationToken = default);
+    Task<ChatRoom?> GetFacultyRoomAsync(string facultyName, CancellationToken cancellationToken = default);
     void AddRoom(ChatRoom room);
 
     /// <summary>
