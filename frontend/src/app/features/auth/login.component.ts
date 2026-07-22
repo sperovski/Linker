@@ -14,6 +14,7 @@ import { apiErrorMessage } from '../../shared/api-error';
 import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
+import { BgDecorComponent } from '../../shared/bg-decor.component';
 import { DotFieldComponent } from '../../shared/dot-field.component';
 import { LiquidEtherComponent } from '../../shared/liquid-ether.component';
 import { LoaderComponent } from '../../shared/loader.component';
@@ -21,7 +22,7 @@ import { LoaderComponent } from '../../shared/loader.component';
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LoaderComponent, ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, DotFieldComponent, LiquidEtherComponent],
+  imports: [LoaderComponent, ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, DotFieldComponent, LiquidEtherComponent, BgDecorComponent],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -36,6 +37,9 @@ import { LoaderComponent } from '../../shared/loader.component';
         [autoSpeed]="0.32"
       />
       <div class="auth-glow auth-glow-follow" aria-hidden="true"></div>
+      <!-- Last of the z-index:0 background layers, so the icons stay crisp above the
+           ether and the follow-glow rather than being washed out by them. -->
+      <app-bg-decor />
       <div class="auth-card">
         <h1>Welcome back</h1>
         <p class="auth-sub">Log in to your Linker account.</p>

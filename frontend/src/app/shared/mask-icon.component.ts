@@ -12,14 +12,21 @@ const ICON_SRC: Record<string, string> = {
   university: '/university.svg',
   skills: '/skills.svg',
   recommended: '/recommended.svg',
-  'bg-briefcase': '/briefcase_5782884.png',
-  'bg-graduation-cap': '/graduation-cap_417180.png',
+
+  // Field/industry glyphs. Only the decorative background draws these today —
+  // they name the kinds of work on the platform rather than anything in the UI.
+  'code-branch': '/code-branch.svg',
+  'drafting-compass': '/drafting-compass.svg',
+  engine: '/engine.svg',
+  'machine-learning': '/machine-learning.svg',
+  'robotic-arm': '/robotic-arm.svg',
+  stethoscope: '/stethoscope.svg',
 };
 
 export type MaskIconName = keyof typeof ICON_SRC;
 
 /**
- * Renders a transparent-background PNG as a solid shape tinted with the current
+ * Renders a transparent-background image as a solid shape tinted with the current
  * text colour (via CSS mask). Lets black line-art icons adopt the badge/section
  * colour they sit in — e.g. the gear turning green/amber with a match tier.
  */

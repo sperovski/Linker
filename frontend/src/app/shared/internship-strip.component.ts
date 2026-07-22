@@ -138,10 +138,15 @@ import { matchExplanation } from './match';
 
       .strip-titles { flex: 1; min-width: 0; }
 
+      /* Sits on the h2's line box (1.2rem × 1.15 global heading line-height) rather
+         than centring against heading + subheading together. align-self keeps the
+         carousel nav buttons centred against the full head. */
       .strip-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        align-self: flex-start;
+        height: calc(1.2rem * 1.15);
         color: var(--color-primary);
         flex-shrink: 0;
       }

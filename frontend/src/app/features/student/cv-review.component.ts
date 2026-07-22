@@ -41,7 +41,7 @@ import { LoaderComponent } from '../../shared/loader.component';
               (change)="onFileInput($event)"
               [disabled]="loading()"
             />
-            <span class="dz-icon"><app-mask-icon name="cv" [size]="26" /></span>
+            <span class="dz-icon"><app-mask-icon name="cv" [size]="30" /></span>
             @if (fileName()) {
               <span class="dz-title">{{ fileName() }}</span>
               <span class="dz-sub">Scanned. Click or drop another to replace</span>
@@ -93,7 +93,7 @@ import { LoaderComponent } from '../../shared/loader.component';
         <div class="card result-card">
           @if (!result() && !loading()) {
             <div class="placeholder">
-              <span class="ph-icon"><app-mask-icon name="cv" [size]="28" /></span>
+              <span class="ph-icon"><app-mask-icon name="cv" [size]="32" /></span>
               <h3>Your score appears here</h3>
               <p>The analyser looks at structure, skill coverage, quantified impact and clarity.</p>
             </div>
@@ -228,8 +228,7 @@ import { LoaderComponent } from '../../shared/loader.component';
 
       .dz-icon {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 48px; height: 48px; border-radius: var(--radius-md);
-        background: rgba(29, 77, 36, 0.1); color: var(--color-primary); margin-bottom: 4px;
+        color: var(--color-primary); margin-bottom: 4px;
       }
       .dz-title { font-weight: 700; color: var(--color-foreground); word-break: break-word; }
       .dz-sub { font-size: 0.8125rem; color: var(--color-text-soft); }
@@ -274,8 +273,7 @@ import { LoaderComponent } from '../../shared/loader.component';
       .placeholder h3 { color: var(--color-foreground); margin-bottom: var(--space-xs); }
       .ph-icon {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 56px; height: 56px; border-radius: var(--radius-lg);
-        background: var(--color-muted); color: var(--color-text-soft); margin-bottom: var(--space-md);
+        color: var(--color-text-soft); margin-bottom: var(--space-md);
       }
       .ph-loader { --loader-scale: 0.8; margin-bottom: var(--space-md); }
 

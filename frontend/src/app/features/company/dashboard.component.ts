@@ -35,25 +35,25 @@ import { statusLabel } from '../../shared/application-status';
       } @else if (data(); as d) {
         <div class="stat-grid">
           <div class="card stat">
-            <span class="stat-icon"><app-icon name="briefcase" [size]="18" /></span>
+            <span class="stat-icon"><app-icon name="briefcase" [size]="22" /></span>
             <span class="stat-value">{{ d.activeListings }}</span>
             <span class="stat-label">Active listings</span>
             <span class="stat-sub">{{ d.totalListings }} total</span>
           </div>
           <div class="card stat">
-            <span class="stat-icon"><app-icon name="users" [size]="18" /></span>
+            <span class="stat-icon"><app-icon name="users" [size]="22" /></span>
             <span class="stat-value">{{ d.totalApplicants }}</span>
             <span class="stat-label">Applicants</span>
             <span class="stat-sub">across all roles</span>
           </div>
           <div class="card stat">
-            <span class="stat-icon accent-amber"><app-icon name="clock" [size]="18" /></span>
+            <span class="stat-icon accent-amber"><app-icon name="clock" [size]="22" /></span>
             <span class="stat-value">{{ d.pendingApplicants }}</span>
             <span class="stat-label">Awaiting review</span>
             <span class="stat-sub">need a decision</span>
           </div>
           <div class="card stat">
-            <span class="stat-icon accent-green"><app-icon name="check" [size]="18" /></span>
+            <span class="stat-icon accent-green"><app-icon name="check" [size]="22" /></span>
             <span class="stat-value">{{ d.acceptedApplicants }}</span>
             <span class="stat-label">Accepted</span>
             <span class="stat-sub">offers extended</span>
@@ -149,20 +149,20 @@ import { statusLabel } from '../../shared/application-status';
 
       .stat { display: flex; flex-direction: column; gap: 2px; }
 
+      /* .stat is a flex column defaulting to align-items: stretch. The old fixed
+         40px badge sized this span; without it, align-self keeps the glyph pinned
+         left with the value and label rather than centred across the card. */
       .stat-icon {
         display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-md);
-        background: rgba(29, 77, 36, 0.1);
+        align-self: flex-start;
         color: var(--color-primary);
         margin-bottom: var(--space-sm);
       }
 
-      .stat-icon.accent-amber { background: #fef3c7; color: #92400e; }
-      .stat-icon.accent-green { background: #dcfce7; color: #166534; }
+      /* The tint used to come from the badge behind the icon; with that gone the
+         accent has to live on the glyph itself, darkened to stay legible unbacked. */
+      .stat-icon.accent-amber { color: #b45309; }
+      .stat-icon.accent-green { color: #15803d; }
 
       .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
       .stat-label { font-weight: 600; margin-top: 4px; }

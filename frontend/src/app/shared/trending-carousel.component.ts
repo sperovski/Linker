@@ -174,6 +174,12 @@ const POSES: Pose[] = [
         color: #b45309;
         flex-shrink: 0;
         animation: tc-flicker 3.1s ease-in-out infinite;
+        /* Centred on the h2's line box, matching app-internship-strip's icon — the
+           two rails sit next to each other on Browse, so a difference shows. The
+           badge is taller than the line, hence the negative pull rather than a
+           plain flex-start. */
+        align-self: flex-start;
+        margin-top: calc((1.2rem * 1.15 - 36px) / 2);
       }
 
       /* The glyph sits above the embers; currentColor makes it shift with the
