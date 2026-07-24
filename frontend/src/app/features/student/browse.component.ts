@@ -59,7 +59,8 @@ const PAGE_SIZE = 12;
           <app-internship-strip
             heading="Recommended for you"
             subheading="Ranked by how well they match your skills"
-            icon="gear"
+            icon="recommended"
+            [flare]="true"
             [items]="recommended()"
           />
         }

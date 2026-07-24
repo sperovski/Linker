@@ -19,7 +19,7 @@ import { BgDecorComponent } from '../../shared/bg-decor.component';
       <div class="auth-card">
         @if (sent()) {
           <div class="sent-block">
-            <span class="v-icon"><app-icon name="mail" [size]="26" /></span>
+            <span class="v-icon"><app-icon name="mail" [size]="32" /></span>
             <h1>Check your email</h1>
             <p class="auth-sub">
               If an account exists for that address, we've sent a link to reset your password.
@@ -61,8 +61,7 @@ import { BgDecorComponent } from '../../shared/bg-decor.component';
       .sent-block { text-align: center; }
       .v-icon {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 60px; height: 60px; border-radius: 50%;
-        background: var(--color-muted); color: var(--color-primary);
+        color: var(--color-primary);
         margin: 0 auto var(--space-md);
       }
     `,

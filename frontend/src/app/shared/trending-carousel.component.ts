@@ -62,6 +62,10 @@ const POSES: Pose[] = [
     >
       <div class="tc-head">
         <span class="tc-icon">
+          <!-- Embers rising behind the glyph; purely decorative. -->
+          <span class="ember e1" aria-hidden="true"></span>
+          <span class="ember e2" aria-hidden="true"></span>
+          <span class="ember e3" aria-hidden="true"></span>
           <app-mask-icon [name]="icon()" [size]="17" />
         </span>
         <div class="tc-titles">
@@ -152,7 +156,14 @@ const POSES: Pose[] = [
       .tc-head h2 { font-size: 1.2rem; margin: 0; letter-spacing: -0.01em; }
       .tc-head p { margin: 2px 0 0; font-size: 0.85rem; color: var(--color-text-soft); }
 
+      /* ---- Trending badge: a small fire behind the glyph ----
+         Embers rise inside the badge (overflow clips them, so it reads as a
+         lit window rather than loose particles), while the badge itself
+         flickers. Flicker keyframes are deliberately unevenly spaced — evenly
+         spaced ones read as a pulse, not a flame. */
       .tc-icon {
+        position: relative;
+        overflow: hidden;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -162,6 +173,51 @@ const POSES: Pose[] = [
         background: #fef3c7;
         color: #b45309;
         flex-shrink: 0;
+        animation: tc-flicker 3.1s ease-in-out infinite;
+        /* Centred on the h2's line box, matching app-internship-strip's icon — the
+           two rails sit next to each other on Browse, so a difference shows. The
+           badge is taller than the line, hence the negative pull rather than a
+           plain flex-start. */
+        align-self: flex-start;
+        margin-top: calc((1.2rem * 1.15 - 36px) / 2);
+      }
+
+      /* The glyph sits above the embers; currentColor makes it shift with the
+         badge's flicker. */
+      .tc-icon app-mask-icon { position: relative; z-index: 1; }
+
+      .ember {
+        position: absolute;
+        bottom: -5px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 60%, #fb923c, #f59e0b 55%, transparent 72%);
+        filter: blur(2.5px);
+        opacity: 0;
+        pointer-events: none;
+        animation: tc-ember 2.6s ease-out infinite;
+      }
+
+      /* Staggered so the embers never rise in lockstep. */
+      .ember.e1 { left: 6px; animation-delay: 0s; }
+      .ember.e2 { left: 15px; animation-duration: 3.2s; animation-delay: 0.9s; }
+      .ember.e3 { left: 23px; animation-duration: 2.2s; animation-delay: 1.7s; }
+
+      @keyframes tc-ember {
+        0% { transform: translateY(0) scale(0.55); opacity: 0; }
+        18% { opacity: 0.9; }
+        55% { opacity: 0.55; }
+        100% { transform: translateY(-30px) scale(0.2); opacity: 0; }
+      }
+
+      @keyframes tc-flicker {
+        0%, 100% { background: #fef3c7; color: #b45309; }
+        22% { background: #fee9b0; color: #ea580c; }
+        38% { background: #fef3c7; color: #c2410c; }
+        61% { background: #fde3a0; color: #f97316; }
+        74% { background: #fef0bd; color: #ea580c; }
+        88% { background: #fef3c7; color: #b45309; }
       }
 
       /* ---- 3D stage ---- */
@@ -273,6 +329,8 @@ const POSES: Pose[] = [
       @media (prefers-reduced-motion: reduce) {
         .tc-slide.animate { transition: none; }
         .dot { transition: none; }
+        .tc-icon { animation: none; }
+        .ember { display: none; }
       }
     `,
   ],

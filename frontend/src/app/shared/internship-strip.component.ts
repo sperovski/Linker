@@ -40,8 +40,8 @@ import { matchExplanation } from './match';
   template: `
     <section class="strip" [class.is-carousel]="carousel()">
       <div class="strip-head">
-        <span class="strip-icon" [class]="accent()">
-          <app-mask-icon [name]="icon()" [size]="17" />
+        <span class="strip-icon" [class]="accent()" [class.flare]="flare()">
+          <app-mask-icon [name]="icon()" [size]="24" />
         </span>
         <div class="strip-titles">
           <h2>{{ heading() }}</h2>
@@ -138,19 +138,44 @@ import { matchExplanation } from './match';
 
       .strip-titles { flex: 1; min-width: 0; }
 
+      /* Sits on the h2's line box (1.2rem × 1.15 global heading line-height) rather
+         than centring against heading + subheading together. align-self keeps the
+         carousel nav buttons centred against the full head. */
       .strip-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        background: rgba(29, 77, 36, 0.1);
+        align-self: flex-start;
+        height: calc(1.2rem * 1.15);
         color: var(--color-primary);
         flex-shrink: 0;
       }
 
-      .strip-icon.amber { background: #fef3c7; color: #b45309; }
+      .strip-icon.amber { color: #b45309; }
+
+      /* Quiet most of the time, with a brief "pop" every few seconds to draw
+         the eye — used only on rails worth calling out (Recommended). No badge
+         behind the icon, so the glow is a drop-shadow rather than a ring. */
+      .strip-icon.flare { animation: strip-icon-flare 6s ease-in-out infinite; }
+
+      @keyframes strip-icon-flare {
+        0%, 82%, 100% {
+          transform: scale(1) rotate(0deg);
+          filter: drop-shadow(0 0 0 rgba(29, 77, 36, 0));
+        }
+        87% {
+          transform: scale(1.28) rotate(-6deg);
+          filter: drop-shadow(0 0 6px rgba(29, 77, 36, 0.5));
+        }
+        91% {
+          transform: scale(0.94) rotate(3deg);
+          filter: drop-shadow(0 0 3px rgba(29, 77, 36, 0.3));
+        }
+        95% {
+          transform: scale(1.1) rotate(0deg);
+          filter: drop-shadow(0 0 4px rgba(29, 77, 36, 0.4));
+        }
+      }
 
       .strip-head h2 { font-size: 1.2rem; margin: 0; letter-spacing: -0.01em; }
       .strip-head p { margin: 2px 0 0; font-size: 0.85rem; color: var(--color-text-soft); }
@@ -321,6 +346,7 @@ import { matchExplanation } from './match';
       }
 
       @media (prefers-reduced-motion: reduce) {
+        .strip-icon.flare { animation: none; }
         .mini-wrap { animation: none; }
         .mini { transition: box-shadow 0.2s ease; }
         .mini:hover,
@@ -344,6 +370,8 @@ export class InternshipStripComponent implements OnInit, OnDestroy {
   readonly icon = input.required<MaskIconName>();
   readonly items = input.required<InternshipListItem[]>();
   readonly accent = input('');
+  /** Periodic "pop" on the header icon, for a rail worth calling out. */
+  readonly flare = input(false);
   /** Show a #rank chip when an item has no match score (e.g. anonymous popular list). */
   readonly rank = input(false);
   /** Turn the rail into an auto-advancing carousel. */

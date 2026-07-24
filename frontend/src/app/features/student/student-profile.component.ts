@@ -227,7 +227,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 3. Experience ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic"><app-mask-icon name="experience" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="experience" [size]="20" /></span>
             <div class="grow">
               <h2>Experience</h2>
               <p class="section-sub">Internships, part-time work, volunteering.</p>
@@ -402,7 +402,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 5. Projects ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic"><app-mask-icon name="projects" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="projects" [size]="20" /></span>
             <div class="grow">
               <h2>Projects</h2>
               <p class="section-sub">Side projects, coursework, hackathons.</p>
@@ -483,7 +483,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 6. Skills ============ -->
         <div class="card">
           <div class="section-head">
-            <span class="section-ic"><app-mask-icon name="skills" [size]="17" /></span>
+            <span class="section-ic"><app-mask-icon name="skills" [size]="20" /></span>
             <div>
               <h2>Your skills</h2>
               <p class="section-sub">Tag your strengths so companies spot the match.</p>
@@ -500,7 +500,7 @@ type SectionKind = 'experience' | 'education' | 'project';
         <!-- ============ 7. Resume / CV ============ -->
         <div class="card resume-card">
           <div class="resume-body">
-            <span class="resume-ic"><app-mask-icon name="cv" [size]="24" /></span>
+            <span class="resume-ic"><app-mask-icon name="cv" [size]="28" /></span>
             <div class="grow">
               <h2>Resume</h2>
               @if (profile()?.cvUrl) {
@@ -670,14 +670,16 @@ type SectionKind = 'experience' | 'education' | 'project';
         margin-bottom: var(--space-lg);
       }
 
+      /* align-self (not align-items on .section-head) so only the icon moves — the
+         "Add" button on the right keeps centring against the full block. Height is
+         the h2's line box (1.15rem × 1.15 global heading line-height), so the glyph
+         centres on the heading line instead of between it and .section-sub. */
       .section-ic {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 38px;
-        height: 38px;
-        border-radius: var(--radius-md);
-        background: rgba(29, 77, 36, 0.1);
+        align-self: flex-start;
+        height: calc(1.15rem * 1.15);
         color: var(--color-primary);
         flex-shrink: 0;
       }
@@ -812,14 +814,15 @@ type SectionKind = 'experience' | 'education' | 'project';
         margin-bottom: var(--space-md);
       }
 
+      /* Same trick as .section-ic; .card h2 is 1.125rem here. The 28px glyph is
+         taller than the line box and overflows it evenly, which is what keeps it
+         centred *on* the heading rather than dropping below it. */
       .resume-ic {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        background: rgba(29, 77, 36, 0.1);
+        align-self: flex-start;
+        height: calc(1.125rem * 1.15);
         color: var(--color-primary);
         flex-shrink: 0;
       }
