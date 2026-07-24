@@ -4,6 +4,12 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    # Publish Postgres to the host so tools on the Mac (Rider DB, DBeaver, psql)
+    # can reach it at localhost:5432. Bound to 127.0.0.1 ONLY — a bare "5432:5432"
+    # binds 0.0.0.0 and exposes the DB to the whole LAN. The API still connects
+    # in-network via `db`, so this loopback bind is all the host needs.
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: linker
       POSTGRES_USER: linker
@@ -88,8 +94,13 @@ services:
   mailpit:
     image: axllent/mailpit
     restart: unless-stopped
+    # Loopback ONLY. The inbox has no authentication and holds every password
+    # reset / email verification link the app issues, so a bare "8025:8025"
+    # (which binds 0.0.0.0) hands account takeover to anyone on the same WiFi.
+    # 1025/SMTP is deliberately NOT published — the API reaches it in-network
+    # as `mailpit:1025`, so nothing about this needs a host port.
     ports:
-      - "8025:8025"
+      - "127.0.0.1:8025:8025"
 
   # Daily pg_dump into ./backups (bind mount: survives docker volume wipes).
   # Keeps the newest 14 dumps. Restore with:
