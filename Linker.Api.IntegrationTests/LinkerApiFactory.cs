@@ -32,6 +32,13 @@ public class LinkerApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // full run needs so they're never throttled. The limiter itself is
         // proven separately in RateLimitTests.
         builder.UseSetting("RateLimiting:AuthPerMinute", "1000");
+        // Off here on purpose: these suites exercise search, paging and the
+        // apply/review flows, and would otherwise spend every fixture walking a
+        // verification link. The gate itself is proven separately in
+        // VerifiedEmailGateTests, which flips this back on. Set explicitly rather
+        // than inherited, so neither suite depends on which way the app default
+        // happens to point.
+        builder.UseSetting("Auth:RequireVerifiedEmail", "false");
     }
 
     public async Task InitializeAsync()

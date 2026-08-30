@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Linker.Api.IntegrationTests;
 
-/// <summary>Own factory with the verified-email gate switched on.</summary>
+/// <summary>Own factory with the verified-email gate switched on (the base factory turns it off).</summary>
 public class VerifiedGateApiFactory : LinkerApiFactory
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
