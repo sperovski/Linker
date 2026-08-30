@@ -100,11 +100,20 @@ import { TYPE_LABELS } from '../../shared/dates';
                     @if (listing.isActive) {
                       <app-link-button
                         size="sm"
-                        [disabled]="closingId() === listing.id"
+                        [disabled]="busyId() === listing.id"
                         (pressed)="close(listing)"
                       >
                         <app-icon name="x" [size]="15" />
-                        {{ closingId() === listing.id ? 'Closing…' : 'Close' }}
+                        {{ busyId() === listing.id ? 'Closing…' : 'Close' }}
+                      </app-link-button>
+                    } @else {
+                      <app-link-button
+                        size="sm"
+                        [disabled]="busyId() === listing.id"
+                        (pressed)="reopen(listing)"
+                      >
+                        <app-icon name="check" [size]="15" />
+                        {{ busyId() === listing.id ? 'Reopening…' : 'Reopen' }}
                       </app-link-button>
                     }
                   </div>
@@ -176,7 +185,8 @@ export class MyListingsComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
-  protected readonly closingId = signal<number | null>(null);
+  /** The listing currently being closed or reopened; both share the row's busy state. */
+  protected readonly busyId = signal<number | null>(null);
 
   ngOnInit(): void {
     this.internshipService.getMine().subscribe({
@@ -198,18 +208,34 @@ export class MyListingsComponent implements OnInit {
   }
 
   protected close(listing: InternshipListItem): void {
-    this.closingId.set(listing.id);
-    this.internshipService.close(listing.id).subscribe({
+    this.setActive(listing, false);
+  }
+
+  protected reopen(listing: InternshipListItem): void {
+    this.setActive(listing, true);
+  }
+
+  private setActive(listing: InternshipListItem, isActive: boolean): void {
+    this.busyId.set(listing.id);
+    const request = isActive
+      ? this.internshipService.reopen(listing.id)
+      : this.internshipService.close(listing.id);
+
+    request.subscribe({
       next: () => {
         this.listings.update((items) =>
-          items.map((item) => (item.id === listing.id ? { ...item, isActive: false } : item)),
+          items.map((item) => (item.id === listing.id ? { ...item, isActive } : item)),
         );
-        this.closingId.set(null);
-        this.toast.success(`"${listing.title}" is now closed`);
+        this.busyId.set(null);
+        this.toast.success(`"${listing.title}" is now ${isActive ? 'open' : 'closed'}`);
       },
       error: (err) => {
-        this.closingId.set(null);
-        this.toast.error(apiErrorMessage(err, 'Could not close the listing.'));
+        this.busyId.set(null);
+        // The reopen failure worth explaining is an expired deadline, and the
+        // server says so — so surface its message rather than a generic one.
+        this.toast.error(
+          apiErrorMessage(err, `Could not ${isActive ? 'reopen' : 'close'} the listing.`),
+        );
       },
     });
   }

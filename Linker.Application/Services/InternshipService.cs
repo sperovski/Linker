@@ -107,6 +107,27 @@ public class InternshipService : IInternshipService
         return internship.ToDetailResponse();
     }
 
+    public async Task<InternshipDetailResponse> ReopenAsync(int userId, int internshipId, CancellationToken cancellationToken = default)
+    {
+        var internship = await GetOwnedInternshipAsync(userId, internshipId, cancellationToken);
+
+        // Reopening into an expired deadline would put a listing back on the
+        // board that students still can't apply to, so ask for a new date first
+        // rather than silently producing a dead posting.
+        if (internship.ApplicationDeadline is { } deadline &&
+            deadline < DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            throw new BadRequestException(
+                "This listing's application deadline has passed. Update the deadline before reopening it.");
+        }
+
+        internship.IsActive = true;
+        _internshipRepository.Update(internship);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return internship.ToDetailResponse();
+    }
+
     public async Task<InternshipSearchResponse> SearchAsync(InternshipSearchRequest request, int? userId = null, CancellationToken cancellationToken = default)
     {
         request = request.Normalized();

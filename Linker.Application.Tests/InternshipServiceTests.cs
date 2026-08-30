@@ -1,3 +1,4 @@
+using Linker.Application.Common.Exceptions;
 using Linker.Application.DTOs.Internships;
 using Linker.Application.Services;
 using Linker.Domain.Entities;
@@ -270,4 +271,50 @@ public class InternshipServiceTests : IDisposable
         // Globex has no *open* roles, so it should not be offered as a filter.
         Assert.Equal(["Acme"], result.Companies.Select(c => c.Name));
     }
+    // ---- Close / reopen ---------------------------------------------------
+
+    [Fact]
+    public async Task Reopen_PutsAClosedListingBackOnTheBoard()
+    {
+        var company = _db.AddCompany();
+        var internship = _db.AddInternship(company, isActive: false, deadline: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(7)));
+
+        var result = await _service.ReopenAsync(company.UserId, internship.Id);
+
+        Assert.True(result.IsActive);
+    }
+
+    [Fact]
+    public async Task Reopen_AListingWithNoDeadline_IsAllowed()
+    {
+        var company = _db.AddCompany();
+        var internship = _db.AddInternship(company, isActive: false);
+
+        var result = await _service.ReopenAsync(company.UserId, internship.Id);
+
+        Assert.True(result.IsActive);
+    }
+
+    [Fact]
+    public async Task Reopen_AListingWhoseDeadlineHasPassed_IsRejected()
+    {
+        var company = _db.AddCompany();
+        var internship = _db.AddInternship(
+            company, isActive: false, deadline: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)));
+
+        // Otherwise it goes back on the board as a posting nobody can apply to.
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.ReopenAsync(company.UserId, internship.Id));
+    }
+
+    [Fact]
+    public async Task Reopen_AnotherCompanysListing_IsRefused()
+    {
+        var mine = _db.AddCompany();
+        var theirs = _db.AddCompany("other@test.local", "Other Co");
+        var internship = _db.AddInternship(theirs, isActive: false);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => _service.ReopenAsync(mine.UserId, internship.Id));
+    }
+
 }

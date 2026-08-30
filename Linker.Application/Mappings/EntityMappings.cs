@@ -202,6 +202,7 @@ public static class EntityMappings
             application.Status.ToString(),
             application.CoverNote,
             application.CreatedAt,
-            application.UpdatedAt);
+            application.UpdatedAt,
+            !string.IsNullOrWhiteSpace(student?.CvUrl));
     }
 }

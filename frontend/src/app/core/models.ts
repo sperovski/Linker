@@ -331,6 +331,8 @@ export interface Applicant {
   coverNote: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Whether a CV is on file; the file itself comes from the authorised CV endpoint. */
+  hasCv: boolean;
 }
 
 export interface CreateApplicationRequest {

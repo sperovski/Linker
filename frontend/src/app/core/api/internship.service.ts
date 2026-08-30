@@ -72,6 +72,10 @@ export class InternshipService {
     return this.http.post<InternshipDetail>(`${this.baseUrl}/${id}/close`, {});
   }
 
+  reopen(id: number): Observable<InternshipDetail> {
+    return this.http.post<InternshipDetail>(`${this.baseUrl}/${id}/reopen`, {});
+  }
+
   getApplications(id: number, page = 1, pageSize = 20): Observable<PagedResponse<Applicant>> {
     return this.http.get<PagedResponse<Applicant>>(`${this.baseUrl}/${id}/applications`, {
       params: new HttpParams().set('page', page).set('pageSize', pageSize),

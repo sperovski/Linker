@@ -37,4 +37,10 @@ public record ApplicantResponse(
     string Status,
     string? CoverNote,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    /// <summary>
+    /// Whether this applicant has a CV on file. Only a flag — the file itself
+    /// stays behind the authorised GET /api/students/{id}/cv, so the list can
+    /// offer the link without the personal data riding along in every page.
+    /// </summary>
+    bool HasCv);

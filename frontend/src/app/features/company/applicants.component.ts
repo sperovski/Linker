@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApplicationService } from '../../core/api/application.service';
 import { InternshipService } from '../../core/api/internship.service';
+import { StudentService } from '../../core/api/student.service';
 import {
   Applicant,
   ApplicationStatus,
@@ -146,6 +147,21 @@ const PAGE_SIZE = 10;
                       <p>{{ app.coverNote }}</p>
                     </div>
                   }
+
+                  <div class="applicant-actions">
+                    @if (app.hasCv) {
+                      <app-link-button
+                        size="sm"
+                        [disabled]="cvOpeningId() === app.studentId"
+                        (pressed)="openCv(app)"
+                      >
+                        <app-icon name="file-text" [size]="15" />
+                        {{ cvOpeningId() === app.studentId ? 'Opening…' : 'View CV' }}
+                      </app-link-button>
+                    } @else {
+                      <span class="no-cv">No CV uploaded</span>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -262,6 +278,18 @@ const PAGE_SIZE = 10;
         color: var(--color-foreground);
       }
 
+      .applicant-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+      }
+
+      .no-cv {
+        font-size: 0.8125rem;
+        color: var(--color-text-soft);
+      }
+
       .cover-letter {
         margin-top: var(--space-md);
         background: var(--color-background);
@@ -302,6 +330,7 @@ const PAGE_SIZE = 10;
 export class ApplicantsComponent implements OnInit {
   private readonly internshipService = inject(InternshipService);
   private readonly applicationService = inject(ApplicationService);
+  private readonly studentService = inject(StudentService);
   private readonly toast = inject(ToastService);
 
   readonly id = input.required({ transform: numberAttribute });
@@ -316,6 +345,30 @@ export class ApplicantsComponent implements OnInit {
   protected readonly loadError = signal(false);
   protected readonly animState = signal<'loading' | 'loaded'>('loading');
   protected readonly updatingId = signal<number | null>(null);
+  protected readonly cvOpeningId = signal<number | null>(null);
+
+  /**
+   * Opens the applicant's CV in a new tab. CV files are personal data served
+   * only through the authenticated endpoint, so this fetches a blob rather than
+   * pointing an anchor at a URL — a plain href would arrive without the token
+   * and 401.
+   */
+  protected openCv(app: Applicant): void {
+    this.cvOpeningId.set(app.studentId);
+    this.studentService.downloadCvFile(app.studentId).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+        // Give the new tab time to read the blob before revoking.
+        setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        this.cvOpeningId.set(null);
+      },
+      error: (err) => {
+        this.cvOpeningId.set(null);
+        this.toast.error(apiErrorMessage(err, `Could not open ${app.studentName}'s CV.`));
+      },
+    });
+  }
 
   protected readonly page = signal(1);
   protected readonly total = signal(0);

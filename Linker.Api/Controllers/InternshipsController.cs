@@ -135,6 +135,17 @@ public class InternshipsController : ApiControllerBase
         return Ok(await _internshipService.CloseAsync(CurrentUserId, id, cancellationToken));
     }
 
+    [HttpPost("{id:int}/reopen")]
+    [Authorize(Roles = "Company")]
+    [ProducesResponseType(typeof(InternshipDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<InternshipDetailResponse>> Reopen(int id, CancellationToken cancellationToken)
+    {
+        return Ok(await _internshipService.ReopenAsync(CurrentUserId, id, cancellationToken));
+    }
+
     [HttpGet("{id:int}/applications")]
     [Authorize(Roles = "Company")]
     [ProducesResponseType(typeof(PagedResponse<ApplicantResponse>), StatusCodes.Status200OK)]
