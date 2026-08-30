@@ -42,6 +42,19 @@ import { formatDate } from '../../shared/dates';
         </div>
       </div>
 
+      @if (auth.mustChangePassword()) {
+        <div class="card rotation-notice" role="alert">
+          <app-icon name="lock" [size]="18" />
+          <div>
+            <strong>Choose a new password to continue</strong>
+            <p>
+              Your current password no longer meets our security requirements. The rest of
+              Linker stays locked until you set a new one below &mdash; it only takes a moment.
+            </p>
+          </div>
+        </div>
+      }
+
       @if (loading()) {
         <div class="card" role="status" aria-label="Loading">
           <div class="skeleton" style="height: 44px; width: 100%; margin-bottom: 12px;"></div>
@@ -180,6 +193,24 @@ import { formatDate } from '../../shared/dates';
     `
       .narrow { max-width: 660px; }
 
+      .rotation-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-md);
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        margin-bottom: var(--space-lg);
+      }
+
+      .rotation-notice strong { display: block; }
+
+      .rotation-notice p {
+        margin: 4px 0 0;
+        font-size: 0.875rem;
+        line-height: 1.5;
+      }
+
       .card + .card { margin-top: var(--space-lg); }
 
       .card h2 { margin: 0; font-size: 1.0625rem; }
@@ -242,7 +273,7 @@ import { formatDate } from '../../shared/dates';
 export class AccountSettingsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly accountService = inject(AccountService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   protected readonly account = signal<Account | null>(null);

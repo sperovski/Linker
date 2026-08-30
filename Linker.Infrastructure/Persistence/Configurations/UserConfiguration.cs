@@ -42,5 +42,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.FailedLoginAttempts)
             .IsRequired()
             .HasDefaultValue(0);
+
+        // False for existing rows: the flag is raised at the account's next
+        // sign-in, when its password can actually be checked.
+        builder.Property(u => u.MustChangePassword)
+            .IsRequired()
+            .HasDefaultValue(false);
     }
 }

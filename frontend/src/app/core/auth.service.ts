@@ -17,6 +17,7 @@ interface StoredSession {
   token: string;
   refreshToken: string;
   emailVerified: boolean;
+  mustChangePassword: boolean;
 }
 
 const STORAGE_KEY = 'linker_session';
@@ -57,6 +58,13 @@ export class AuthService {
   readonly isAdmin = computed(() => this.role() === 'Admin');
   readonly email = computed(() => this.sessionSignal()?.email ?? null);
   readonly emailVerified = computed(() => this.sessionSignal()?.emailVerified ?? true);
+
+  /**
+   * True while this account's password is below the policy. The server confines
+   * the session regardless; this only lets the app route somewhere useful
+   * instead of showing a wall of 403s.
+   */
+  readonly mustChangePassword = computed(() => this.sessionSignal()?.mustChangePassword ?? false);
 
   get token(): string | null {
     return this.sessionSignal()?.token ?? null;
@@ -119,6 +127,11 @@ export class AuthService {
   }
 
   homePath(): string {
+    // A confined session can only reach the settings page, so that is its home
+    // until the password is replaced.
+    if (this.mustChangePassword()) {
+      return '/settings';
+    }
     switch (this.role()) {
       case 'Student':
         return '/internships';
@@ -149,6 +162,7 @@ export class AuthService {
       token: response.token,
       refreshToken: response.refreshToken,
       emailVerified: response.emailVerified,
+      mustChangePassword: response.mustChangePassword,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     this.sessionSignal.set(session);

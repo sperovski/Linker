@@ -291,6 +291,12 @@ app.UseCors(CorsPolicy);
 app.UseRateLimiter();
 
 app.UseAuthentication();
+
+// After authentication (it reads the caller's claims) and before authorization,
+// so a session that must rotate its password is confined no matter which
+// endpoint or hub it targets.
+app.UseMiddleware<PasswordRotationMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();

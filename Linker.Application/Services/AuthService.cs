@@ -128,6 +128,12 @@ public class AuthService : IAuthService
         }
 
         user.RegisterSuccessfulLogin();
+
+        // The one moment the plaintext is in hand, and so the only place a
+        // legacy password can be measured against the current policy. Accounts
+        // that predate it (or an older, weaker version of it) are marked here
+        // and can do nothing but change their password until they do.
+        user.MustChangePassword = PasswordPolicy.Validate(request.Password, user.Email) is not null;
         _userRepository.Update(user);
 
         var rawRefreshToken = StageRefreshToken(user);
@@ -244,6 +250,7 @@ public class AuthService : IAuthService
 
         token.UsedAtUtc = DateTime.UtcNow;
         token.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        token.User.MustChangePassword = false;
         // Completing a reset from the inbox proves ownership, so it also lifts a
         // brute-force lockout — otherwise the real owner stays shut out by the
         // attacker's failed guesses.
@@ -272,6 +279,9 @@ public class AuthService : IAuthService
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
         user.RegisterSuccessfulLogin();
+        // The new password was just measured against the policy, so whatever
+        // raised this flag is resolved.
+        user.MustChangePassword = false;
         _userRepository.Update(user);
 
         // Every other session dies with the old password: if the change was
@@ -370,7 +380,8 @@ public class AuthService : IAuthService
             ?? throw new NotFoundException("User", userId);
 
         return new AccountResponse(
-            user.Id, user.Email, user.Role.ToString(), user.EmailVerified, user.PendingEmail, user.CreatedAtUtc);
+            user.Id, user.Email, user.Role.ToString(), user.EmailVerified, user.PendingEmail, user.CreatedAtUtc,
+            user.MustChangePassword);
     }
 
     private static void EnsurePasswordMeetsPolicy(string password, string email)
@@ -450,7 +461,8 @@ public class AuthService : IAuthService
     }
 
     private AuthResponse ToAuthResponse(User user, string rawRefreshToken) =>
-        new(user.Id, user.Email, user.Role.ToString(), _tokenService.CreateToken(user), rawRefreshToken, user.EmailVerified);
+        new(user.Id, user.Email, user.Role.ToString(), _tokenService.CreateToken(user), rawRefreshToken,
+            user.EmailVerified, user.MustChangePassword);
 
     private static string Hash(string token) =>
         Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(token)));

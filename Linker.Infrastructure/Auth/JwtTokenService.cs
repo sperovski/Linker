@@ -29,7 +29,10 @@ public class JwtTokenService : ITokenService
             new Claim(ClaimTypes.Role, user.Role.ToString()),
             // Consumed by the VerifiedEmail authorization policy; refreshed
             // tokens pick up the new value after the user verifies.
-            new Claim("email_verified", user.EmailVerified ? "true" : "false")
+            new Claim("email_verified", user.EmailVerified ? "true" : "false"),
+            // Consumed by PasswordRotationMiddleware, which confines the session
+            // to changing the password while this is true.
+            new Claim("must_change_password", user.MustChangePassword ? "true" : "false")
         };
 
         var credentials = new SigningCredentials(

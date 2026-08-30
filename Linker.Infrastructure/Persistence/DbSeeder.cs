@@ -1,3 +1,4 @@
+using Linker.Application.Common.Validation;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +64,22 @@ public static class DbSeeder
         if (string.IsNullOrWhiteSpace(password))
         {
             return;
+        }
+
+        // Warned on every start, not only when the hash actually changes: the
+        // problem is the configured value, and it is at its most confusing
+        // precisely when the password already matches — sign in, get told to
+        // rotate, change it, and have this re-sync undo that on the next start.
+        // The password is still synced (a volume wipe would otherwise leave no
+        // way in), but the loop is said out loud.
+        var policyFailure = PasswordPolicy.Validate(password, PrimaryStudentEmail);
+        if (policyFailure is not null)
+        {
+            logger.LogWarning(
+                "Seed:StefanPassword does not meet the password policy ({Reason}) — {Email} will be " +
+                "required to change it at sign-in, and this re-sync will undo that change on the next " +
+                "start. Set a compliant Seed:StefanPassword (e.g. SEED_STEFAN_PASSWORD in .env).",
+                policyFailure, PrimaryStudentEmail);
         }
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == PrimaryStudentEmail, cancellationToken);

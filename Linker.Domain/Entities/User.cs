@@ -35,6 +35,19 @@ public class User
     /// <summary>When set and in the future, login is refused regardless of the password.</summary>
     public DateTime? LockoutEndUtc { get; set; }
 
+    /// <summary>
+    /// Set when a sign-in proves the account's password no longer meets
+    /// <c>PasswordPolicy</c> — an account created before the policy existed, or
+    /// under an older one. The account keeps working only far enough to choose a
+    /// new password; everything else is refused until it does.
+    ///
+    /// This is decided at login because that is the only moment the plaintext is
+    /// in hand: a stored bcrypt hash cannot be tested against the policy, so
+    /// flagging accounts wholesale would force a change on people whose password
+    /// was already fine.
+    /// </summary>
+    public bool MustChangePassword { get; set; }
+
     public Student? Student { get; set; }
     public Company? Company { get; set; }
 

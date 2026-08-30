@@ -11,6 +11,12 @@ export interface AuthResponse {
   token: string;
   refreshToken: string;
   emailVerified: boolean;
+  /**
+   * The account's password no longer meets the policy. The session is real but
+   * confined server-side: until a new password is set, the API refuses
+   * everything except reading the account and changing it.
+   */
+  mustChangePassword: boolean;
 }
 
 export interface NotificationItem {
@@ -399,4 +405,5 @@ export interface Account {
   /** A requested address awaiting confirmation; the login email hasn't moved yet. */
   pendingEmail: string | null;
   createdAtUtc: string;
+  mustChangePassword: boolean;
 }

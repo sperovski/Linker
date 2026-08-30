@@ -507,4 +507,95 @@ public class AuthServiceTests : IDisposable
             _service.RegisterStudentAsync(new RegisterStudentRequest("weak@test.local", "password", "A", "B", null, null)));
     }
 
+    // ---- Forced rotation of legacy passwords ------------------------------
+
+    /// <summary>
+    /// Stands in for an account created before the policy existed: the row is
+    /// written straight to the DB with a hash of a password registration would
+    /// now reject.
+    /// </summary>
+    private async Task<User> AddLegacyUserAsync(string email, string weakPassword)
+    {
+        var user = new User
+        {
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(weakPassword),
+            Role = Linker.Domain.Enums.UserRole.Student,
+            CreatedAtUtc = DateTime.UtcNow,
+            EmailVerified = true,
+            IsActive = true
+        };
+        _db.Context.Users.Add(user);
+        await _db.Context.SaveChangesAsync();
+        return user;
+    }
+
+    [Fact]
+    public async Task Login_WithAPasswordBelowThePolicy_FlagsTheAccountForRotation()
+    {
+        await AddLegacyUserAsync("legacy@test.local", "password");
+
+        var response = await _service.LoginAsync(new LoginRequest("legacy@test.local", "password"));
+
+        // The session is real — they need it to reach the change-password call —
+        // but confined; the middleware is what enforces that.
+        Assert.NotNull(response.Token);
+        Assert.True(response.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task Login_WithACompliantPassword_DoesNotFlagTheAccount()
+    {
+        await _service.RegisterStudentAsync(
+            new RegisterStudentRequest("fine@test.local", ValidPassword, "A", "B", null, null));
+
+        var response = await _service.LoginAsync(new LoginRequest("fine@test.local", ValidPassword));
+
+        // A hash can't be measured against the policy, so flagging wholesale
+        // would drag in accounts that were always fine. This one isn't touched.
+        Assert.False(response.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task ChangePassword_ClearsTheRotationFlag()
+    {
+        var legacy = await AddLegacyUserAsync("rotate@test.local", "password");
+        await _service.LoginAsync(new LoginRequest("rotate@test.local", "password"));
+
+        await _service.ChangePasswordAsync(legacy.Id, new ChangePasswordRequest("password", ValidPassword));
+
+        var relogin = await NewRequestScopedService().LoginAsync(
+            new LoginRequest("rotate@test.local", ValidPassword));
+        Assert.False(relogin.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task ResetPassword_AlsoClearsTheRotationFlag()
+    {
+        await AddLegacyUserAsync("rotate-reset@test.local", "password");
+        await _service.LoginAsync(new LoginRequest("rotate-reset@test.local", "password"));
+
+        _email.Sent.Clear();
+        await _service.ForgotPasswordAsync(new ForgotPasswordRequest("rotate-reset@test.local"));
+        var token = ExtractToken(_email.Sent[0].Body, "reset-password?token=");
+        await _service.ResetPasswordAsync(new ResetPasswordRequest(token, AnotherValidPassword));
+
+        // Someone locked out of a weak password must be able to escape via reset,
+        // not only via the signed-in change form.
+        var relogin = await NewRequestScopedService().LoginAsync(
+            new LoginRequest("rotate-reset@test.local", AnotherValidPassword));
+        Assert.False(relogin.MustChangePassword);
+    }
+
+    [Fact]
+    public async Task GetAccount_ReportsTheRotationRequirement()
+    {
+        var legacy = await AddLegacyUserAsync("acct@test.local", "password");
+        await _service.LoginAsync(new LoginRequest("acct@test.local", "password"));
+
+        var account = await _service.GetAccountAsync(legacy.Id);
+
+        Assert.True(account.MustChangePassword);
+    }
+
 }

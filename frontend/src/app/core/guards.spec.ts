@@ -7,20 +7,29 @@ import { authGuard, guestGuard, roleGuard, unsavedChangesGuard } from './guards'
 describe('route guards', () => {
   let loggedIn: boolean;
   let role: UserRole | null;
+  let mustChangePassword: boolean;
 
   const fakeAuth = {
     isLoggedIn: () => loggedIn,
     role: () => role,
+    mustChangePassword: () => mustChangePassword,
     homePath: () =>
-      role === 'Student' ? '/internships' : role === 'Company' ? '/company/dashboard' : '/',
+      mustChangePassword
+        ? '/settings'
+        : role === 'Student'
+          ? '/internships'
+          : role === 'Company'
+            ? '/company/dashboard'
+            : '/',
   };
 
-  // The guards ignore their route/state arguments.
+  // The guards ignore the route argument; state.url decides only whether a
+  // confined session is already on the page it is being sent to.
   const route = {} as ActivatedRouteSnapshot;
   const state = {} as RouterStateSnapshot;
 
-  function run(guard: typeof authGuard) {
-    return TestBed.runInInjectionContext(() => guard(route, state));
+  function run(guard: typeof authGuard, url = '/somewhere') {
+    return TestBed.runInInjectionContext(() => guard(route, { url } as RouterStateSnapshot));
   }
 
   function path(result: unknown): string {
@@ -31,6 +40,7 @@ describe('route guards', () => {
   beforeEach(() => {
     loggedIn = false;
     role = null;
+    mustChangePassword = false;
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthService, useValue: fakeAuth }],
     });
@@ -62,6 +72,31 @@ describe('route guards', () => {
       loggedIn = true;
       role = 'Company';
       expect(path(run(roleGuard('Student')))).toBe('/company/dashboard');
+    });
+  });
+
+  describe('forced password rotation', () => {
+    it('sends a confined session to /settings', () => {
+      loggedIn = true;
+      role = 'Student';
+      mustChangePassword = true;
+      expect(path(run(authGuard))).toBe('/settings');
+      expect(path(run(roleGuard('Student')))).toBe('/settings');
+    });
+
+    it('lets a confined session reach /settings itself', () => {
+      loggedIn = true;
+      role = 'Student';
+      mustChangePassword = true;
+      // Otherwise the redirect would loop on the one page that can fix it.
+      expect(run(authGuard, '/settings')).toBe(true);
+    });
+
+    it('takes precedence over the wrong-role redirect', () => {
+      loggedIn = true;
+      role = 'Company';
+      mustChangePassword = true;
+      expect(path(run(roleGuard('Student')))).toBe('/settings');
     });
   });
 

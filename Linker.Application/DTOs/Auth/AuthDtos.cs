@@ -40,7 +40,13 @@ public record AuthResponse(
     string Role,
     string Token,
     string RefreshToken,
-    bool EmailVerified);
+    bool EmailVerified,
+    /// <summary>
+    /// True when this account's password no longer meets the policy. The session
+    /// is real but confined: until a new password is set, the API refuses
+    /// everything except reading the account and changing it.
+    /// </summary>
+    bool MustChangePassword);
 
 /// <summary>
 /// Changing a password requires proving possession of the current one, so a
@@ -67,4 +73,5 @@ public record AccountResponse(
     string Role,
     bool EmailVerified,
     string? PendingEmail,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    bool MustChangePassword);
