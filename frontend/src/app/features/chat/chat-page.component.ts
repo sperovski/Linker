@@ -101,6 +101,7 @@ const PAGE_SIZE = 50;
           <app-chat-composer
             #composer
             [canPost]="canPost()"
+            [readOnlyReason]="readOnlyReason()"
             [disabled]="hub.status() !== 'connected' || sending()"
             (send)="sendMessage($event)"
           />
@@ -245,7 +246,20 @@ export class ChatPageComponent implements OnInit {
   protected readonly reporting = signal<ChatMessageResponse | null>(null);
 
   protected readonly currentUserId = computed(() => this.auth.session()?.userId ?? null);
-  protected readonly canPost = computed(() => this.auth.isStudent());
+  /**
+   * Students and companies post; admins moderate. An unverified address can read
+   * but not write, matching the server's rule — the composer would only produce
+   * a rejected send otherwise.
+   */
+  protected readonly canPost = computed(
+    () => (this.auth.isStudent() || this.auth.isCompany()) && this.auth.emailVerified(),
+  );
+
+  protected readonly readOnlyReason = computed(() => {
+    if (this.auth.isAdmin()) return 'Moderators can read and remove messages, but not post.';
+    if (!this.auth.emailVerified()) return 'Confirm your email address to post in the community.';
+    return 'You have read-only access to this room.';
+  });
 
   private page = 1;
 

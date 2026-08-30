@@ -98,6 +98,17 @@ export class AuthService {
   }
 
   logout(): void {
+    this.clearSession();
+    this.router.navigate(['/']);
+  }
+
+  /**
+   * Drops the local session without navigating. For flows that have already
+   * invalidated the session server-side and still need to render their own
+   * result page (confirming an email change, for one) — navigating away there
+   * would replace the outcome the user came to read.
+   */
+  clearSession(): void {
     const refreshToken = this.sessionSignal()?.refreshToken;
     localStorage.removeItem(STORAGE_KEY);
     this.sessionSignal.set(null);
@@ -105,7 +116,6 @@ export class AuthService {
       // Best-effort server-side revocation; the local session is already gone.
       this.http.post(`${this.baseUrl}/logout`, { refreshToken }).subscribe({ error: () => {} });
     }
-    this.router.navigate(['/']);
   }
 
   homePath(): string {

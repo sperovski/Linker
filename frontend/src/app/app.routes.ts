@@ -40,6 +40,23 @@ export const routes: Routes = [
     title: 'Choose a new password | Linker',
   },
   {
+    path: 'confirm-email-change',
+    loadComponent: () =>
+      import('./features/auth/confirm-email-change.component').then(
+        (m) => m.ConfirmEmailChangeComponent,
+      ),
+    title: 'Confirm email change | Linker',
+  },
+  {
+    // Credentials live on the user account, not on either profile, so one
+    // settings page serves students and companies alike.
+    path: 'settings',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/account-settings.component').then((m) => m.AccountSettingsComponent),
+    title: 'Security settings | Linker',
+  },
+  {
     path: 'admin',
     canActivate: [roleGuard('Admin')],
     loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),

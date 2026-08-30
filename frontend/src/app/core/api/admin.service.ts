@@ -2,7 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AdminInternship, AdminStats, AdminUser, PagedResponse, SkillResponse } from '../models';
+import {
+  AdminCompany,
+  AdminInternship,
+  AdminStats,
+  AdminUser,
+  PagedResponse,
+  SkillResponse,
+} from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -31,6 +38,16 @@ export class AdminService {
 
   closeInternship(id: number): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/internships/${id}/close`, {});
+  }
+
+  getCompanies(page = 1, pageSize = 20): Observable<PagedResponse<AdminCompany>> {
+    return this.http.get<PagedResponse<AdminCompany>>(`${this.baseUrl}/companies`, {
+      params: { page, pageSize },
+    });
+  }
+
+  setCompanyVerified(id: number, isVerified: boolean): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/companies/${id}/verified`, { isVerified });
   }
 
   createSkill(name: string): Observable<SkillResponse> {

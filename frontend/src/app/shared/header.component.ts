@@ -147,6 +147,9 @@ interface NavLink {
                 <a role="menuitem" class="menu-item" [routerLink]="profilePath">
                   <app-icon name="user" [size]="15" /> Profile
                 </a>
+                <a role="menuitem" class="menu-item" routerLink="/settings">
+                  <app-icon name="lock" [size]="15" /> Security settings
+                </a>
                 <button role="menuitem" type="button" class="menu-item danger" (click)="logout()">
                   <app-icon name="log-out" [size]="15" /> Log out
                 </button>
@@ -695,7 +698,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     return letters.toUpperCase();
   });
 
-  /** No dedicated settings route exists; both items point at the profile page. */
+  /** Profile is role-specific; /settings (credentials) is shared by both roles. */
   protected readonly profilePath = this.auth.isCompany() ? '/company/profile' : '/profile';
 
   protected readonly bellLabel = computed(() => {

@@ -10,13 +10,23 @@ import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { SelectComponent } from '../../shared/select.component';
 import { DotFieldComponent } from '../../shared/dot-field.component';
+import { PasswordStrengthComponent } from '../../shared/password-strength.component';
+import { strongPasswordValidator } from '../../shared/password-policy';
 
 type RegisterRole = 'student' | 'company';
 
 @Component({
   selector: 'app-register',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, IconComponent, LinkButtonComponent, SelectComponent, DotFieldComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    IconComponent,
+    LinkButtonComponent,
+    SelectComponent,
+    DotFieldComponent,
+    PasswordStrengthComponent,
+  ],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -136,8 +146,9 @@ type RegisterRole = 'student' | 'company';
                   <input id="sPassword" type="password" class="input" formControlName="password"
                   autocomplete="new-password" [class.invalid]="invalid(studentForm, 'password')" />
                 </div>
+                <app-password-strength [password]="studentForm.controls.password.value" />
                 @if (invalid(studentForm, 'password')) {
-                  <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
+                  <div class="field-error" @fadeSlideIn>{{ passwordError(studentForm) }}</div>
                 }
               </div>
             </div>
@@ -199,8 +210,9 @@ type RegisterRole = 'student' | 'company';
                   <input id="cPassword" type="password" class="input" formControlName="password"
                   autocomplete="new-password" [class.invalid]="invalid(companyForm, 'password')" />
                 </div>
+                <app-password-strength [password]="companyForm.controls.password.value" />
                 @if (invalid(companyForm, 'password')) {
-                  <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
+                  <div class="field-error" @fadeSlideIn>{{ passwordError(companyForm) }}</div>
                 }
               </div>
             </div>
@@ -234,6 +246,19 @@ export class RegisterComponent implements OnInit {
 
   private readonly currentYear = new Date().getFullYear();
 
+  /**
+   * Late-bound email readers for the password validator. Annotated and assigned
+   * in the constructor because a closure that reaches into the form it is being
+   * declared on would make the form's own type circular.
+   */
+  private studentEmail: () => string | null = () => null;
+  private companyEmail: () => string | null = () => null;
+
+  constructor() {
+    this.studentEmail = () => this.studentForm.controls.email.value;
+    this.companyEmail = () => this.companyForm.controls.email.value;
+  }
+
   protected readonly facultyOptions = facultyOptions();
   protected readonly gradYearOptions = gradYearOptions();
 
@@ -241,7 +266,12 @@ export class RegisterComponent implements OnInit {
     firstName: ['', Validators.required],
     lastName: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: [
+      '',
+      // The email getter feeds the "don't put your address in your password"
+      // rule, which the server applies too.
+      [Validators.required, strongPasswordValidator(() => this.studentEmail())],
+    ],
     university: [''],
     // Students can't have already graduated — floor the year at the present.
     graduationYear: [null as number | null, [Validators.min(this.currentYear), Validators.max(2100)]],
@@ -263,7 +293,7 @@ export class RegisterComponent implements OnInit {
   protected readonly companyForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, strongPasswordValidator(() => this.companyEmail())]],
     website: [''],
     description: [''],
   });
@@ -272,6 +302,13 @@ export class RegisterComponent implements OnInit {
     if (this.as() === 'company') {
       this.mode.set('company');
     }
+  }
+
+  /** Surfaces the specific policy failure rather than a generic "invalid". */
+  protected passwordError(form: FormGroup): string {
+    const errors = form.get('password')?.errors;
+    if (errors?.['strongPassword']) return errors['strongPassword'] as string;
+    return 'Choose a password.';
   }
 
   protected invalid(form: FormGroup, control: string): boolean {

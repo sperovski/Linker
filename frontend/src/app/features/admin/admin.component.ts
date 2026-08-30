@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../core/api/admin.service';
-import { AdminInternship, AdminStats, AdminUser } from '../../core/models';
+import { AdminCompany, AdminInternship, AdminStats, AdminUser } from '../../core/models';
 import { AuthService } from '../../core/auth.service';
 import { ToastService } from '../../core/toast.service';
 import { apiErrorMessage } from '../../shared/api-error';
@@ -10,7 +10,7 @@ import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { formatDate } from '../../shared/dates';
 
-type AdminTab = 'users' | 'internships' | 'skills';
+type AdminTab = 'users' | 'companies' | 'internships' | 'skills';
 
 @Component({
   selector: 'app-admin',
@@ -59,7 +59,7 @@ type AdminTab = 'users' | 'internships' | 'skills';
               [attr.aria-selected]="tab() === t"
               (click)="tab.set(t)"
             >
-              {{ t === 'users' ? 'Users' : t === 'internships' ? 'Listings' : 'Skills' }}
+              {{ tabLabel(t) }}
             </button>
           }
         </div>
@@ -111,6 +111,61 @@ type AdminTab = 'users' | 'internships' | 'skills';
                 <div class="load-more">
                   <app-link-button size="sm" variant="standard-secondary" (pressed)="loadMoreUsers()">
                     Load more ({{ users().length }} of {{ usersTotal() }})
+                  </app-link-button>
+                </div>
+              }
+            </div>
+          }
+          @case ('companies') {
+            <div class="card table-card">
+              <p class="tab-note">
+                Verifying a company puts a badge on every message it posts in the community
+                chat &mdash; it is Linker vouching that the account belongs to the employer it
+                names. A company must confirm its email address before it can be verified.
+              </p>
+              <div class="t-scroll">
+                <table>
+                  <thead>
+                    <tr><th>Company</th><th>Contact</th><th>Listings</th><th>Email</th><th>Verified</th><th>Joined</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    @for (c of companies(); track c.id) {
+                      <tr>
+                        <td>{{ c.name }}</td>
+                        <td class="mono">{{ c.email }}</td>
+                        <td class="soft">{{ c.listingCount }}</td>
+                        <td>
+                          @if (c.emailVerified) {
+                            <app-icon name="check" [size]="15" class="ok" />
+                          } @else {
+                            <span class="soft">—</span>
+                          }
+                        </td>
+                        <td>
+                          <span class="badge" [class.badge-open]="c.isVerified" [class.badge-closed]="!c.isVerified">
+                            {{ c.isVerified ? 'Verified' : 'Unverified' }}
+                          </span>
+                        </td>
+                        <td class="soft">{{ formatDate(c.createdAtUtc) }}</td>
+                        <td class="right">
+                          <app-link-button
+                            size="sm"
+                            [variant]="c.isVerified ? 'standard-secondary' : 'standard'"
+                            [disabled]="busyId() === c.id || (!c.isVerified && !c.emailVerified)"
+                            (pressed)="toggleVerified(c)"
+                          >
+                            {{ c.isVerified ? 'Revoke' : 'Verify' }}
+                          </app-link-button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (companies().length < companiesTotal()) {
+                <div class="load-more">
+                  <app-link-button size="sm" variant="standard-secondary" (pressed)="loadMoreCompanies()">
+                    Load more ({{ companies().length }} of {{ companiesTotal() }})
                   </app-link-button>
                 </div>
               }
@@ -219,6 +274,15 @@ type AdminTab = 'users' | 'internships' | 'skills';
       .tab.active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
 
       .table-card { padding: 0; overflow: hidden; }
+
+      .tab-note {
+        margin: 0;
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--color-border);
+        color: var(--color-text-soft);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+      }
       .t-scroll { overflow-x: auto; }
       .load-more {
         display: flex;
@@ -256,15 +320,18 @@ export class AdminComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly formatDate = formatDate;
 
-  protected readonly tabs: AdminTab[] = ['users', 'internships', 'skills'];
+  protected readonly tabs: AdminTab[] = ['users', 'companies', 'internships', 'skills'];
   protected readonly tab = signal<AdminTab>('users');
 
   protected readonly stats = signal<AdminStats | null>(null);
   protected readonly users = signal<AdminUser[]>([]);
   protected readonly usersTotal = signal(0);
+  protected readonly companies = signal<AdminCompany[]>([]);
+  protected readonly companiesTotal = signal(0);
   protected readonly listings = signal<AdminInternship[]>([]);
   protected readonly listingsTotal = signal(0);
   private usersPage = 1;
+  private companiesPage = 1;
   private listingsPage = 1;
   protected readonly loading = signal(true);
   protected readonly loadError = signal(false);
@@ -287,11 +354,19 @@ export class AdminComponent implements OnInit {
       },
     });
     this.usersPage = 1;
+    this.companiesPage = 1;
     this.listingsPage = 1;
     this.admin.getUsers(1).subscribe({
       next: (page) => {
         this.users.set(page.items);
         this.usersTotal.set(page.total);
+      },
+      error: () => {},
+    });
+    this.admin.getCompanies(1).subscribe({
+      next: (page) => {
+        this.companies.set(page.items);
+        this.companiesTotal.set(page.total);
       },
       error: () => {},
     });
@@ -301,6 +376,44 @@ export class AdminComponent implements OnInit {
         this.listingsTotal.set(page.total);
       },
       error: () => {},
+    });
+  }
+
+  protected tabLabel(tab: AdminTab): string {
+    switch (tab) {
+      case 'users': return 'Users';
+      case 'companies': return 'Companies';
+      case 'internships': return 'Listings';
+      case 'skills': return 'Skills';
+    }
+  }
+
+  protected loadMoreCompanies(): void {
+    this.admin.getCompanies(this.companiesPage + 1).subscribe({
+      next: (page) => {
+        this.companiesPage = page.page;
+        this.companies.update((list) => [...list, ...page.items]);
+        this.companiesTotal.set(page.total);
+      },
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Could not load more companies.')),
+    });
+  }
+
+  protected toggleVerified(company: AdminCompany): void {
+    const next = !company.isVerified;
+    this.busyId.set(company.id);
+    this.admin.setCompanyVerified(company.id, next).subscribe({
+      next: () => {
+        this.companies.update((list) =>
+          list.map((c) => (c.id === company.id ? { ...c, isVerified: next } : c)),
+        );
+        this.busyId.set(null);
+        this.toast.success(next ? `${company.name} verified` : `${company.name} verification revoked`);
+      },
+      error: (err) => {
+        this.busyId.set(null);
+        this.toast.error(apiErrorMessage(err, 'Could not update the company.'));
+      },
     });
   }
 

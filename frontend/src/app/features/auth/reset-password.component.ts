@@ -8,11 +8,20 @@ import { fadeSlideIn } from '../../shared/animations';
 import { IconComponent } from '../../shared/icon.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 import { BgDecorComponent } from '../../shared/bg-decor.component';
+import { PasswordStrengthComponent } from '../../shared/password-strength.component';
+import { strongPasswordValidator } from '../../shared/password-policy';
 
 @Component({
   selector: 'app-reset-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, LinkButtonComponent, IconComponent, BgDecorComponent],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    LinkButtonComponent,
+    IconComponent,
+    BgDecorComponent,
+    PasswordStrengthComponent,
+  ],
   animations: [fadeSlideIn],
   styleUrl: './auth-card.css',
   template: `
@@ -34,8 +43,9 @@ import { BgDecorComponent } from '../../shared/bg-decor.component';
               <input id="password" type="password" class="input" formControlName="password"
               autocomplete="new-password" [class.invalid]="showError('password')" />
             </div>
+            <app-password-strength [password]="form.controls.password.value" />
             @if (showError('password')) {
-              <div class="field-error" @fadeSlideIn>At least 8 characters.</div>
+              <div class="field-error" @fadeSlideIn>{{ passwordError() }}</div>
             }
           </div>
 
@@ -75,7 +85,7 @@ export class ResetPasswordComponent implements OnInit {
   protected readonly serverError = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, strongPasswordValidator()]],
     confirm: ['', Validators.required],
   });
 
@@ -83,6 +93,13 @@ export class ResetPasswordComponent implements OnInit {
     if (!this.token()) {
       this.serverError.set('This reset link is missing its token. Request a new one.');
     }
+  }
+
+  /** Surfaces the specific policy failure rather than a generic "invalid". */
+  protected passwordError(): string {
+    const errors = this.form.controls.password.errors;
+    if (errors?.['strongPassword']) return errors['strongPassword'] as string;
+    return 'Choose a password.';
   }
 
   protected showError(control: 'password' | 'confirm'): boolean {

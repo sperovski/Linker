@@ -39,7 +39,7 @@ const MAX_LENGTH = 2000;
         </div>
       </form>
     } @else {
-      <div class="readonly-bar">You have read-only access to this room.</div>
+      <div class="readonly-bar">{{ readOnlyReason() }}</div>
     }
   `,
   styles: [
@@ -118,6 +118,8 @@ const MAX_LENGTH = 2000;
 })
 export class ChatComposerComponent {
   readonly canPost = input.required<boolean>();
+  /** Why the composer is hidden — an accurate reason beats a generic one the reader can't act on. */
+  readonly readOnlyReason = input('You have read-only access to this room.');
   readonly disabled = input(false);
   readonly send = output<string>();
 

@@ -8,12 +8,20 @@ import { fadeSlideIn } from '../../shared/animations';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
+import { CompanyBadgeComponent } from '../../shared/company-badge.component';
 import { LinkButtonComponent } from '../../shared/link-button.component';
 
 @Component({
   selector: 'app-company-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, EmptyStateComponent, IconComponent, CompanyLogoComponent, LinkButtonComponent],
+  imports: [
+    ReactiveFormsModule,
+    EmptyStateComponent,
+    IconComponent,
+    CompanyLogoComponent,
+    CompanyBadgeComponent,
+    LinkButtonComponent,
+  ],
   animations: [fadeSlideIn],
   template: `
     <div class="container page narrow">
@@ -42,7 +50,12 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
           <div class="profile-head">
             <app-company-logo [name]="profile()?.name ?? '?'" [size]="56" />
             <div>
-              <h2>{{ profile()?.name }}</h2>
+              <div class="name-row">
+                <h2>{{ profile()?.name }}</h2>
+                @if (profile(); as p) {
+                  <app-company-badge [verified]="p.isVerified" [companyName]="p.name" />
+                }
+              </div>
               @if (profile()?.website; as website) {
                 <a [href]="website" target="_blank" rel="noopener" class="website-link">
                   <app-icon name="external-link" [size]="13" />
@@ -51,6 +64,27 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
               }
             </div>
           </div>
+
+          @if (profile(); as p) {
+            @if (p.isVerified) {
+              <div class="verify-note ok">
+                <app-icon name="check" [size]="15" />
+                <span>
+                  Your company is verified. Students see a verified badge next to your name in
+                  the community chat and on your listings.
+                </span>
+              </div>
+            } @else {
+              <div class="verify-note pending">
+                <app-icon name="clock" [size]="15" />
+                <span>
+                  Not verified yet. You can still post listings and chat, but your messages show
+                  as an unverified company until a Linker admin confirms this account. Confirm
+                  your email address first &mdash; verification can't be granted without it.
+                </span>
+              </div>
+            }
+          }
 
           <div class="field">
             <label class="label" for="name">Company name</label>
@@ -92,6 +126,36 @@ import { LinkButtonComponent } from '../../shared/link-button.component';
       }
 
       .profile-head h2 { margin: 0; font-size: 1.25rem; }
+
+      .name-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+        flex-wrap: wrap;
+      }
+
+      .verify-note {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        border-radius: var(--radius-md);
+        padding: 10px 12px;
+        margin-bottom: var(--space-lg);
+        font-size: 0.8125rem;
+        line-height: 1.5;
+      }
+
+      .verify-note.ok {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+      }
+
+      .verify-note.pending {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+      }
 
       .website-link {
         display: inline-flex;

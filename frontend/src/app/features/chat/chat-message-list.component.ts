@@ -12,6 +12,7 @@ import { ChatMessageResponse } from '../../core/models';
 import { CompanyLogoComponent } from '../../shared/company-logo.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
 import { IconComponent } from '../../shared/icon.component';
+import { CompanyBadgeComponent } from '../../shared/company-badge.component';
 import { relativeTime } from '../../shared/dates';
 
 /**
@@ -22,7 +23,7 @@ import { relativeTime } from '../../shared/dates';
 @Component({
   selector: 'app-chat-message-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CompanyLogoComponent, EmptyStateComponent, IconComponent],
+  imports: [CompanyLogoComponent, EmptyStateComponent, IconComponent, CompanyBadgeComponent],
   template: `
     <div class="scroll" #scroll (scroll)="onScroll()">
       @if (hasMore()) {
@@ -49,6 +50,12 @@ import { relativeTime } from '../../shared/dates';
           <div class="bubble-wrap">
             <div class="meta">
               <span class="sender">{{ message.senderId === currentUserId() ? 'You' : message.senderName }}</span>
+              @if (message.senderRole === 'Company') {
+                <app-company-badge
+                  [verified]="message.isVerifiedCompany"
+                  [companyName]="message.senderCompanyName"
+                />
+              }
               <span class="time">{{ stamp(message.createdAt) }}</span>
             </div>
             <div class="bubble">{{ message.body }}</div>

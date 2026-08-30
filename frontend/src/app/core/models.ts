@@ -43,6 +43,18 @@ export interface AdminInternship {
   createdAtUtc: string;
 }
 
+export interface AdminCompany {
+  id: number;
+  name: string;
+  email: string;
+  website: string | null;
+  isVerified: boolean;
+  emailVerified: boolean;
+  isActive: boolean;
+  listingCount: number;
+  createdAtUtc: string;
+}
+
 export interface AdminStats {
   totalUsers: number;
   students: number;
@@ -176,6 +188,8 @@ export interface CompanyProfile {
   name: string;
   description: string | null;
   website: string | null;
+  /** Admin-granted; read-only here — updating the profile never changes it. */
+  isVerified: boolean;
 }
 
 export interface UpdateCompanyProfileRequest {
@@ -364,4 +378,23 @@ export interface ChatMessageResponse {
   senderName: string;
   body: string;
   createdAt: string;
+  /**
+   * Badge fields, all derived server-side from the sender's account. The UI
+   * renders them as-is and never infers a company from a display name — that
+   * distinction is exactly what the badge exists to make trustworthy.
+   */
+  senderRole: UserRole;
+  senderCompanyName: string | null;
+  isVerifiedCompany: boolean;
+}
+
+/** The signed-in account as its owner sees it, for the settings page. */
+export interface Account {
+  userId: number;
+  email: string;
+  role: UserRole;
+  emailVerified: boolean;
+  /** A requested address awaiting confirmation; the login email hasn't moved yet. */
+  pendingEmail: string | null;
+  createdAtUtc: string;
 }
