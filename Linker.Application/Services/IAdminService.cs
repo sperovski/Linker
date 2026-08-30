@@ -11,5 +11,10 @@ public interface IAdminService
     Task SetUserActiveAsync(int actingUserId, int userId, bool isActive, CancellationToken cancellationToken = default);
     Task<PagedResponse<AdminInternshipResponse>> ListInternshipsAsync(int page, int pageSize, CancellationToken cancellationToken = default);
     Task CloseInternshipAsync(int internshipId, CancellationToken cancellationToken = default);
+    Task<PagedResponse<AdminCompanyResponse>> ListCompaniesAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+
+    /// <summary>Grants or revokes a company's verified badge. Admin-only by design.</summary>
+    Task SetCompanyVerifiedAsync(int companyId, bool isVerified, CancellationToken cancellationToken = default);
+
     Task<SkillResponse> CreateSkillAsync(CreateSkillRequest request, CancellationToken cancellationToken = default);
 }

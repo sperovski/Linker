@@ -43,7 +43,7 @@ public class AdminAuthorizationTests : IClassFixture<LinkerApiFactory>
         var register = await client.PostAsJsonAsync("/api/auth/register/student", new
         {
             email = $"adm-{Guid.NewGuid():N}@test.local",
-            password = "password123",
+            password = "Fixture-Pass-1",
             firstName = "Not",
             lastName = "Admin"
         });

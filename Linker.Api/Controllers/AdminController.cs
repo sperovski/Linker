@@ -64,6 +64,26 @@ public class AdminController : ApiControllerBase
         return NoContent();
     }
 
+    [HttpGet("companies")]
+    [ProducesResponseType(typeof(PagedResponse<AdminCompanyResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<AdminCompanyResponse>>> GetCompanies(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await _adminService.ListCompaniesAsync(page, pageSize, cancellationToken));
+    }
+
+    [HttpPost("companies/{id:int}/verified")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetCompanyVerified(int id, SetCompanyVerifiedRequest request, CancellationToken cancellationToken)
+    {
+        await _adminService.SetCompanyVerifiedAsync(id, request.IsVerified, cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("skills")]
     [ProducesResponseType(typeof(SkillResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]

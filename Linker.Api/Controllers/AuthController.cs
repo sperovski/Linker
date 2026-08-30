@@ -1,5 +1,6 @@
 using Linker.Application.DTOs.Auth;
 using Linker.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -92,6 +93,48 @@ public class AuthController : ApiControllerBase
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
         await _authService.ResetPasswordAsync(request, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>The signed-in account, for the settings page.</summary>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(AccountResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AccountResponse>> Me(CancellationToken cancellationToken)
+    {
+        return Ok(await _authService.GetAccountAsync(CurrentUserId, cancellationToken));
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ChangePasswordAsync(CurrentUserId, request, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("change-email")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ChangeEmail(ChangeEmailRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ChangeEmailAsync(CurrentUserId, request, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("confirm-email-change")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ConfirmEmailChange(ConfirmEmailChangeRequest request, CancellationToken cancellationToken)
+    {
+        await _authService.ConfirmEmailChangeAsync(request, cancellationToken);
         return NoContent();
     }
 }

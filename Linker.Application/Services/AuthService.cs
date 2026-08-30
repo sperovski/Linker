@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Linker.Application.Common.Exceptions;
 using Linker.Application.Common.Interfaces;
+using Linker.Application.Common.Validation;
 using Linker.Application.DTOs.Auth;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
@@ -94,9 +95,30 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
+        var now = DateTime.UtcNow;
         var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
-        if (user is null || !PasswordMatches(request.Password, user.PasswordHash))
+
+        // Unknown address: answer exactly as we do for a wrong password, so login
+        // can't be used to test whether an email is registered.
+        if (user is null)
         {
+            throw new AuthenticationFailedException("Invalid email or password.");
+        }
+
+        // Checked before the password so a locked account cannot be probed for a
+        // correct guess during the lockout window.
+        if (user.IsLockedOut(now))
+        {
+            var minutes = Math.Max(1, (int)Math.Ceiling((user.LockoutEndUtc!.Value - now).TotalMinutes));
+            throw new AuthenticationFailedException(
+                $"Too many failed sign-in attempts. Try again in {minutes} minute{(minutes == 1 ? "" : "s")}, or reset your password.");
+        }
+
+        if (!PasswordMatches(request.Password, user.PasswordHash))
+        {
+            user.RegisterFailedLogin(now);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             throw new AuthenticationFailedException("Invalid email or password.");
         }
 
@@ -104,6 +126,9 @@ public class AuthService : IAuthService
         {
             throw new AuthenticationFailedException("This account has been disabled. Contact support if you think this is a mistake.");
         }
+
+        user.RegisterSuccessfulLogin();
+        _userRepository.Update(user);
 
         var rawRefreshToken = StageRefreshToken(user);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -213,11 +238,148 @@ public class AuthService : IAuthService
             throw new BadRequestException("This reset link is invalid or has expired.");
         }
 
+        // Re-checked here against the account's own email — the DTO attribute
+        // can't see it, and "password contains your address" is a real rule.
+        EnsurePasswordMeetsPolicy(request.NewPassword, token.User.Email);
+
         token.UsedAtUtc = DateTime.UtcNow;
         token.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        // Completing a reset from the inbox proves ownership, so it also lifts a
+        // brute-force lockout — otherwise the real owner stays shut out by the
+        // attacker's failed guesses.
+        token.User.RegisterSuccessfulLogin();
         // A password change invalidates all existing sessions.
         await _refreshTokenRepository.RevokeAllForUserAsync(token.UserId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User", userId);
+
+        if (!PasswordMatches(request.CurrentPassword, user.PasswordHash))
+        {
+            throw new AuthenticationFailedException("Your current password is incorrect.");
+        }
+
+        EnsurePasswordMeetsPolicy(request.NewPassword, user.Email);
+
+        if (PasswordMatches(request.NewPassword, user.PasswordHash))
+        {
+            throw new BadRequestException("Your new password must be different from your current one.");
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.RegisterSuccessfulLogin();
+        _userRepository.Update(user);
+
+        // Every other session dies with the old password: if the change was
+        // prompted by a suspected compromise, it actually evicts the intruder.
+        await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _emailSender.SendAsync(user.Email, "Your Linker password was changed",
+            "<p>The password on your Linker account was just changed, and every signed-in device was signed out.</p>" +
+            "<p>If this wasn't you, reset your password immediately and contact support.</p>",
+            cancellationToken);
+    }
+
+    public async Task ChangeEmailAsync(int userId, ChangeEmailRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User", userId);
+
+        if (!PasswordMatches(request.CurrentPassword, user.PasswordHash))
+        {
+            throw new AuthenticationFailedException("Your current password is incorrect.");
+        }
+
+        var newEmail = request.NewEmail.Trim();
+        if (string.Equals(newEmail, user.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BadRequestException("That is already your email address.");
+        }
+
+        if (await _userRepository.EmailExistsAsync(newEmail, cancellationToken))
+        {
+            throw new ConflictException($"An account with email '{newEmail}' already exists.");
+        }
+
+        // Staged, not applied: the login identity only moves in ConfirmEmailChangeAsync,
+        // once the link sent to the new address comes back.
+        user.PendingEmail = newEmail;
+        _userRepository.Update(user);
+        await _userTokenRepository.InvalidateExistingAsync(user.Id, UserTokenPurpose.EmailChange, cancellationToken);
+        var raw = StageUserToken(user, UserTokenPurpose.EmailChange, _verificationTokenHours);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var link = $"{_appBaseUrl}/confirm-email-change?token={Uri.EscapeDataString(raw)}";
+        await _emailSender.SendAsync(newEmail, "Confirm your new Linker email",
+            "<p>Confirm this address to make it the email you sign in with:</p>" +
+            $"<p><a href=\"{link}\">Confirm this address</a></p>" +
+            $"<p>This link expires in {_verificationTokenHours} hours. Until you use it, your old address keeps working.</p>",
+            cancellationToken);
+
+        // The old address is told too, so a hijacked session can't move the
+        // account silently.
+        await _emailSender.SendAsync(user.Email, "An email change was requested",
+            $"<p>Someone requested changing your Linker sign-in email to <strong>{newEmail}</strong>.</p>" +
+            "<p>If this wasn't you, change your password now — your current address is still in effect until the new one is confirmed.</p>",
+            cancellationToken);
+    }
+
+    public async Task ConfirmEmailChangeAsync(ConfirmEmailChangeRequest request, CancellationToken cancellationToken = default)
+    {
+        var token = await _userTokenRepository.GetUsableAsync(Hash(request.Token), UserTokenPurpose.EmailChange, cancellationToken);
+        if (token is null || !token.IsUsable)
+        {
+            throw new BadRequestException("This confirmation link is invalid or has expired.");
+        }
+
+        var user = token.User;
+        var pending = user.PendingEmail;
+        if (string.IsNullOrWhiteSpace(pending))
+        {
+            throw new BadRequestException("There is no pending email change on this account.");
+        }
+
+        // Re-checked at confirmation time: another account may have claimed the
+        // address in the window between request and click.
+        if (await _userRepository.EmailExistsAsync(pending, cancellationToken))
+        {
+            throw new ConflictException($"An account with email '{pending}' already exists.");
+        }
+
+        token.UsedAtUtc = DateTime.UtcNow;
+        user.Email = pending;
+        user.PendingEmail = null;
+        // The address was just proven; carrying the old verified flag over would
+        // be wrong, but so would resetting it — this click *is* the verification.
+        user.EmailVerified = true;
+        _userRepository.Update(user);
+
+        // The identity in every issued token is now stale.
+        await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<AccountResponse> GetAccountAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw new NotFoundException("User", userId);
+
+        return new AccountResponse(
+            user.Id, user.Email, user.Role.ToString(), user.EmailVerified, user.PendingEmail, user.CreatedAtUtc);
+    }
+
+    private static void EnsurePasswordMeetsPolicy(string password, string email)
+    {
+        var failure = PasswordPolicy.Validate(password, email);
+        if (failure is not null)
+        {
+            throw new BadRequestException(failure);
+        }
     }
 
     private async Task<User> BuildUserAsync(string email, string password, UserRole role, CancellationToken cancellationToken)
@@ -226,6 +388,8 @@ public class AuthService : IAuthService
         {
             throw new ConflictException($"An account with email '{email}' already exists.");
         }
+
+        EnsurePasswordMeetsPolicy(password, email);
 
         var user = new User
         {

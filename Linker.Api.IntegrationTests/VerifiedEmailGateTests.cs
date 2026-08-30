@@ -35,13 +35,13 @@ public class VerifiedEmailGateTests : IClassFixture<VerifiedGateApiFactory>
         // Company account, force-verified straight in the DB so it can post.
         var coEmail = $"gate-co-{Guid.NewGuid():N}@test.local";
         var co = await (await client.PostAsJsonAsync("/api/auth/register/company",
-            new { email = coEmail, password = "password123", name = "Gate Co" }))
+            new { email = coEmail, password = "Fixture-Pass-1", name = "Gate Co" }))
             .Content.ReadFromJsonAsync<AuthBody>();
         await MarkVerifiedInDb(coEmail);
 
         // Re-login so the company token carries email_verified=true.
         var coLogin = await (await client.PostAsJsonAsync("/api/auth/login",
-            new { email = coEmail, password = "password123" })).Content.ReadFromJsonAsync<AuthBody>();
+            new { email = coEmail, password = "Fixture-Pass-1" })).Content.ReadFromJsonAsync<AuthBody>();
         var coClient = _factory.CreateClient();
         coClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", coLogin!.token);
         var listing = await (await coClient.PostAsJsonAsync("/api/internships", new
@@ -55,7 +55,7 @@ public class VerifiedEmailGateTests : IClassFixture<VerifiedGateApiFactory>
         // Fresh student: unverified, apply must be forbidden.
         var stEmail = $"gate-st-{Guid.NewGuid():N}@test.local";
         var st = await (await client.PostAsJsonAsync("/api/auth/register/student",
-            new { email = stEmail, password = "password123", firstName = "Gate", lastName = "Student" }))
+            new { email = stEmail, password = "Fixture-Pass-1", firstName = "Gate", lastName = "Student" }))
             .Content.ReadFromJsonAsync<AuthBody>();
         Assert.False(st!.emailVerified);
 

@@ -62,11 +62,13 @@ public sealed class TestDb : IDisposable
         return student;
     }
 
-    public Company AddCompany(string email = "company@test.local", string name = "Test Co")
+    public Company AddCompany(string email = "company@test.local", string name = "Test Co", bool isVerified = false)
     {
         var company = new Company
         {
             Name = name,
+            IsVerified = isVerified,
+            VerifiedAtUtc = isVerified ? DateTime.UtcNow : null,
             User = new User
             {
                 Email = email,

@@ -20,6 +20,11 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(c => c.Website)
             .HasMaxLength(500);
 
+        // Verification is admin-granted; false for every row that predates it.
+        builder.Property(c => c.IsVerified)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // One profile per user account.
         builder.HasIndex(c => c.UserId)
             .IsUnique();

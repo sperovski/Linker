@@ -83,7 +83,8 @@ public static class EntityMappings
             company.UserId,
             company.Name,
             company.Description,
-            company.Website);
+            company.Website,
+            company.IsVerified);
 
     public static InternshipListItemResponse ToListItemResponse(
         this Internship internship,

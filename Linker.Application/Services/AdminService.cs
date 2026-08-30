@@ -12,17 +12,20 @@ public class AdminService : IAdminService
 {
     private readonly IUserRepository _userRepository;
     private readonly IInternshipRepository _internshipRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly ISkillRepository _skillRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public AdminService(
         IUserRepository userRepository,
         IInternshipRepository internshipRepository,
+        ICompanyRepository companyRepository,
         ISkillRepository skillRepository,
         IUnitOfWork unitOfWork)
     {
         _userRepository = userRepository;
         _internshipRepository = internshipRepository;
+        _companyRepository = companyRepository;
         _skillRepository = skillRepository;
         _unitOfWork = unitOfWork;
     }
@@ -87,6 +90,52 @@ public class AdminService : IAdminService
         // Soft close (preserves applications/history) rather than a hard delete.
         internship.IsActive = false;
         _internshipRepository.Update(internship);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<PagedResponse<AdminCompanyResponse>> ListCompaniesAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        (page, pageSize) = Paging.Normalize(page, pageSize);
+        var (companies, total) = await _companyRepository.ListPagedWithUserAsync(page, pageSize, cancellationToken);
+
+        var items = companies
+            .Select(c => new AdminCompanyResponse(
+                c.Id,
+                c.Name,
+                c.User.Email,
+                c.Website,
+                c.IsVerified,
+                c.User.EmailVerified,
+                c.User.IsActive,
+                c.Internships.Count,
+                c.User.CreatedAtUtc))
+            .ToList();
+
+        return new PagedResponse<AdminCompanyResponse>(items, total, page, pageSize);
+    }
+
+    /// <summary>
+    /// Grants or revokes the badge students see in chat. Deliberately admin-only
+    /// and separate from the company's own profile update, so a company can never
+    /// verify itself by editing its profile.
+    /// </summary>
+    public async Task SetCompanyVerifiedAsync(int companyId, bool isVerified, CancellationToken cancellationToken = default)
+    {
+        // With the user loaded: the email-verified precondition below reads the
+        // account row, which a plain GetByIdAsync would leave null.
+        var company = await _companyRepository.GetByIdWithUserAsync(companyId, cancellationToken)
+            ?? throw new NotFoundException("Company", companyId);
+
+        // A company with no confirmed email address hasn't proven anything yet;
+        // badging it would put our word behind an unowned inbox.
+        if (isVerified && !company.User.EmailVerified)
+        {
+            throw new BadRequestException("This company must confirm its email address before it can be verified.");
+        }
+
+        company.IsVerified = isVerified;
+        company.VerifiedAtUtc = isVerified ? DateTime.UtcNow : null;
+        _companyRepository.Update(company);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 

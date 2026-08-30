@@ -18,6 +18,7 @@ public class AdminServiceTests : IDisposable
         _service = new AdminService(
             new UserRepository(context),
             new InternshipRepository(context),
+            new CompanyRepository(context),
             new SkillRepository(context),
             context);
     }
@@ -194,4 +195,64 @@ public class AdminServiceTests : IDisposable
         await Assert.ThrowsAsync<ConflictException>(() =>
             _service.CreateSkillAsync(new CreateSkillRequest("  Rust  ")));
     }
+    // ---- Company verification --------------------------------------------
+
+    [Fact]
+    public async Task SetCompanyVerified_GrantsTheBadge()
+    {
+        var company = _db.AddCompany();
+        _db.Context.Users.Single(u => u.Id == company.UserId).EmailVerified = true;
+        _db.Save();
+
+        await _service.SetCompanyVerifiedAsync(company.Id, true);
+
+        var stored = _db.NewContext().Companies.Single(c => c.Id == company.Id);
+        Assert.True(stored.IsVerified);
+        Assert.NotNull(stored.VerifiedAtUtc);
+    }
+
+    [Fact]
+    public async Task SetCompanyVerified_False_RevokesTheBadgeAndClearsTheTimestamp()
+    {
+        var company = _db.AddCompany(isVerified: true);
+        _db.Context.Users.Single(u => u.Id == company.UserId).EmailVerified = true;
+        _db.Save();
+
+        await _service.SetCompanyVerifiedAsync(company.Id, false);
+
+        var stored = _db.NewContext().Companies.Single(c => c.Id == company.Id);
+        Assert.False(stored.IsVerified);
+        Assert.Null(stored.VerifiedAtUtc);
+    }
+
+    [Fact]
+    public async Task SetCompanyVerified_WithAnUnconfirmedEmail_IsRejected()
+    {
+        // Badging an unowned inbox would put our word behind nothing.
+        var company = _db.AddCompany();
+
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.SetCompanyVerifiedAsync(company.Id, true));
+    }
+
+    [Fact]
+    public async Task SetCompanyVerified_ForAnUnknownCompany_IsNotFound()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.SetCompanyVerifiedAsync(9999, true));
+    }
+
+    [Fact]
+    public async Task ListCompanies_ReturnsCompaniesWithTheirAccountState()
+    {
+        _db.AddCompany("a@test.local", "Alpha", isVerified: true);
+        _db.AddCompany("b@test.local", "Beta");
+
+        var page = await _service.ListCompaniesAsync(1, 20);
+
+        Assert.Equal(2, page.Total);
+        Assert.Contains(page.Items, c => c.Name == "Alpha" && c.IsVerified);
+        Assert.Contains(page.Items, c => c.Name == "Beta" && !c.IsVerified);
+    }
+
 }

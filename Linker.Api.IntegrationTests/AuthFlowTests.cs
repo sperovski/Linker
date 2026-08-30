@@ -13,7 +13,7 @@ public class AuthFlowTests : IClassFixture<LinkerApiFactory>
     private static object StudentPayload(string email) => new
     {
         email,
-        password = "password123",
+        password = "Fixture-Pass-1",
         firstName = "Test",
         lastName = "User"
     };
@@ -95,7 +95,7 @@ public class AuthFlowTests : IClassFixture<LinkerApiFactory>
         var companyReg = await client.PostAsJsonAsync("/api/auth/register/company", new
         {
             email = companyEmail,
-            password = "password123",
+            password = "Fixture-Pass-1",
             name = "Flow Co"
         });
         var company = await companyReg.Content.ReadFromJsonAsync<AuthBody>();

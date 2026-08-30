@@ -208,6 +208,10 @@ public static class DbSeeder
             Name = c.Name,
             Description = c.Description,
             Website = c.Website,
+            // Demo employers ship verified so the chat badge is visible without
+            // an admin having to approve twelve companies by hand first.
+            IsVerified = true,
+            VerifiedAtUtc = DateTime.UtcNow,
             User = new User
             {
                 Email = $"careers@{c.Name.ToLowerInvariant().Replace(" ", "")}.demo",

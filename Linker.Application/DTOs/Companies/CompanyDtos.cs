@@ -7,7 +7,8 @@ public record CompanyProfileResponse(
     int UserId,
     string Name,
     string? Description,
-    string? Website);
+    string? Website,
+    bool IsVerified);
 
 public record UpdateCompanyProfileRequest(
     [Required, MaxLength(200)] string Name,

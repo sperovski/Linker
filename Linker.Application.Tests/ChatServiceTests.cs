@@ -3,13 +3,14 @@ using Linker.Application.Services;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
 using Linker.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 
 namespace Linker.Application.Tests;
 
 /// <summary>
-/// Covers the v1 visibility model: any active student may view and post in any
-/// room, a company may view only its own rooms and never post, an admin may
-/// view all and moderate.
+/// Covers the visibility model: any active student may view and post in any room;
+/// a company may view and post in General and in its own rooms but never in
+/// another company's; an admin may view all and moderate but not post.
 /// </summary>
 public class ChatServiceTests : IDisposable
 {
@@ -25,7 +26,12 @@ public class ChatServiceTests : IDisposable
             new StudentRepository(context),
             new CompanyRepository(context),
             new InternshipRepository(context),
-            context);
+            context,
+            // Verified-email enforcement has its own tests; these fixtures create
+            // users directly and are about the visibility rules, so switch it off.
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["Auth:RequireVerifiedEmail"] = "false" })
+                .Build());
     }
 
     public void Dispose() => _db.Dispose();
@@ -96,13 +102,88 @@ public class ChatServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PostMessage_AsACompany_IsForbidden()
+    public async Task PostMessage_AsACompany_InItsOwnRoom_IsAllowed()
     {
         var company = _db.AddCompany();
 
-        // Companies can read their rooms but cannot post in v1.
+        var message = await _service.PostMessageAsync(company.UserId, RoomIdForCompany(company), "We're hiring!");
+
+        Assert.Equal("Company", message.SenderRole);
+        Assert.Equal(company.Name, message.SenderCompanyName);
+    }
+
+    [Fact]
+    public async Task PostMessage_AsACompany_InAnotherCompanysRoom_IsNotFound()
+    {
+        var mine = _db.AddCompany();
+        var theirs = _db.AddCompany("other@test.local", "Other Co");
+
+        // Posting can never reach further than viewing, so this is the same
+        // NotFound a view attempt would get — not a Forbidden that confirms the room.
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.PostMessageAsync(mine.UserId, RoomIdForCompany(theirs), "Hi"));
+    }
+
+    [Fact]
+    public async Task PostMessage_AsAnAdmin_IsForbidden()
+    {
+        var admin = AddAdmin();
+        var roomId = RoomIdForCompany(_db.AddCompany());
+
+        // Admins moderate rather than participate.
         await Assert.ThrowsAsync<ForbiddenAccessException>(() =>
-            _service.PostMessageAsync(company.UserId, RoomIdForCompany(company), "Hi"));
+            _service.PostMessageAsync(admin.Id, roomId, "Hi"));
+    }
+
+    // ---- Sender badge ----------------------------------------------------
+
+    [Fact]
+    public async Task PostMessage_FromAVerifiedCompany_CarriesTheVerifiedBadge()
+    {
+        var company = _db.AddCompany(isVerified: true);
+
+        var message = await _service.PostMessageAsync(company.UserId, RoomIdForCompany(company), "Hello");
+
+        Assert.True(message.IsVerifiedCompany);
+    }
+
+    [Fact]
+    public async Task PostMessage_FromAnUnverifiedCompany_DoesNotCarryTheBadge()
+    {
+        var company = _db.AddCompany(isVerified: false);
+
+        var message = await _service.PostMessageAsync(company.UserId, RoomIdForCompany(company), "Hello");
+
+        Assert.Equal("Company", message.SenderRole);
+        Assert.False(message.IsVerifiedCompany);
+    }
+
+    [Fact]
+    public async Task PostMessage_FromAStudent_IsNeverBadgedAsACompany()
+    {
+        var student = _db.AddStudent();
+
+        // The badge is derived from the sender's own account row, so a student
+        // cannot render as an employer whatever their profile name says.
+        var message = await _service.PostMessageAsync(student.UserId, RoomIdForCompany(_db.AddCompany()), "Hi");
+
+        Assert.Equal("Student", message.SenderRole);
+        Assert.Null(message.SenderCompanyName);
+        Assert.False(message.IsVerifiedCompany);
+    }
+
+    [Fact]
+    public async Task GetMessages_CarriesTheSendersBadgeIntoHistory()
+    {
+        var company = _db.AddCompany(isVerified: true);
+        var roomId = RoomIdForCompany(company);
+        await _service.PostMessageAsync(company.UserId, roomId, "Hello");
+
+        var page = await _service.GetMessagesAsync(company.UserId, roomId, 1, 20);
+
+        var message = Assert.Single(page.Items);
+        Assert.Equal("Company", message.SenderRole);
+        Assert.True(message.IsVerifiedCompany);
     }
 
     [Fact]

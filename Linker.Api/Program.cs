@@ -184,9 +184,12 @@ builder.Services
         };
     });
 
-// Opt-in gate (Auth__RequireVerifiedEmail=true): applying and posting require a
-// verified email. Off by default so dev/demo flows aren't blocked on SMTP.
-var requireVerifiedEmail = builder.Configuration.GetValue("Auth:RequireVerifiedEmail", false);
+// Applying, posting a listing and posting in chat all require a confirmed email
+// address. On by default: an unverified account is an unowned inbox, and the
+// whole point of the chat badge is that identities on this platform mean
+// something. Set Auth__RequireVerifiedEmail=false to relax it for a local demo
+// with no SMTP.
+var requireVerifiedEmail = builder.Configuration.GetValue("Auth:RequireVerifiedEmail", true);
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("VerifiedEmail", policy =>

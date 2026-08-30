@@ -32,7 +32,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
         var register = await client.PostAsJsonAsync("/api/auth/register/company", new
         {
             email = $"co-{Guid.NewGuid():N}@test.local",
-            password = "password123",
+            password = "Fixture-Pass-1",
             name = companyName,
             description = (string?)null,
             website = (string?)null,
@@ -107,7 +107,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
         var register = await student.PostAsJsonAsync("/api/auth/register/student", new
         {
             email = $"st-{Guid.NewGuid():N}@test.local",
-            password = "password123",
+            password = "Fixture-Pass-1",
             firstName = "Test",
             lastName = "Student",
         });
@@ -157,7 +157,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
         var register = await student.PostAsJsonAsync("/api/auth/register/student", new
         {
             email,
-            password = "password123",
+            password = "Fixture-Pass-1",
             firstName = "Ada",
             lastName = "Lovelace",
         });
@@ -219,7 +219,7 @@ public class SearchPagingTests : IClassFixture<LinkerApiFactory>
         var register = await student.PostAsJsonAsync("/api/auth/register/student", new
         {
             email = $"rec-{Guid.NewGuid():N}@test.local",
-            password = "password123",
+            password = "Fixture-Pass-1",
             firstName = "Rec",
             lastName = "Student",
         });

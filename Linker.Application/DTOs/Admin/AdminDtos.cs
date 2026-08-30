@@ -26,6 +26,20 @@ public record AdminStatsResponse(
 
 public record SetUserActiveRequest([Required] bool IsActive);
 
+/// <summary>A company as the moderation queue sees it, newest sign-ups first.</summary>
+public record AdminCompanyResponse(
+    int Id,
+    string Name,
+    string Email,
+    string? Website,
+    bool IsVerified,
+    bool EmailVerified,
+    bool IsActive,
+    int ListingCount,
+    DateTime CreatedAtUtc);
+
+public record SetCompanyVerifiedRequest([Required] bool IsVerified);
+
 public record CreateSkillRequest(
     [Required, MaxLength(100)] string Name,
     [MaxLength(100)] string? Category = null);

@@ -4,6 +4,7 @@ using Linker.Application.DTOs.Common;
 using Linker.Domain.Entities;
 using Linker.Domain.Enums;
 using Linker.Domain.Repositories;
+using Microsoft.Extensions.Configuration;
 
 namespace Linker.Application.Services;
 
@@ -12,9 +13,12 @@ namespace Linker.Application.Services;
 /// the REST controller are thin and both route through these methods, so a client
 /// can never bypass a check by talking to one transport instead of the other.
 ///
-/// Visibility model (v1, "open"): any active student may view and post in any
-/// room; a company may view only its own rooms and may not post; an admin may
-/// view all and moderate. Posting is students-only.
+/// Visibility model: any active student may view and post in any room. A company
+/// may view and post in the General room and in its own company/internship rooms,
+/// but never in another company's rooms. An admin may view all and moderate but
+/// does not post. Every company message carries a server-derived badge (see
+/// <see cref="ChatMessageResponse"/>) so students can tell a real employer from
+/// someone claiming to be one.
 /// </summary>
 public class ChatService : IChatService
 {
@@ -24,6 +28,7 @@ public class ChatService : IChatService
     private readonly ICompanyRepository _companyRepository;
     private readonly IInternshipRepository _internshipRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly bool _requireVerifiedEmail;
 
     public ChatService(
         IChatRepository chatRepository,
@@ -31,8 +36,13 @@ public class ChatService : IChatService
         IStudentRepository studentRepository,
         ICompanyRepository companyRepository,
         IInternshipRepository internshipRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IConfiguration configuration)
     {
+        // The hub isn't an HTTP endpoint, so the "VerifiedEmail" authorization
+        // policy can't cover it. Reading the same switch here keeps chat under
+        // the same rule as applying and posting a listing.
+        _requireVerifiedEmail = !bool.TryParse(configuration["Auth:RequireVerifiedEmail"], out var require) || require;
         _chatRepository = chatRepository;
         _userRepository = userRepository;
         _studentRepository = studentRepository;
@@ -125,21 +135,43 @@ public class ChatService : IChatService
         }
 
         var user = await LoadActiveUserAsync(userId, cancellationToken);
-        if (user.Role != UserRole.Student)
+
+        if (_requireVerifiedEmail && !user.EmailVerified && user.Role != UserRole.Admin)
         {
-            // Companies can view their rooms but cannot post in v1.
-            throw new ForbiddenAccessException("Only students can post messages.");
+            throw new ForbiddenAccessException("Confirm your email address before posting in chat.");
         }
 
-        // Students may view (and thus post in) any room; still 404s a bad roomId.
+        if (user.Role is not (UserRole.Student or UserRole.Company))
+        {
+            // Admins moderate rather than participate: letting a moderator post
+            // would blur the one account type students are asked to trust.
+            throw new ForbiddenAccessException("Only students and companies can post messages.");
+        }
+
+        // Companies may post exactly where they may look — the General room and
+        // their own rooms. The visibility check below is what enforces that, so
+        // posting can never reach further than viewing.
         await GetViewableRoomAsync(user, roomId, cancellationToken);
+
+        var company = user.Role == UserRole.Company
+            ? await _companyRepository.GetByUserIdAsync(user.Id, cancellationToken)
+            : null;
+
+        if (user.Role == UserRole.Company && company is null)
+        {
+            throw new ForbiddenAccessException("Finish setting up your company profile before posting.");
+        }
 
         var message = new ChatMessage(roomId, user.Id, body, DateTime.UtcNow);
         _chatRepository.AddMessage(message);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var senderName = await ResolveSenderNameAsync(user, cancellationToken);
-        return new ChatMessageResponse(message.Id, message.RoomId, user.Id, senderName, message.Body, message.CreatedAt);
+        var senderName = company?.Name ?? await ResolveSenderNameAsync(user, cancellationToken);
+        return new ChatMessageResponse(
+            message.Id, message.RoomId, user.Id, senderName, message.Body, message.CreatedAt,
+            user.Role.ToString(),
+            company?.Name,
+            company?.IsVerified ?? false);
     }
 
     public async Task ReportMessageAsync(int userId, int messageId, string reason, CancellationToken cancellationToken = default)
@@ -252,7 +284,11 @@ public class ChatService : IChatService
         {
             ChatRoomType.Company => room.CompanyId == company.Id,
             ChatRoomType.Internship => room.Internship is not null && room.Internship.CompanyId == company.Id,
-            _ => false, // General is not a company-owned room
+            // The General room is the shared community space, open to companies
+            // as well as students — it belongs to no one, so ownership doesn't
+            // apply. Another company's rooms remain invisible.
+            ChatRoomType.General => true,
+            _ => false,
         };
     }
 
@@ -261,8 +297,15 @@ public class ChatService : IChatService
     private static ChatRoomResponse ToResponse(ChatRoom room) =>
         new(room.Id, room.Type.ToString(), room.Title, room.CompanyId, room.InternshipId);
 
-    private static ChatMessageResponse ToResponse(ChatMessage m) =>
-        new(m.Id, m.RoomId, m.SenderId, DisplayName(m.Sender), m.Body, m.CreatedAt);
+    private static ChatMessageResponse ToResponse(ChatMessage m)
+    {
+        var company = m.Sender?.Company;
+        return new ChatMessageResponse(
+            m.Id, m.RoomId, m.SenderId, DisplayName(m.Sender), m.Body, m.CreatedAt,
+            (m.Sender?.Role ?? UserRole.Student).ToString(),
+            company?.Name,
+            company?.IsVerified ?? false);
+    }
 
     private async Task<string> ResolveSenderNameAsync(User sender, CancellationToken cancellationToken)
     {
