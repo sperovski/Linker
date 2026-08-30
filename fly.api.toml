@@ -20,7 +20,15 @@ primary_region = "fra"
   #   ConnectionStrings__DefaultConnection, Jwt__Key,
   #   Seed__AdminEmail, Seed__AdminPassword,
   #   App__BaseUrl (public web URL, used in emailed links),
-  #   optionally Anthropic__ApiKey and Smtp__* for real email.
+  #   Smtp__Host, Smtp__Port, Smtp__FromAddress (+ Smtp__Username/Smtp__Password
+  #     if the relay needs them, Smtp__UseSsl for implicit TLS).
+  #     REQUIRED here: Auth:RequireVerifiedEmail defaults on, and the API now
+  #     refuses to boot outside Development without an SMTP host — otherwise
+  #     verification links would go nowhere but the log and no account could
+  #     ever be verified. To run without real email, set the line below instead.
+  #   optionally Anthropic__ApiKey for the AI CV reviewer.
+  # Uncomment to run this deployment without the verified-email gate:
+  #   Auth__RequireVerifiedEmail = "false"
 
 [http_service]
   internal_port = 8080

@@ -15,6 +15,12 @@ public class VerifiedGateApiFactory : LinkerApiFactory
     {
         base.ConfigureWebHost(builder);
         builder.UseSetting("Auth:RequireVerifiedEmail", "true");
+        // Startup refuses to run the gate with no SMTP configured, so this
+        // factory supplies one. Port 1 is refused immediately (no 100s SmtpClient
+        // timeout), and SmtpEmailSender logs send failures rather than throwing —
+        // these tests read verification state from the DB, never from an inbox.
+        builder.UseSetting("Smtp:Host", "localhost");
+        builder.UseSetting("Smtp:Port", "1");
     }
 }
 

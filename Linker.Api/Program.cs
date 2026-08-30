@@ -190,6 +190,23 @@ builder.Services
 // something. Set Auth__RequireVerifiedEmail=false to relax it for a local demo
 // with no SMTP.
 var requireVerifiedEmail = builder.Configuration.GetValue("Auth:RequireVerifiedEmail", true);
+
+// Requiring a verified email while no SMTP is configured is a silently fatal
+// combination: IEmailSender falls back to LoggingEmailSender, so the only copy
+// of every verification link goes to the server log. Registration keeps
+// "working", and every new account is then permanently unable to apply, post a
+// listing or chat. Outside Development that is a broken deployment, so refuse
+// to start rather than discover it through the first user who signs up.
+if (requireVerifiedEmail
+    && !builder.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(builder.Configuration["Smtp:Host"]))
+{
+    throw new InvalidOperationException(
+        "Auth:RequireVerifiedEmail is on but no SMTP host is configured, so verification " +
+        "emails would only be written to the log and no new account could ever be verified. " +
+        "Set Smtp__Host (plus Smtp__Port/FromAddress, and Username/Password if your relay " +
+        "needs them), or set Auth__RequireVerifiedEmail=false to run without the gate.");
+}
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("VerifiedEmail", policy =>
