@@ -1,7 +1,4 @@
-# Linker
 
-## Demo
 
-[![Watch the demo](docs/demo-poster.jpg)](https://github.com/sperovski/Linker/blob/main/docs/demo.mp4)
+https://github.com/user-attachments/assets/90ebd0eb-a3cc-41e2-b860-5bcdfbbcc15f
 
-▶︎ [Click the screenshot](https://github.com/sperovski/Linker/blob/main/docs/demo.mp4) to play the demo (4 min).
