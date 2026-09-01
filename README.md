@@ -2,6 +2,6 @@
 
 ## Demo
 
-<video src="https://github.com/sperovski/Linker/raw/main/docs/demo.mp4" poster="https://github.com/sperovski/Linker/raw/main/docs/demo-poster.jpg" controls muted playsinline width="100%"></video>
+[![Watch the demo](docs/demo-poster.jpg)](https://github.com/sperovski/Linker/blob/main/docs/demo.mp4)
 
-[Watch the demo](https://github.com/sperovski/Linker/raw/main/docs/demo.mp4) if the player above doesn't load.
+▶︎ [Click the screenshot](https://github.com/sperovski/Linker/blob/main/docs/demo.mp4) to play the demo (4 min).
