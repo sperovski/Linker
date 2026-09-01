@@ -25,3 +25,7 @@ https://github.com/user-attachments/assets/90ebd0eb-a3cc-41e2-b860-5bcdfbbcc15f
 ```
 
 
+
+## License
+
+All rights reserved. You may view this code for evaluation purposes only — see [LICENSE](LICENSE).
